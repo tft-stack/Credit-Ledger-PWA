@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Credit Ledger PWA</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #f4f6f8; margin: 0; padding: 12px; color: #333; }
+    .card { background: #fff; border-radius: 10px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+    h2, h3 { margin: 0 0 10px 0; }
+    label { font-size: 12px; font-weight: bold; color: #666; text-transform: uppercase; display: block; margin-bottom: 4px; }
+    select, input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; margin-bottom: 10px; }
+    .month-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 12px; }
+    .month-pill {
+      background: #eef2f5; border: 1px solid #cfd8dc; border-radius: 20px;
+      padding: 6px 0; font-size: 12px; font-weight: 600; text-align: center;
+      cursor: pointer; user-select: none; color: #455a64;
+    }
+    .month-pill.active { background: #007bff; color: #fff; border-color: #007bff; }
+    .btn-group { display: flex; gap: 8px; margin-top: 6px; }
+    .btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; color: #fff; text-align: center; }
+    .btn-red { background: #d32f2f; }
+    .btn-green { background: #2e7d32; }
+    .btn-blue { background: #007bff; }
+    .btn-outline { background: transparent; border: 1px solid #007bff; color: #007bff; }
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: center; margin-bottom: 10px; }
+    .stat-box { padding: 8px; border-radius: 6px; background: #f8f9fa; }
+    .stat-val { font-size: 16px; font-weight: bold; }
+    .text-red { color: #d32f2f; }
+    .text-green { color: #2e7d32; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    th, td { padding: 8px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #f8f9fa; font-size: 12px; }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff; padding: 0; }
+      .card { box-shadow: none; border: none; padding: 0; }
+      table { border: 1px solid #000; }
+      th, td { border: 1px solid #000; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card no-print">
+    <h3>Customer Ledger</h3>
+    
+    <label>Select / Type Customer</label>
+    <input type="text" id="customerInput" list="customerList" placeholder="Start typing name..." onchange="loadLedger()">
+    <datalist id="customerList"></datalist>
+
+    <label>Financial Year Filter</label>
+    <select id="fySelect" onchange="loadLedger()"></select>
+
+    <label>Filter By Month (Tap to toggle multi-select)</label>
+    <div class="month-grid" id="monthContainer">
+      <div class="month-pill" data-month="3" onclick="toggleMonth(this)">Apr</div>
+      <div class="month-pill" data-month="4" onclick="toggleMonth(this)">May</div>
+      <div class="month-pill" data-month="5" onclick="toggleMonth(this)">Jun</div>
+      <div class="month-pill" data-month="6" onclick="toggleMonth(this)">Jul</div>
+      <div class="month-pill" data-month="7" onclick="toggleMonth(this)">Aug</div>
+      <div class="month-pill" data-month="8" onclick="toggleMonth(this)">Sep</div>
+      <div class="month-pill" data-month="9" onclick="toggleMonth(this)">Oct</div>
+      <div class="month-pill" data-month="10" onclick="toggleMonth(this)">Nov</div>
+      <div class="month-pill" data-month="11" onclick="toggleMonth(this)">Dec</div>
+      <div class="month-pill" data-month="0" onclick="toggleMonth(this)">Jan</div>
+      <div class="month-pill" data-month="1" onclick="toggleMonth(this)">Feb</div>
+      <div class="month-pill" data-month="2" onclick="toggleMonth(this)">Mar</div>
+    </div>
+    
+    <button class="btn btn-outline" style="width:100%; padding: 6px; font-size: 12px;" onclick="clearMonthFilters()">Clear Month Filters (Show All Months)</button>
+  </div>
+
+  <div class="card no-print">
+    <label>Quick Entry</label>
+    <input type="number" id="entryAmount" placeholder="Amount (₹)">
+    <input type="date" id="entryDate">
+    <input type="text" id="entryNotes" placeholder="Notes/Bill No (Optional)">
+    <div class="btn-group">
+      <button class="btn btn-red" onclick="submitEntry('Goods Purchased')">+ Purchased</button>
+      <button class="btn btn-green" onclick="submitEntry('Amount Received')">+ Received</button>
+    </div>
+  </div>
+
+  <div class="card" id="ledgerCard" style="display:none;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h2 id="dispCustomerName">Customer</h2>
+      <button class="btn btn-blue no-print" style="padding: 6px 12px; font-size: 12px;" onclick="window.print()">Print / Export PDF</button>
+    </div>
+
+    <div class="summary-grid">
+      <div class="stat-box">
+        <label>Period Purchased</label>
+        <div class="stat-val text-red" id="dispPurchased">₹0</div>
+      </div>
+      <div class="stat-box">
+        <label>Period Received</label>
+        <div class="stat-val text-green" id="dispReceived">₹0</div>
+      </div>
+    </div>
+    <div style="background: #eef2f5; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 10px;">
+      <label>Overall Outstanding Due (All Time)</label>
+      <div class="stat-val" id="dispOverallBalance" style="font-size: 18px;">₹0</div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>FY</th>
+          <th>Type</th>
+          <th>Amount</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="txnTableBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    // REPLACE THIS WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
+    const API_URL = "https://script.google.com/macros/s/AKfycbwaZL5E5fePFLabRz5NnXvwFzApxBILHR-8V15csIHCDoDdXIyVzGnz0wP9KhLAaBzg0w/exec";
+
+    let selectedMonths = [];
+
+    // Generic HTTP GET Handler
+    async function apiGet(action, params = {}) {
+      const query = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(`${API_URL}?${query}`, { method: 'GET', redirect: 'follow' });
+      return await response.json();
+    }
+
+    // Generic HTTP POST Handler (Uses text/plain to bypass CORS preflight issues on Apps Script)
+    async function apiPost(action, payload = {}) {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action, payload })
+      });
+      return await response.json();
+    }
+
+    window.onload = async function() {
+      document.getElementById('entryDate').valueAsDate = new Date();
+
+      const data = await apiGet('getInitialData');
+      
+      const datalist = document.getElementById('customerList');
+      data.customers.forEach(c => {
+        let opt = document.createElement('option');
+        opt.value = c;
+        datalist.appendChild(opt);
+      });
+
+      const fySelect = document.getElementById('fySelect');
+      let allOpt = document.createElement('option');
+      allOpt.value = 'ALL';
+      allOpt.innerText = 'All Time';
+      fySelect.appendChild(allOpt);
+
+      data.fyTabs.forEach(fy => {
+        let opt = document.createElement('option');
+        opt.value = fy;
+        opt.innerText = fy;
+        if (fy === data.currentFY) opt.selected = true;
+        fySelect.appendChild(opt);
+      });
+    };
+
+    function toggleMonth(el) {
+      const monthVal = parseInt(el.getAttribute('data-month'));
+      if (el.classList.contains('active')) {
+        el.classList.remove('active');
+        selectedMonths = selectedMonths.filter(m => m !== monthVal);
+      } else {
+        el.classList.add('active');
+        selectedMonths.push(monthVal);
+      }
+      loadLedger();
+    }
+
+    function clearMonthFilters() {
+      document.querySelectorAll('.month-pill').forEach(el => el.classList.remove('active'));
+      selectedMonths = [];
+      loadLedger();
+    }
+
+    async function loadLedger() {
+      const name = document.getElementById('customerInput').value.trim();
+      if (!name) return;
+
+      const fy = document.getElementById('fySelect').value;
+
+      const data = await apiGet('getFilteredLedger', {
+        customerName: name,
+        selectedFY: fy,
+        selectedMonths: selectedMonths.join(',')
+      });
+
+      renderLedger(data);
+    }
+
+    function renderLedger(data) {
+      document.getElementById('ledgerCard').style.display = 'block';
+      document.getElementById('dispCustomerName').innerText = data.customerName;
+      document.getElementById('dispPurchased').innerText = '₹' + data.periodPurchased.toLocaleString('en-IN');
+      document.getElementById('dispReceived').innerText = '₹' + data.periodReceived.toLocaleString('en-IN');
+      
+      const overallElem = document.getElementById('dispOverallBalance');
+      overallElem.innerText = '₹' + data.overallBalance.toLocaleString('en-IN');
+      overallElem.className = 'stat-val ' + (data.overallBalance > 0 ? 'text-red' : 'text-green');
+
+      const tbody = document.getElementById('txnTableBody');
+      tbody.innerHTML = '';
+
+      if (data.history.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888;">No transactions found for this selection.</td></tr>';
+        return;
+      }
+
+      data.history.forEach(row => {
+        const tr = document.createElement('tr');
+        const isPurchase = row.type === 'Goods Purchased';
+        tr.innerHTML = `
+          <td>${row.date}</td>
+          <td><small>${row.fy}</small></td>
+          <td style="color:${isPurchase ? '#d32f2f' : '#2e7d32'}; font-weight:bold;">${row.type}</td>
+          <td style="font-weight:bold;">₹${row.amount.toLocaleString('en-IN')}</td>
+          <td>${row.notes || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function submitEntry(type) {
+      const name = document.getElementById('customerInput').value.trim();
+      const amount = document.getElementById('entryAmount').value;
+      const date = document.getElementById('entryDate').value;
+      const notes = document.getElementById('entryNotes').value;
+
+      if (!name || !amount) {
+        alert('Please enter both Customer Name and Amount');
+        return;
+      }
+
+      await apiPost('addEntry', {
+        customerName: name,
+        type: type,
+        amount: amount,
+        date: date,
+        notes: notes
+      });
+
+      document.getElementById('entryAmount').value = '';
+      document.getElementById('entryNotes').value = '';
+      loadLedger();
+    }
+  </script>
+</body>
+</html>
