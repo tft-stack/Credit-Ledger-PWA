@@ -2,136 +2,186 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Credit Ledger PWA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Credit Ledger</title>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: #f4f6f8; margin: 0; padding: 12px; color: #333; }
-    .card { background: #fff; border-radius: 10px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
-    h2, h3 { margin: 0 0 10px 0; }
-    label { font-size: 12px; font-weight: bold; color: #666; text-transform: uppercase; display: block; margin-bottom: 4px; }
-    select, input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; margin-bottom: 10px; }
-    .month-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 12px; }
+    body { background: #f4f6f8; margin: 0; padding: 0; color: #333; padding-bottom: 70px; /* Space for bottom nav */ }
+    
+    .screen { display: none; padding: 12px; animation: fadeIn 0.3s; }
+    .screen.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .card { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+    h2, h3 { margin: 0 0 12px 0; }
+    label { font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase; display: block; margin-bottom: 6px; }
+    select, input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; margin-bottom: 12px; background: #fff; }
+    input:focus, select:focus { outline: none; border-color: #007bff; }
+    
+    /* Month Pill Selector Grid */
+    .month-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 12px; }
     .month-pill {
       background: #eef2f5; border: 1px solid #cfd8dc; border-radius: 20px;
-      padding: 6px 0; font-size: 12px; font-weight: 600; text-align: center;
+      padding: 8px 0; font-size: 13px; font-weight: 600; text-align: center;
       cursor: pointer; user-select: none; color: #455a64;
     }
     .month-pill.active { background: #007bff; color: #fff; border-color: #007bff; }
-    .btn-group { display: flex; gap: 8px; margin-top: 6px; }
-    .btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; color: #fff; text-align: center; }
+    
+    /* Buttons */
+    .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+    .btn { flex: 1; padding: 14px; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; color: #fff; text-align: center; transition: 0.2s; }
+    .btn:active { transform: scale(0.98); }
     .btn-red { background: #d32f2f; }
     .btn-green { background: #2e7d32; }
     .btn-blue { background: #007bff; }
-    .btn-outline { background: transparent; border: 1px solid #007bff; color: #007bff; }
-    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: center; margin-bottom: 10px; }
-    .stat-box { padding: 8px; border-radius: 6px; background: #f8f9fa; }
-    .stat-val { font-size: 16px; font-weight: bold; }
-    .text-red { color: #d32f2f; }
-    .text-green { color: #2e7d32; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-    th, td { padding: 8px; text-align: left; border-bottom: 1px solid #eee; }
-    th { background: #f8f9fa; font-size: 12px; }
+    .btn-outline { background: transparent; border: 1px solid #007bff; color: #007bff; padding: 10px; }
+
+    /* Side-by-Side Ledger View */
+    .ledger-header { text-align: center; padding-bottom: 12px; border-bottom: 2px dashed #ccc; margin-bottom: 12px; }
+    .ledger-header h2 { margin: 0 0 4px 0; font-size: 20px; }
+    .ledger-header .balance { font-size: 16px; font-weight: bold; }
+    .ledger-split { display: flex; width: 100%; }
+    .ledger-col { flex: 1; padding: 0 8px; }
+    .ledger-col:first-child { border-right: 1px dashed #ccc; }
+    .col-title { font-size: 11px; font-weight: bold; color: #666; text-align: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+    .ledger-item { font-size: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+    .ledger-date { color: #888; font-size: 12px; }
+    
+    /* Similarity Checker Warning */
+    #similarityWarning { font-size: 12px; color: #d32f2f; margin-top: -8px; margin-bottom: 12px; display: none; background: #ffebee; padding: 8px; border-radius: 4px; }
+    .suggestion-chip { display: inline-block; background: #ffcdd2; color: #b71c1c; padding: 4px 8px; border-radius: 12px; margin: 2px; cursor: pointer; font-weight: bold; }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; background: #fff;
+      display: flex; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+      padding-bottom: env(safe-area-inset-bottom); /* For iPhone notch */
+    }
+    .nav-item {
+      flex: 1; padding: 16px; text-align: center; color: #666; font-size: 14px; font-weight: bold; cursor: pointer; border-top: 3px solid transparent;
+    }
+    .nav-item.active { color: #007bff; border-top-color: #007bff; background: #f8f9fa; }
+
+    /* Print Styles */
     @media print {
-      .no-print { display: none !important; }
+      .bottom-nav, .no-print { display: none !important; }
       body { background: #fff; padding: 0; }
-      .card { box-shadow: none; border: none; padding: 0; }
-      table { border: 1px solid #000; }
-      th, td { border: 1px solid #000; }
+      .card { box-shadow: none; border: 1px solid #000; }
     }
   </style>
 </head>
 <body>
 
-  <div class="card no-print">
-    <h3>Customer Ledger</h3>
+  <!-- ==================== SCREEN 1: VIEW LEDGER ==================== -->
+  <div id="screen-view" class="screen active">
     
-    <label>Select / Type Customer</label>
-    <input type="text" id="customerInput" list="customerList" placeholder="Start typing name..." onchange="loadLedger()">
-    <datalist id="customerList"></datalist>
+    <div class="card no-print">
+      <h3>Customer Ledger</h3>
+      
+      <label>Select / Type Customer</label>
+      <input type="text" id="searchCustomerInput" list="customerList" placeholder="Start typing name..." onchange="loadLedger()">
+      
+      <label>Financial Year Filter</label>
+      <select id="fySelect" onchange="loadLedger()"></select>
 
-    <label>Financial Year Filter</label>
-    <select id="fySelect" onchange="loadLedger()"></select>
-
-    <label>Filter By Month (Tap to toggle multi-select)</label>
-    <div class="month-grid" id="monthContainer">
-      <div class="month-pill" data-month="3" onclick="toggleMonth(this)">Apr</div>
-      <div class="month-pill" data-month="4" onclick="toggleMonth(this)">May</div>
-      <div class="month-pill" data-month="5" onclick="toggleMonth(this)">Jun</div>
-      <div class="month-pill" data-month="6" onclick="toggleMonth(this)">Jul</div>
-      <div class="month-pill" data-month="7" onclick="toggleMonth(this)">Aug</div>
-      <div class="month-pill" data-month="8" onclick="toggleMonth(this)">Sep</div>
-      <div class="month-pill" data-month="9" onclick="toggleMonth(this)">Oct</div>
-      <div class="month-pill" data-month="10" onclick="toggleMonth(this)">Nov</div>
-      <div class="month-pill" data-month="11" onclick="toggleMonth(this)">Dec</div>
-      <div class="month-pill" data-month="0" onclick="toggleMonth(this)">Jan</div>
-      <div class="month-pill" data-month="1" onclick="toggleMonth(this)">Feb</div>
-      <div class="month-pill" data-month="2" onclick="toggleMonth(this)">Mar</div>
+      <label>Filter By Month (Tap to toggle multi-select)</label>
+      <div class="month-grid" id="monthContainer">
+        <div class="month-pill" data-month="3" onclick="toggleMonth(this)">Apr</div>
+        <div class="month-pill" data-month="4" onclick="toggleMonth(this)">May</div>
+        <div class="month-pill" data-month="5" onclick="toggleMonth(this)">Jun</div>
+        <div class="month-pill" data-month="6" onclick="toggleMonth(this)">Jul</div>
+        <div class="month-pill" data-month="7" onclick="toggleMonth(this)">Aug</div>
+        <div class="month-pill" data-month="8" onclick="toggleMonth(this)">Sep</div>
+        <div class="month-pill" data-month="9" onclick="toggleMonth(this)">Oct</div>
+        <div class="month-pill" data-month="10" onclick="toggleMonth(this)">Nov</div>
+        <div class="month-pill" data-month="11" onclick="toggleMonth(this)">Dec</div>
+        <div class="month-pill" data-month="0" onclick="toggleMonth(this)">Jan</div>
+        <div class="month-pill" data-month="1" onclick="toggleMonth(this)">Feb</div>
+        <div class="month-pill" data-month="2" onclick="toggleMonth(this)">Mar</div>
+      </div>
+      <button class="btn btn-outline" style="width:100%;" onclick="clearMonthFilters()">Clear Month Filters</button>
     </div>
-    
-    <button class="btn btn-outline" style="width:100%; padding: 6px; font-size: 12px;" onclick="clearMonthFilters()">Clear Month Filters (Show All Months)</button>
+
+    <!-- Ledger Display Card (Matches your register layout) -->
+    <div class="card" id="ledgerCard" style="display:none;">
+      <div class="ledger-header">
+        <h2 id="dispCustomerName">Customer</h2>
+        <div class="balance" id="dispOverallBalance">Current Balance: ₹0</div>
+      </div>
+      
+      <div class="ledger-split">
+        <!-- Left Column: Purchased -->
+        <div class="ledger-col">
+          <div class="col-title">GOODS PURCHASED (-)</div>
+          <div id="purchasedCol"></div>
+        </div>
+        <!-- Right Column: Received -->
+        <div class="ledger-col">
+          <div class="col-title">AMOUNT RECEIVED (+)</div>
+          <div id="receivedCol"></div>
+        </div>
+      </div>
+
+      <div style="border-top: 2px dashed #ccc; margin-top: 12px; padding-top: 12px;" class="no-print">
+        <div class="btn-group">
+          <button class="btn btn-outline" onclick="routeToAddData('purchase')">[ + Add Purchase ]</button>
+          <button class="btn btn-outline" onclick="routeToAddData('payment')">[ + Add Payment ]</button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="card no-print">
-    <label>Quick Entry</label>
-    <input type="number" id="entryAmount" placeholder="Amount (₹)">
-    <input type="date" id="entryDate">
-    <input type="text" id="entryNotes" placeholder="Notes/Bill No (Optional)">
-    <div class="btn-group">
-      <button class="btn btn-red" onclick="submitEntry('Goods Purchased')">+ Purchased</button>
-      <button class="btn btn-green" onclick="submitEntry('Amount Received')">+ Received</button>
+  <!-- ==================== SCREEN 2: ENTER DATA ==================== -->
+  <div id="screen-enter" class="screen">
+    <div class="card">
+      <h3>Enter Customer Data</h3>
+      
+      <label>Customer Name</label>
+      <input type="text" id="entryCustomerInput" list="customerList" placeholder="Select existing or type new..." oninput="checkSimilarity(this.value)">
+      
+      <!-- Smart Similarity Warning Area -->
+      <div id="similarityWarning">
+        <strong>Similar names found:</strong> Did you mean to select one of these?<br>
+        <div id="similarityChips" style="margin-top: 5px;"></div>
+      </div>
+
+      <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border: 1px solid #eee;">
+        <label>Quick Entry</label>
+        <input type="number" id="entryAmount" placeholder="Amount (₹)">
+        <input type="date" id="entryDate">
+        <input type="text" id="entryNotes" placeholder="Notes/Bill No (Optional)">
+        
+        <div class="btn-group">
+          <button class="btn btn-red" onclick="submitEntry('Goods Purchased')">+ Purchased</button>
+          <button class="btn btn-green" onclick="submitEntry('Amount Received')">+ Received</button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="card" id="ledgerCard" style="display:none;">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h2 id="dispCustomerName">Customer</h2>
-      <button class="btn btn-blue no-print" style="padding: 6px 12px; font-size: 12px;" onclick="window.print()">Print / Export PDF</button>
-    </div>
+  <!-- Shared Datalist for autocomplete -->
+  <datalist id="customerList"></datalist>
 
-    <div class="summary-grid">
-      <div class="stat-box">
-        <label>Period Purchased</label>
-        <div class="stat-val text-red" id="dispPurchased">₹0</div>
-      </div>
-      <div class="stat-box">
-        <label>Period Received</label>
-        <div class="stat-val text-green" id="dispReceived">₹0</div>
-      </div>
-    </div>
-    <div style="background: #eef2f5; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 10px;">
-      <label>Overall Outstanding Due (All Time)</label>
-      <div class="stat-val" id="dispOverallBalance" style="font-size: 18px;">₹0</div>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>FY</th>
-          <th>Type</th>
-          <th>Amount</th>
-          <th>Notes</th>
-        </tr>
-      </thead>
-      <tbody id="txnTableBody"></tbody>
-    </table>
+  <!-- ==================== BOTTOM NAVIGATION ==================== -->
+  <div class="bottom-nav no-print">
+    <div id="nav-view" class="nav-item active" onclick="switchScreen('view')">View Ledger</div>
+    <div id="nav-enter" class="nav-item" onclick="switchScreen('enter')">Enter Data</div>
   </div>
 
   <script>
     // REPLACE THIS WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
     const API_URL = "https://script.google.com/macros/s/AKfycbwaZL5E5fePFLabRz5NnXvwFzApxBILHR-8V15csIHCDoDdXIyVzGnz0wP9KhLAaBzg0w/exec";
-
+    
+    let allCustomers = [];
     let selectedMonths = [];
 
-    // Generic HTTP GET Handler
+    // --- API Handlers ---
     async function apiGet(action, params = {}) {
       const query = new URLSearchParams({ action, ...params }).toString();
       const response = await fetch(`${API_URL}?${query}`, { method: 'GET', redirect: 'follow' });
       return await response.json();
     }
 
-    // Generic HTTP POST Handler (Uses text/plain to bypass CORS preflight issues on Apps Script)
     async function apiPost(action, payload = {}) {
       const response = await fetch(API_URL, {
         method: 'POST',
@@ -142,13 +192,16 @@
       return await response.json();
     }
 
+    // --- Initialization ---
     window.onload = async function() {
       document.getElementById('entryDate').valueAsDate = new Date();
 
+      // Fetch init data
       const data = await apiGet('getInitialData');
+      allCustomers = data.customers;
       
       const datalist = document.getElementById('customerList');
-      data.customers.forEach(c => {
+      allCustomers.forEach(c => {
         let opt = document.createElement('option');
         opt.value = c;
         datalist.appendChild(opt);
@@ -169,6 +222,96 @@
       });
     };
 
+    // --- Navigation Logic ---
+    function switchScreen(screen) {
+      // Update screens
+      document.getElementById('screen-view').classList.remove('active');
+      document.getElementById('screen-enter').classList.remove('active');
+      document.getElementById('screen-' + screen).classList.add('active');
+      
+      // Update nav highlights
+      document.getElementById('nav-view').classList.remove('active');
+      document.getElementById('nav-enter').classList.remove('active');
+      document.getElementById('nav-' + screen).classList.add('active');
+    }
+
+    function routeToAddData(type) {
+      const currentCust = document.getElementById('searchCustomerInput').value;
+      if (currentCust) {
+        document.getElementById('entryCustomerInput').value = currentCust;
+        checkSimilarity(currentCust); // clear warning if exact match
+      }
+      switchScreen('enter');
+    }
+
+    // --- Enter Data / Smart Checking ---
+    function checkSimilarity(inputStr) {
+      const warningBox = document.getElementById('similarityWarning');
+      const chipContainer = document.getElementById('similarityChips');
+      const lowerInput = inputStr.toLowerCase().trim();
+      
+      warningBox.style.display = 'none';
+      chipContainer.innerHTML = '';
+
+      if (lowerInput.length < 3) return; // Only check if they typed at least 3 letters
+
+      // Exact match check
+      const exactMatch = allCustomers.find(c => c.toLowerCase() === lowerInput);
+      if (exactMatch) return; // It's an exact existing customer, no warning needed
+
+      // Fuzzy / Substring match
+      const similar = allCustomers.filter(c => c.toLowerCase().includes(lowerInput));
+      
+      if (similar.length > 0) {
+        warningBox.style.display = 'block';
+        similar.forEach(c => {
+          let chip = document.createElement('span');
+          chip.className = 'suggestion-chip';
+          chip.innerText = c;
+          chip.onclick = function() {
+            document.getElementById('entryCustomerInput').value = c;
+            warningBox.style.display = 'none';
+          };
+          chipContainer.appendChild(chip);
+        });
+      }
+    }
+
+    async function submitEntry(type) {
+      const nameInput = document.getElementById('entryCustomerInput');
+      const amountInput = document.getElementById('entryAmount');
+      const name = nameInput.value.trim();
+      const amount = amountInput.value;
+      const date = document.getElementById('entryDate').value;
+      const notes = document.getElementById('entryNotes').value;
+
+      if (!name || !amount) {
+        alert('Please enter both Customer Name and Amount');
+        return;
+      }
+
+      // Add to local list immediately if new (for UX)
+      if (!allCustomers.includes(name)) {
+        allCustomers.push(name);
+        let opt = document.createElement('option');
+        opt.value = name;
+        document.getElementById('customerList').appendChild(opt);
+      }
+
+      await apiPost('addEntry', { customerName: name, type: type, amount: amount, date: date, notes: notes });
+
+      // Reset form and jump to view
+      amountInput.value = '';
+      document.getElementById('entryNotes').value = '';
+      document.getElementById('similarityWarning').style.display = 'none';
+      
+      // Auto-load ledger for this person
+      document.getElementById('searchCustomerInput').value = name;
+      loadLedger();
+      switchScreen('view');
+    }
+
+    // --- Filter & Ledger View Logic ---
     function toggleMonth(el) {
       const monthVal = parseInt(el.getAttribute('data-month'));
       if (el.classList.contains('active')) {
@@ -188,11 +331,10 @@
     }
 
     async function loadLedger() {
-      const name = document.getElementById('customerInput').value.trim();
+      const name = document.getElementById('searchCustomerInput').value.trim();
       if (!name) return;
 
       const fy = document.getElementById('fySelect').value;
-
       const data = await apiGet('getFilteredLedger', {
         customerName: name,
         selectedFY: fy,
@@ -205,57 +347,40 @@
     function renderLedger(data) {
       document.getElementById('ledgerCard').style.display = 'block';
       document.getElementById('dispCustomerName').innerText = data.customerName;
-      document.getElementById('dispPurchased').innerText = '₹' + data.periodPurchased.toLocaleString('en-IN');
-      document.getElementById('dispReceived').innerText = '₹' + data.periodReceived.toLocaleString('en-IN');
       
-      const overallElem = document.getElementById('dispOverallBalance');
-      overallElem.innerText = '₹' + data.overallBalance.toLocaleString('en-IN');
-      overallElem.className = 'stat-val ' + (data.overallBalance > 0 ? 'text-red' : 'text-green');
+      const balElem = document.getElementById('dispOverallBalance');
+      balElem.innerText = `Current Balance: ₹${Math.abs(data.overallBalance).toLocaleString('en-IN')} ${data.overallBalance > 0 ? 'Outstanding' : 'Advance'}`;
+      balElem.style.color = data.overallBalance > 0 ? '#d32f2f' : '#2e7d32';
 
-      const tbody = document.getElementById('txnTableBody');
-      tbody.innerHTML = '';
+      const purCol = document.getElementById('purchasedCol');
+      const recCol = document.getElementById('receivedCol');
+      purCol.innerHTML = '';
+      recCol.innerHTML = '';
 
       if (data.history.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888;">No transactions found for this selection.</td></tr>';
+        purCol.innerHTML = '<div style="color:#888; font-size:12px; text-align:center;">No records</div>';
+        recCol.innerHTML = '<div style="color:#888; font-size:12px; text-align:center;">No records</div>';
         return;
       }
 
+      // Split data chronologically into the two columns based on type
       data.history.forEach(row => {
-        const tr = document.createElement('tr');
-        const isPurchase = row.type === 'Goods Purchased';
-        tr.innerHTML = `
-          <td>${row.date}</td>
-          <td><small>${row.fy}</small></td>
-          <td style="color:${isPurchase ? '#d32f2f' : '#2e7d32'}; font-weight:bold;">${row.type}</td>
-          <td style="font-weight:bold;">₹${row.amount.toLocaleString('en-IN')}</td>
-          <td>${row.notes || '-'}</td>
+        // Strip the year off the date for cleaner view (e.g. 28/07/2026 -> 28/07)
+        const shortDate = row.date.substring(0, 5); 
+        const html = `
+          <div class="ledger-item">
+            <span class="ledger-date">${shortDate}</span>
+            <span style="font-weight:bold;">₹${row.amount.toLocaleString('en-IN')}</span>
+          </div>
+          ${row.notes ? `<div style="font-size:10px; color:#888; margin-top:-6px; margin-bottom:8px; text-align:right;">${row.notes}</div>` : ''}
         `;
-        tbody.appendChild(tr);
+
+        if (row.type === 'Goods Purchased') {
+          purCol.innerHTML += html;
+        } else {
+          recCol.innerHTML += html;
+        }
       });
-    }
-
-    async function submitEntry(type) {
-      const name = document.getElementById('customerInput').value.trim();
-      const amount = document.getElementById('entryAmount').value;
-      const date = document.getElementById('entryDate').value;
-      const notes = document.getElementById('entryNotes').value;
-
-      if (!name || !amount) {
-        alert('Please enter both Customer Name and Amount');
-        return;
-      }
-
-      await apiPost('addEntry', {
-        customerName: name,
-        type: type,
-        amount: amount,
-        date: date,
-        notes: notes
-      });
-
-      document.getElementById('entryAmount').value = '';
-      document.getElementById('entryNotes').value = '';
-      loadLedger();
     }
   </script>
 </body>
