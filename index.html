@@ -171,6 +171,12 @@
       
       <label>Amount</label>
       <input type="number" id="editAmount">
+      
+      <div id="editBFContainer" style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px; display: none;">
+        <input type="checkbox" id="editBroughtForward" onchange="toggleEditBF()" style="width:16px; margin:0;">
+        <label for="editBroughtForward" style="margin:0; text-transform:none; font-size:13px; color:#444;">Brought forward</label>
+      </div>
+
       <label>Date</label>
       <input type="date" id="editDate" required>
       <label>Notes</label>
@@ -189,7 +195,7 @@
     
     let allCustomers = [];
     let selectedMonths = [];
-    let currentLedgerHistory = []; // Needed to reference row details for Edit/Delete
+    let currentLedgerHistory = []; 
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').then(() => console.log("Service Worker Registered"));
@@ -274,6 +280,19 @@
       }
     }
 
+    // New logic for Edit Modal Checkbox
+    function toggleEditBF() {
+      const isBF = document.getElementById('editBroughtForward').checked;
+      const dateInput = document.getElementById('editDate');
+      if (isBF) {
+        dateInput.value = '';
+        dateInput.disabled = true;
+      } else {
+        dateInput.disabled = false;
+        if(!dateInput.value) dateInput.valueAsDate = new Date();
+      }
+    }
+
     function checkSimilarity(inputStr) {
       const warningBox = document.getElementById('similarityWarning');
       const chipContainer = document.getElementById('similarityChips');
@@ -333,7 +352,7 @@
       document.getElementById('entryAmount').value = '';
       document.getElementById('entryNotes').value = '';
       document.getElementById('similarityWarning').style.display = 'none';
-      document.getElementById('entryCustomerInput').value = ''; // Auto-clear customer
+      document.getElementById('entryCustomerInput').value = ''; 
       
       document.getElementById('searchCustomerInput').value = name;
       loadLedger();
@@ -370,12 +389,11 @@
     }
 
     function renderLedger(data) {
-      currentLedgerHistory = data.history; // Save for Edit/Delete actions
+      currentLedgerHistory = data.history; 
       document.getElementById('ledgerCard').style.display = 'block';
       document.getElementById('dispCustomerName').innerText = data.customerName;
       
       const balElem = document.getElementById('dispOverallBalance');
-      // Format Outstanding/Advance
       if (data.overallBalance >= 0) {
         balElem.innerText = `Outstanding: ₹${data.overallBalance.toLocaleString('en-IN')}`;
         balElem.style.color = '#d32f2f';
@@ -431,15 +449,40 @@
       document.getElementById('editOldAmount').value = row.amount;
       document.getElementById('editType').value = row.type;
       document.getElementById('editAmount').value = row.amount;
-      
-      if(row.rawDate) {
-        const d = new Date(row.rawDate);
-        document.getElementById('editDate').value = d.toLocaleDateString('en-CA'); // Formats to YYYY-MM-DD
-      } else {
-        document.getElementById('editDate').value = '';
+
+      // Extract existing Brought Forward logic
+      let notes = row.notes || '';
+      let isBF = false;
+      if (notes.startsWith("(Brought Forward) ")) {
+        isBF = true;
+        notes = notes.replace("(Brought Forward) ", ""); // Strip the tag for the text input
       }
+
+      document.getElementById('editNotes').value = notes;
+
+      // Configure Checkbox UI based on transaction type
+      const bfCheckboxContainer = document.getElementById('editBFContainer');
+      const bfCheckbox = document.getElementById('editBroughtForward');
+
+      if (row.type === 'Goods Purchased') {
+        bfCheckboxContainer.style.display = 'flex';
+        bfCheckbox.checked = isBF;
+      } else {
+        bfCheckboxContainer.style.display = 'none';
+        bfCheckbox.checked = false;
+      }
+
+      // Configure Date field
+      const dateInput = document.getElementById('editDate');
+      if (row.rawDate && !isBF) {
+        const d = new Date(row.rawDate);
+        dateInput.value = d.toLocaleDateString('en-CA');
+      } else {
+        dateInput.value = '';
+      }
+
+      toggleEditBF(); // Trigger disabling logic
       
-      document.getElementById('editNotes').value = row.notes;
       document.getElementById('editModal').style.display = 'flex';
     }
 
@@ -453,11 +496,22 @@
       const type = document.getElementById('editType').value;
       const amount = document.getElementById('editAmount').value;
       const date = document.getElementById('editDate').value;
-      const notes = document.getElementById('editNotes').value;
+      let notes = document.getElementById('editNotes').value;
       const custName = document.getElementById('searchCustomerInput').value;
+      const isBF = document.getElementById('editBroughtForward').checked;
 
-      if (!date || !amount) {
-        alert("Amount and Date are mandatory for edits."); return;
+      // New Save Validations mimicking initial entry
+      if (!amount) {
+        alert("Amount is mandatory."); return;
+      }
+
+      if (!isBF && !date) {
+        alert("Date is mandatory unless Brought Forward is checked."); return;
+      }
+
+      // Re-apply BF tag to notes if checked
+      if (isBF && type === 'Goods Purchased') {
+        notes = "(Brought Forward) " + notes;
       }
 
       document.getElementById('editModal').style.display = 'none';
