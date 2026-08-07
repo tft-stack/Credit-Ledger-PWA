@@ -2,18 +2,16 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Credit Ledger</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#007bff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Ledger">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Credit Ledger</title>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: #f4f6f8; margin: 0; padding: 0; color: #333; padding-bottom: 70px; /* Space for bottom nav */ }
+    body { background: #f4f6f8; margin: 0; padding: 0; color: #333; padding-bottom: 70px; }
     
     .screen { display: none; padding: 12px; animation: fadeIn 0.3s; }
     .screen.active { display: block; }
@@ -22,37 +20,38 @@
     .card { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
     h2, h3 { margin: 0 0 12px 0; }
     label { font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase; display: block; margin-bottom: 6px; }
-    select, input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; margin-bottom: 12px; background: #fff; }
+    select, input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; margin-bottom: 12px; background: #fff; }
     input:focus, select:focus { outline: none; border-color: #007bff; }
     
     /* Month Pill Selector Grid */
-    .month-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 12px; }
+    .month-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 12px; }
     .month-pill {
-      background: #eef2f5; border: 1px solid #cfd8dc; border-radius: 20px;
-      padding: 8px 0; font-size: 13px; font-weight: 600; text-align: center;
+      background: #eef2f5; border: 1px solid #cfd8dc; border-radius: 16px;
+      padding: 6px 0; font-size: 12px; font-weight: 600; text-align: center;
       cursor: pointer; user-select: none; color: #455a64;
     }
     .month-pill.active { background: #007bff; color: #fff; border-color: #007bff; }
     
     /* Buttons */
-    .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+    .btn-group { display: flex; gap: 8px; margin-top: 10px; }
     .btn { flex: 1; padding: 14px; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; color: #fff; text-align: center; transition: 0.2s; }
+    .btn-sm { padding: 8px 12px; font-size: 13px; } /* Compact button size */
     .btn:active { transform: scale(0.98); }
     .btn-red { background: #d32f2f; }
     .btn-green { background: #2e7d32; }
     .btn-blue { background: #007bff; }
-    .btn-outline { background: transparent; border: 1px solid #007bff; color: #007bff; padding: 10px; }
+    .btn-outline { background: transparent; border: 1px solid #007bff; color: #007bff; padding: 8px; }
 
     /* Side-by-Side Ledger View */
     .ledger-header { text-align: center; padding-bottom: 12px; border-bottom: 2px dashed #ccc; margin-bottom: 12px; }
-    .ledger-header h2 { margin: 0 0 4px 0; font-size: 20px; }
-    .ledger-header .balance { font-size: 16px; font-weight: bold; }
+    .ledger-header h2 { margin: 0 0 4px 0; font-size: 18px; }
+    .ledger-header .balance { font-size: 15px; font-weight: bold; }
     .ledger-split { display: flex; width: 100%; }
-    .ledger-col { flex: 1; padding: 0 8px; }
+    .ledger-col { flex: 1; padding: 0 6px; }
     .ledger-col:first-child { border-right: 1px dashed #ccc; }
-    .col-title { font-size: 11px; font-weight: bold; color: #666; text-align: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
-    .ledger-item { font-size: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; }
-    .ledger-date { color: #888; font-size: 12px; }
+    .col-title { font-size: 10px; font-weight: bold; color: #666; text-align: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+    .ledger-item { font-size: 13px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+    .ledger-date { color: #888; font-size: 11px; }
     
     /* Similarity Checker Warning */
     #similarityWarning { font-size: 12px; color: #d32f2f; margin-top: -8px; margin-bottom: 12px; display: none; background: #ffebee; padding: 8px; border-radius: 4px; }
@@ -62,10 +61,10 @@
     .bottom-nav {
       position: fixed; bottom: 0; left: 0; right: 0; background: #fff;
       display: flex; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-      padding-bottom: env(safe-area-inset-bottom); /* For iPhone notch */
+      padding-bottom: env(safe-area-inset-bottom);
     }
     .nav-item {
-      flex: 1; padding: 16px; text-align: center; color: #666; font-size: 14px; font-weight: bold; cursor: pointer; border-top: 3px solid transparent;
+      flex: 1; padding: 14px; text-align: center; color: #666; font-size: 13px; font-weight: bold; cursor: pointer; border-top: 3px solid transparent;
     }
     .nav-item.active { color: #007bff; border-top-color: #007bff; background: #f8f9fa; }
 
@@ -73,7 +72,7 @@
     @media print {
       .bottom-nav, .no-print { display: none !important; }
       body { background: #fff; padding: 0; }
-      .card { box-shadow: none; border: 1px solid #000; }
+      .card { box-shadow: none; border: 1px solid #000; margin-bottom: 0; }
     }
   </style>
 </head>
@@ -83,15 +82,15 @@
   <div id="screen-view" class="screen active">
     
     <div class="card no-print">
-      <h3>Customer Ledger</h3>
       
-      <label>Select / Type Customer</label>
-      <input type="text" id="searchCustomerInput" list="customerList" placeholder="Start typing name..." onchange="loadLedger()">
-      
-      <label>Financial Year Filter</label>
+      <label>FY Filter</label>
       <select id="fySelect" onchange="loadLedger()"></select>
 
-      <label>Filter By Month (Tap to toggle multi-select)</label>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <label style="margin-bottom: 0;">Month Filter</label>
+        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 10px; width: auto; border-radius: 4px;" onclick="clearMonthFilters()">Clear</button>
+      </div>
+      
       <div class="month-grid" id="monthContainer">
         <div class="month-pill" data-month="3" onclick="toggleMonth(this)">Apr</div>
         <div class="month-pill" data-month="4" onclick="toggleMonth(this)">May</div>
@@ -106,10 +105,12 @@
         <div class="month-pill" data-month="1" onclick="toggleMonth(this)">Feb</div>
         <div class="month-pill" data-month="2" onclick="toggleMonth(this)">Mar</div>
       </div>
-      <button class="btn btn-outline" style="width:100%;" onclick="clearMonthFilters()">Clear Month Filters</button>
+
+      <label>Customer Name</label>
+      <input type="text" id="searchCustomerInput" list="customerList" placeholder="Start typing name..." onchange="loadLedger()" style="margin-bottom: 0;">
     </div>
 
-    <!-- Ledger Display Card (Matches your register layout) -->
+    <!-- Ledger Display Card -->
     <div class="card" id="ledgerCard" style="display:none;">
       <div class="ledger-header">
         <h2 id="dispCustomerName">Customer</h2>
@@ -117,22 +118,21 @@
       </div>
       
       <div class="ledger-split">
-        <!-- Left Column: Purchased -->
         <div class="ledger-col">
           <div class="col-title">GOODS PURCHASED (-)</div>
           <div id="purchasedCol"></div>
         </div>
-        <!-- Right Column: Received -->
         <div class="ledger-col">
           <div class="col-title">AMOUNT RECEIVED (+)</div>
           <div id="receivedCol"></div>
         </div>
       </div>
 
-      <div style="border-top: 2px dashed #ccc; margin-top: 12px; padding-top: 12px;" class="no-print">
+      <div style="border-top: 1px dashed #ccc; margin-top: 12px; padding-top: 12px;" class="no-print">
         <div class="btn-group">
-          <button class="btn btn-outline" onclick="routeToAddData('purchase')">[ + Add Purchase ]</button>
-          <button class="btn btn-outline" onclick="routeToAddData('payment')">[ + Add Payment ]</button>
+          <!-- Compact buttons with color -->
+          <button class="btn btn-red btn-sm" onclick="routeToAddData('purchase')">+ Purchase</button>
+          <button class="btn btn-green btn-sm" onclick="routeToAddData('payment')">+ Payment</button>
         </div>
       </div>
     </div>
@@ -146,7 +146,6 @@
       <label>Customer Name</label>
       <input type="text" id="entryCustomerInput" list="customerList" placeholder="Select existing or type new..." oninput="checkSimilarity(this.value)">
       
-      <!-- Smart Similarity Warning Area -->
       <div id="similarityWarning">
         <strong>Similar names found:</strong> Did you mean to select one of these?<br>
         <div id="similarityChips" style="margin-top: 5px;"></div>
@@ -166,7 +165,6 @@
     </div>
   </div>
 
-  <!-- Shared Datalist for autocomplete -->
   <datalist id="customerList"></datalist>
 
   <!-- ==================== BOTTOM NAVIGATION ==================== -->
@@ -181,6 +179,12 @@
     
     let allCustomers = [];
     let selectedMonths = [];
+
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(() => console.log("Service Worker Registered"));
+    }
 
     // --- API Handlers ---
     async function apiGet(action, params = {}) {
@@ -203,7 +207,6 @@
     window.onload = async function() {
       document.getElementById('entryDate').valueAsDate = new Date();
 
-      // Fetch init data
       const data = await apiGet('getInitialData');
       allCustomers = data.customers;
       
@@ -231,12 +234,10 @@
 
     // --- Navigation Logic ---
     function switchScreen(screen) {
-      // Update screens
       document.getElementById('screen-view').classList.remove('active');
       document.getElementById('screen-enter').classList.remove('active');
       document.getElementById('screen-' + screen).classList.add('active');
       
-      // Update nav highlights
       document.getElementById('nav-view').classList.remove('active');
       document.getElementById('nav-enter').classList.remove('active');
       document.getElementById('nav-' + screen).classList.add('active');
@@ -246,7 +247,7 @@
       const currentCust = document.getElementById('searchCustomerInput').value;
       if (currentCust) {
         document.getElementById('entryCustomerInput').value = currentCust;
-        checkSimilarity(currentCust); // clear warning if exact match
+        checkSimilarity(currentCust);
       }
       switchScreen('enter');
     }
@@ -260,13 +261,11 @@
       warningBox.style.display = 'none';
       chipContainer.innerHTML = '';
 
-      if (lowerInput.length < 3) return; // Only check if they typed at least 3 letters
+      if (lowerInput.length < 3) return;
 
-      // Exact match check
       const exactMatch = allCustomers.find(c => c.toLowerCase() === lowerInput);
-      if (exactMatch) return; // It's an exact existing customer, no warning needed
+      if (exactMatch) return; 
 
-      // Fuzzy / Substring match
       const similar = allCustomers.filter(c => c.toLowerCase().includes(lowerInput));
       
       if (similar.length > 0) {
@@ -297,7 +296,6 @@
         return;
       }
 
-      // Add to local list immediately if new (for UX)
       if (!allCustomers.includes(name)) {
         allCustomers.push(name);
         let opt = document.createElement('option');
@@ -307,12 +305,10 @@
 
       await apiPost('addEntry', { customerName: name, type: type, amount: amount, date: date, notes: notes });
 
-      // Reset form and jump to view
       amountInput.value = '';
       document.getElementById('entryNotes').value = '';
       document.getElementById('similarityWarning').style.display = 'none';
       
-      // Auto-load ledger for this person
       document.getElementById('searchCustomerInput').value = name;
       loadLedger();
       switchScreen('view');
@@ -370,9 +366,7 @@
         return;
       }
 
-      // Split data chronologically into the two columns based on type
       data.history.forEach(row => {
-        // Strip the year off the date for cleaner view (e.g. 28/07/2026 -> 28/07)
         const shortDate = row.date.substring(0, 5); 
         const html = `
           <div class="ledger-item">
@@ -389,13 +383,6 @@
         }
       });
     }
-
-        // Register the Service Worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js')
-        .then(() => console.log("Service Worker Registered"));
-    }
-    
   </script>
 </body>
 </html>
