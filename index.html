@@ -32,12 +32,10 @@
     .btn-green { background: #2e7d32; color: #fff; border: 1px solid #2e7d32; }
     .btn-blue { background: #007bff; color: #fff; border: 1px solid #007bff;}
     
-    /* Outlined variants for the toggle */
     .btn-outline-red { background: transparent; border: 1px solid #d32f2f; color: #d32f2f; }
     .btn-outline-green { background: transparent; border: 1px solid #2e7d32; color: #2e7d32; }
     .btn-outline { background: transparent; border: 1px solid #007bff; color: #007bff; padding: 8px; }
 
-    /* Sticky Ledger Header */
     .sticky-header { 
       position: sticky; top: -16px; 
       background: #fff; z-index: 10; 
@@ -58,10 +56,24 @@
 
     #editModal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; justify-content: center; align-items: center; padding: 20px; }
     
-    @media print { .bottom-nav, .no-print { display: none !important; } body { background: #fff; padding: 0; } .card { box-shadow: none; border: 1px solid #000; margin-bottom: 0; } .sticky-header { position: relative; top: 0; } }
+    /* Toast Notification Styles */
+    #toast {
+      visibility: hidden; min-width: 250px; text-align: center; border-radius: 8px;
+      padding: 14px; position: fixed; z-index: 1000; left: 50%; bottom: 85px;
+      transform: translateX(-50%); font-size: 14px; font-weight: bold; color: #fff;
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.15); opacity: 0; transition: opacity 0.3s, bottom 0.3s;
+    }
+    #toast.show { visibility: visible; opacity: 1; bottom: 95px; }
+    .toast-success { background-color: #2e7d32; }
+    .toast-error { background-color: #d32f2f; }
+
+    @media print { .bottom-nav, .no-print, #toast { display: none !important; } body { background: #fff; padding: 0; } .card { box-shadow: none; border: 1px solid #000; margin-bottom: 0; } .sticky-header { position: relative; top: 0; } }
   </style>
 </head>
 <body>
+
+  <!-- Global Toast Notification -->
+  <div id="toast">Message goes here</div>
 
   <!-- ==================== SCREEN 1: VIEW ENTRY ==================== -->
   <div id="screen-view" class="screen active">
@@ -108,8 +120,7 @@
 
     <div id="emptyState" class="card" style="text-align: center; padding: 30px 16px;">
       <h3 style="color: #666; margin-bottom: 16px; font-size: 16px;">Recent Customers</h3>
-      <div id="recentCustomersList" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-      </div>
+      <div id="recentCustomersList" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"></div>
     </div>
 
     <div class="card" id="ledgerCard" style="display:none; padding-top: 0;">
@@ -153,18 +164,14 @@
       <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border: 1px solid #eee; margin-top: 12px;">
         <label>New Entry</label>
         
-        <!-- Smart Toggle for Type -->
         <div style="display: flex; gap: 8px; margin-bottom: 16px;">
           <button id="typeTogglePurchase" class="btn btn-red btn-sm" style="flex: 1;" onclick="setAddType('Goods Purchased')">Purchase</button>
           <button id="typeTogglePayment" class="btn btn-outline-green btn-sm" style="flex: 1;" onclick="setAddType('Amount Received')">Payment</button>
         </div>
         
-        <!-- Hidden input to track selected type -->
         <input type="hidden" id="entryTypeSelected" value="Goods Purchased">
-
         <input type="number" id="entryAmount" placeholder="Amount (₹)">
         
-        <!-- Brought Forward Box (Hides dynamically) -->
         <div id="addBFContainer" style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
           <input type="checkbox" id="broughtForward" onchange="toggleBF()" style="width:18px; height:18px; margin:0;">
           <label for="broughtForward" style="margin:0; text-transform:none; font-size:14px; color:#444;">Brought forward</label>
@@ -173,7 +180,6 @@
         <input type="date" id="entryDate" required>
         <input type="text" id="entryNotes" placeholder="Notes (Optional)">
         
-        <!-- Single Save Button -->
         <button class="btn btn-blue" style="width: 100%; margin-top: 10px;" onclick="submitEntry()">Save Entry</button>
       </div>
     </div>
@@ -227,6 +233,14 @@
       navigator.serviceWorker.register('sw.js').then(() => console.log("Service Worker Registered"));
     }
 
+    // --- Toast Notification Engine ---
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById("toast");
+      toast.innerText = message;
+      toast.className = type === 'success' ? 'toast-success show' : 'toast-error show';
+      setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+    }
+
     async function apiGet(action, params = {}) {
       const query = new URLSearchParams({ action, ...params }).toString();
       const response = await fetch(`${API_URL}?${query}`, { method: 'GET', redirect: 'follow' });
@@ -278,7 +292,6 @@
       if (currentSelection === 'ALL') allOpt.selected = true;
     }
 
-    // --- Search Input Clear Logic (Reusable) ---
     function toggleClearSearch(inputId, btnId) {
       const val = document.getElementById(inputId).value;
       const btn = document.getElementById(btnId);
@@ -296,7 +309,6 @@
       input.focus(); 
     }
 
-    // --- Add Entry Type Toggle Logic ---
     function setAddType(type) {
       document.getElementById('entryTypeSelected').value = type;
       const purBtn = document.getElementById('typeTogglePurchase');
@@ -311,8 +323,6 @@
         purBtn.className = 'btn btn-outline-red btn-sm';
         payBtn.className = 'btn btn-green btn-sm';
         bfContainer.style.display = 'none';
-        
-        // Uncheck BF and reset date field if user swaps to payment
         document.getElementById('broughtForward').checked = false;
         toggleBF();
       }
@@ -346,14 +356,8 @@
         checkSimilarity(currentCust);
         toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');
       }
-      
-      // Auto set toggle based on which button was clicked
-      if (targetType === 'purchase') {
-        setAddType('Goods Purchased');
-      } else if (targetType === 'payment') {
-        setAddType('Amount Received');
-      }
-
+      if (targetType === 'purchase') setAddType('Goods Purchased');
+      else if (targetType === 'payment') setAddType('Amount Received');
       switchScreen('enter');
     }
 
@@ -393,7 +397,6 @@
         document.getElementById('filtersPanel').style.display = 'none';
         document.getElementById('filterArrow').innerText = '▼';
         document.getElementById('emptyState').style.display = 'none';
-        
         loadLedger();
       } else {
         document.getElementById('ledgerCard').style.display = 'none';
@@ -476,28 +479,33 @@
 
       updateRecentCustomers(name); 
 
-      await apiPost('addEntry', { customerName: name, type: type, amount: amount, date: date, notes: notes });
-
       try {
-        const freshData = await apiGet('getInitialData');
-        localStorage.setItem('ledgerInitData', JSON.stringify(freshData));
-      } catch(e) {}
+        const result = await apiPost('addEntry', { customerName: name, type: type, amount: amount, date: date, notes: notes });
+        if(result.status === 'success' || !result.error) {
+           showToast("Entry Saved Successfully!", "success");
+           
+           document.getElementById('entryAmount').value = '';
+           document.getElementById('entryNotes').value = '';
+           document.getElementById('similarityWarning').style.display = 'none';
+           document.getElementById('broughtForward').checked = false;
+           toggleBF(); 
 
-      // Reset Form Elements
-      document.getElementById('entryAmount').value = '';
-      document.getElementById('entryNotes').value = '';
-      document.getElementById('similarityWarning').style.display = 'none';
-      document.getElementById('broughtForward').checked = false;
-      toggleBF(); // reset date field
+           document.getElementById('entryCustomerInput').value = ''; 
+           toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');
+           
+           document.getElementById('searchCustomerInput').value = name;
+           toggleClearSearch('searchCustomerInput', 'clearSearchBtn');
+           handleSearchChange(); 
+           switchScreen('view');
 
-      // Reset Customer Name & Clear Button
-      document.getElementById('entryCustomerInput').value = ''; 
-      toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');
-      
-      document.getElementById('searchCustomerInput').value = name;
-      toggleClearSearch('searchCustomerInput', 'clearSearchBtn');
-      handleSearchChange(); 
-      switchScreen('view');
+           const freshData = await apiGet('getInitialData');
+           localStorage.setItem('ledgerInitData', JSON.stringify(freshData));
+        } else {
+           showToast("Failed to save: " + result.error, "error");
+        }
+      } catch (e) {
+        showToast("Network Error: Could not save entry.", "error");
+      }
     }
 
     function toggleMonth(el) {
@@ -615,8 +623,17 @@
       const row = currentLedgerHistory.find(r => r.id === id);
       const custName = document.getElementById('searchCustomerInput').value;
       
-      await apiPost('deleteEntry', { id: id, customerName: custName, amount: row.amount, type: row.type });
-      loadLedger();
+      try {
+        const res = await apiPost('deleteEntry', { id: id, customerName: custName, amount: row.amount, type: row.type });
+        if(res.status === 'success' || !res.error) {
+           showToast("Transaction Deleted", "success");
+           loadLedger();
+        } else {
+           showToast("Failed to delete.", "error");
+        }
+      } catch (e) {
+        showToast("Network Error: Could not delete.", "error");
+      }
     }
 
     function openModal(id) {
@@ -692,12 +709,22 @@
         notes = "(Brought Forward) " + notes;
       }
 
-      document.getElementById('editModal').style.display = 'none';
-      await apiPost('updateEntry', {
-        id: id, customerName: custName, type: type, 
-        oldAmount: oldAmount, amount: amount, date: date, notes: notes 
-      });
-      loadLedger();
+      try {
+        const res = await apiPost('updateEntry', {
+          id: id, customerName: custName, type: type, 
+          oldAmount: oldAmount, amount: amount, date: date, notes: notes 
+        });
+        
+        if (res.status === 'success' || !res.error) {
+          document.getElementById('editModal').style.display = 'none';
+          showToast("Changes Saved Successfully!", "success");
+          loadLedger();
+        } else {
+          showToast("Failed to save changes.", "error");
+        }
+      } catch (e) {
+        showToast("Network Error: Could not save changes.", "error");
+      }
     }
   </script>
 </body>
