@@ -36,16 +36,7 @@
     .ledger-header { text-align: center; padding-bottom: 12px; border-bottom: 2px dashed #ccc; margin-bottom: 12px; }
     .ledger-header h2 { margin: 0 0 4px 0; font-size: 18px; }
     .ledger-header .balance { font-size: 15px; font-weight: bold; }
-    .ledger-split { display: flex; width: 100%; }
-    .ledger-col { flex: 1; padding: 0 6px; }
-    .ledger-col:first-child { border-right: 1px dashed #ccc; }
-    .col-title { font-size: 10px; font-weight: bold; color: #666; text-align: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
     
-    .ledger-item { font-size: 13px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; }
-    .ledger-date { color: #888; font-size: 11px; margin-bottom: 2px;}
-    .action-icons { display: flex; gap: 6px; }
-    .icon-btn { background: none; border: none; padding: 4px; cursor: pointer; font-size: 14px; line-height: 1; }
-
     #similarityWarning { font-size: 12px; color: #d32f2f; margin-top: -8px; margin-bottom: 12px; display: none; background: #ffebee; padding: 8px; border-radius: 4px; }
     .suggestion-chip { display: inline-block; background: #ffcdd2; color: #b71c1c; padding: 4px 8px; border-radius: 12px; margin: 2px; cursor: pointer; font-weight: bold; }
 
@@ -100,16 +91,14 @@
         <div class="balance" id="dispOverallBalance">Outstanding: ₹0</div>
       </div>
       
-      <div class="ledger-split">
-        <div class="ledger-col">
-          <div class="col-title">GOODS PURCHASED (-)</div>
-          <div id="purchasedCol"></div>
-        </div>
-        <div class="ledger-col">
-          <div class="col-title">AMOUNT RECEIVED (+)</div>
-          <div id="receivedCol"></div>
-        </div>
+      <!-- New Row-Based Table Header -->
+      <div style="display: flex; border-bottom: 2px dashed #ccc; margin-bottom: 12px; padding-bottom: 4px;">
+        <div style="flex: 1; text-align: center; font-size: 10px; font-weight: bold; color: #666; border-right: 1px dashed #ccc;">GOODS PURCHASED (-)</div>
+        <div style="flex: 1; text-align: center; font-size: 10px; font-weight: bold; color: #666;">AMOUNT RECEIVED (+)</div>
       </div>
+
+      <!-- New Container for Matched Rows -->
+      <div id="ledgerRowsContainer"></div>
 
       <div style="border-top: 1px dashed #ccc; margin-top: 12px; padding-top: 12px;" class="no-print">
         <div class="btn-group">
@@ -280,7 +269,6 @@
       }
     }
 
-    // New logic for Edit Modal Checkbox
     function toggleEditBF() {
       const isBF = document.getElementById('editBroughtForward').checked;
       const dateInput = document.getElementById('editDate');
@@ -348,7 +336,6 @@
         localStorage.setItem('ledgerInitData', JSON.stringify(freshData));
       } catch(e) {}
 
-      // Reset fields
       document.getElementById('entryAmount').value = '';
       document.getElementById('entryNotes').value = '';
       document.getElementById('similarityWarning').style.display = 'none';
@@ -388,6 +375,7 @@
       renderLedger(data);
     }
 
+    // --- NEW SMART MATCHING & ROW RENDERING LOGIC ---
     function renderLedger(data) {
       currentLedgerHistory = data.history; 
       document.getElementById('ledgerCard').style.display = 'block';
@@ -402,34 +390,74 @@
         balElem.style.color = '#2e7d32';
       }
 
-      const purCol = document.getElementById('purchasedCol');
-      const recCol = document.getElementById('receivedCol');
-      purCol.innerHTML = ''; recCol.innerHTML = '';
+      const container = document.getElementById('ledgerRowsContainer');
+      container.innerHTML = ''; 
 
       if (data.history.length === 0) {
-        purCol.innerHTML = '<div style="color:#888; font-size:12px; text-align:center;">No records</div>';
-        recCol.innerHTML = '<div style="color:#888; font-size:12px; text-align:center;">No records</div>';
+        container.innerHTML = '<div style="color:#888; font-size:12px; text-align:center; padding: 16px;">No records</div>';
         return;
       }
 
-      data.history.forEach(row => {
-        const shortDate = row.date.substring(0, 5); 
-        const html = `
-          <div class="ledger-item">
-            <div>
-              <div class="ledger-date">${shortDate}</div>
-              <div style="font-weight:bold;">₹${row.amount.toLocaleString('en-IN')}</div>
-            </div>
-            <div class="action-icons no-print">
-              <button class="icon-btn" onclick="openModal(${row.id})" style="color:#007bff;">✏️</button>
-              <button class="icon-btn" onclick="deleteEntry(${row.id})" style="color:#d32f2f;">🗑️</button>
-            </div>
-          </div>
-          ${row.notes ? `<div style="font-size:10px; color:#888; margin-top:-10px; margin-bottom:8px; text-align:left;">${row.notes}</div>` : ''}
-        `;
+      // 1. Separate into purchases and payments
+      let purchases = data.history.filter(r => r.type === 'Goods Purchased');
+      let payments = data.history.filter(r => r.type === 'Amount Received');
 
-        if (row.type === 'Goods Purchased') purCol.innerHTML += html;
-        else recCol.innerHTML += html;
+      // 2. Sort both by rawDate (ascending). B/F entries have rawDate of null/0 and move to the top automatically.
+      purchases.sort((a, b) => (a.rawDate || 0) - (b.rawDate || 0));
+      payments.sort((a, b) => (a.rawDate || 0) - (b.rawDate || 0));
+
+      let pairedRows = [];
+
+      // 3. Match identical amounts dynamically
+      purchases.forEach(pur => {
+        let matchIndex = payments.findIndex(pay => pay.amount === pur.amount);
+        if (matchIndex !== -1) {
+          // Removes the matched payment from the array and pairs it horizontally
+          let matchedPayment = payments.splice(matchIndex, 1)[0];
+          pairedRows.push({ left: pur, right: matchedPayment });
+        } else {
+          pairedRows.push({ left: pur, right: null });
+        }
+      });
+
+      // 4. Append remaining unmatched payments to the right side
+      payments.forEach(pay => {
+        pairedRows.push({ left: null, right: pay });
+      });
+
+      // 5. Draw the paired rows
+      pairedRows.forEach(row => {
+        const buildCell = (item, isLeft) => {
+          // If no item (blank placeholder to force alignment), just draw an empty column box
+          if (!item) {
+            return `<div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed #ccc;' : ''}"></div>`;
+          }
+          
+          const shortDate = item.date === 'B/F' ? 'B/F' : item.date.substring(0, 5); 
+          const noteHtml = item.notes ? `<div style="font-size:10px; color:#888; margin-top:-6px; margin-bottom:8px; text-align:left;">${item.notes}</div>` : '';
+          
+          return `
+            <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed #ccc;' : ''} display: flex; flex-direction: column;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <div>
+                  <div class="ledger-date" style="color: #888; font-size: 11px; margin-bottom: 2px;">${shortDate}</div>
+                  <div style="font-weight: bold; font-size: 13px;">₹${item.amount.toLocaleString('en-IN')}</div>
+                </div>
+                <div class="action-icons no-print" style="display: flex; gap: 6px;">
+                  <button class="icon-btn" onclick="openModal(${item.id})" style="background: none; border: none; padding: 4px; cursor: pointer; color: #007bff; font-size: 14px; line-height: 1;">✏️</button>
+                  <button class="icon-btn" onclick="deleteEntry(${item.id})" style="background: none; border: none; padding: 4px; cursor: pointer; color: #d32f2f; font-size: 14px; line-height: 1;">🗑️</button>
+                </div>
+              </div>
+              ${noteHtml}
+            </div>
+          `;
+        };
+
+        const rowDiv = document.createElement('div');
+        rowDiv.style.display = 'flex';
+        rowDiv.style.marginBottom = '6px';
+        rowDiv.innerHTML = buildCell(row.left, true) + buildCell(row.right, false);
+        container.appendChild(rowDiv);
       });
     }
 
@@ -450,17 +478,15 @@
       document.getElementById('editType').value = row.type;
       document.getElementById('editAmount').value = row.amount;
 
-      // Extract existing Brought Forward logic
       let notes = row.notes || '';
       let isBF = false;
       if (notes.startsWith("(Brought Forward) ")) {
         isBF = true;
-        notes = notes.replace("(Brought Forward) ", ""); // Strip the tag for the text input
+        notes = notes.replace("(Brought Forward) ", ""); 
       }
 
       document.getElementById('editNotes').value = notes;
 
-      // Configure Checkbox UI based on transaction type
       const bfCheckboxContainer = document.getElementById('editBFContainer');
       const bfCheckbox = document.getElementById('editBroughtForward');
 
@@ -472,7 +498,6 @@
         bfCheckbox.checked = false;
       }
 
-      // Configure Date field
       const dateInput = document.getElementById('editDate');
       if (row.rawDate && !isBF) {
         const d = new Date(row.rawDate);
@@ -481,8 +506,7 @@
         dateInput.value = '';
       }
 
-      toggleEditBF(); // Trigger disabling logic
-      
+      toggleEditBF(); 
       document.getElementById('editModal').style.display = 'flex';
     }
 
@@ -500,7 +524,6 @@
       const custName = document.getElementById('searchCustomerInput').value;
       const isBF = document.getElementById('editBroughtForward').checked;
 
-      // New Save Validations mimicking initial entry
       if (!amount) {
         alert("Amount is mandatory."); return;
       }
@@ -509,7 +532,6 @@
         alert("Date is mandatory unless Brought Forward is checked."); return;
       }
 
-      // Re-apply BF tag to notes if checked
       if (isBF && type === 'Goods Purchased') {
         notes = "(Brought Forward) " + notes;
       }
