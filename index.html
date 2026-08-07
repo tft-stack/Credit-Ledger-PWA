@@ -32,10 +32,12 @@
     .btn-green { background: #2e7d32; color: #fff; border: 1px solid #2e7d32; }
     .btn-blue { background: #007bff; color: #fff; border: 1px solid #007bff;}
     
+    /* Outlined variants for the toggle */
     .btn-outline-red { background: transparent; border: 1px solid #d32f2f; color: #d32f2f; }
     .btn-outline-green { background: transparent; border: 1px solid #2e7d32; color: #2e7d32; }
     .btn-outline { background: transparent; border: 1px solid #007bff; color: #007bff; padding: 8px; }
 
+    /* Sticky Ledger Header */
     .sticky-header { 
       position: sticky; top: -16px; 
       background: #fff; z-index: 10; 
@@ -56,10 +58,22 @@
 
     #editModal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; justify-content: center; align-items: center; padding: 20px; }
     
+    /* Loading Overlay & Spinner */
+    #loadingOverlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255, 255, 255, 0.75); z-index: 2000;
+      justify-content: center; align-items: center; flex-direction: column;
+    }
+    .spinner {
+      border: 4px solid #e0e0e0; border-top: 4px solid #007bff; border-radius: 50%;
+      width: 40px; height: 40px; animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
     /* Toast Notification Styles */
     #toast {
       visibility: hidden; min-width: 250px; text-align: center; border-radius: 8px;
-      padding: 14px; position: fixed; z-index: 1000; left: 50%; bottom: 85px;
+      padding: 14px; position: fixed; z-index: 2500; left: 50%; bottom: 85px;
       transform: translateX(-50%); font-size: 14px; font-weight: bold; color: #fff;
       box-shadow: 0px 4px 12px rgba(0,0,0,0.15); opacity: 0; transition: opacity 0.3s, bottom 0.3s;
     }
@@ -67,10 +81,15 @@
     .toast-success { background-color: #2e7d32; }
     .toast-error { background-color: #d32f2f; }
 
-    @media print { .bottom-nav, .no-print, #toast { display: none !important; } body { background: #fff; padding: 0; } .card { box-shadow: none; border: 1px solid #000; margin-bottom: 0; } .sticky-header { position: relative; top: 0; } }
+    @media print { .bottom-nav, .no-print, #toast, #loadingOverlay { display: none !important; } body { background: #fff; padding: 0; } .card { box-shadow: none; border: 1px solid #000; margin-bottom: 0; } .sticky-header { position: relative; top: 0; } }
   </style>
 </head>
 <body>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
 
   <!-- Global Toast Notification -->
   <div id="toast">Message goes here</div>
@@ -233,7 +252,15 @@
       navigator.serviceWorker.register('sw.js').then(() => console.log("Service Worker Registered"));
     }
 
-    // --- Toast Notification Engine ---
+    // --- Loading & Toast Engine ---
+    function showLoading() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+    
+    function hideLoading() {
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
     function showToast(message, type = 'success') {
       const toast = document.getElementById("toast");
       toast.innerText = message;
@@ -389,7 +416,7 @@
       });
     }
 
-    function handleSearchChange() {
+    async function handleSearchChange() {
       const name = document.getElementById('searchCustomerInput').value.trim();
       
       if (name) {
@@ -397,7 +424,7 @@
         document.getElementById('filtersPanel').style.display = 'none';
         document.getElementById('filterArrow').innerText = '▼';
         document.getElementById('emptyState').style.display = 'none';
-        loadLedger();
+        await loadLedger();
       } else {
         document.getElementById('ledgerCard').style.display = 'none';
         document.getElementById('emptyState').style.display = 'block';
@@ -472,6 +499,8 @@
         notes = "(Brought Forward) " + notes;
       }
 
+      showLoading(); // Prevent double entry
+
       if (!allCustomers.includes(name)) {
         allCustomers.push(name);
         let opt = document.createElement('option'); opt.value = name; document.getElementById('customerList').appendChild(opt);
@@ -495,7 +524,7 @@
            
            document.getElementById('searchCustomerInput').value = name;
            toggleClearSearch('searchCustomerInput', 'clearSearchBtn');
-           handleSearchChange(); 
+           await handleSearchChange(); 
            switchScreen('view');
 
            const freshData = await apiGet('getInitialData');
@@ -505,6 +534,8 @@
         }
       } catch (e) {
         showToast("Network Error: Could not save entry.", "error");
+      } finally {
+        hideLoading();
       }
     }
 
@@ -531,11 +562,16 @@
       if (!name) return;
 
       const fy = document.getElementById('fySelect').value;
-      const data = await apiGet('getFilteredLedger', {
-        customerName: name, selectedFY: fy, selectedMonths: selectedMonths.join(',')
-      });
-
-      renderLedger(data);
+      
+      showLoading();
+      try {
+        const data = await apiGet('getFilteredLedger', {
+          customerName: name, selectedFY: fy, selectedMonths: selectedMonths.join(',')
+        });
+        renderLedger(data);
+      } finally {
+        hideLoading();
+      }
     }
 
     function renderLedger(data) {
@@ -623,16 +659,19 @@
       const row = currentLedgerHistory.find(r => r.id === id);
       const custName = document.getElementById('searchCustomerInput').value;
       
+      showLoading();
       try {
         const res = await apiPost('deleteEntry', { id: id, customerName: custName, amount: row.amount, type: row.type });
         if(res.status === 'success' || !res.error) {
            showToast("Transaction Deleted", "success");
-           loadLedger();
+           await loadLedger();
         } else {
            showToast("Failed to delete.", "error");
         }
       } catch (e) {
         showToast("Network Error: Could not delete.", "error");
+      } finally {
+        hideLoading();
       }
     }
 
@@ -709,6 +748,7 @@
         notes = "(Brought Forward) " + notes;
       }
 
+      showLoading();
       try {
         const res = await apiPost('updateEntry', {
           id: id, customerName: custName, type: type, 
@@ -718,12 +758,14 @@
         if (res.status === 'success' || !res.error) {
           document.getElementById('editModal').style.display = 'none';
           showToast("Changes Saved Successfully!", "success");
-          loadLedger();
+          await loadLedger();
         } else {
           showToast("Failed to save changes.", "error");
         }
       } catch (e) {
         showToast("Network Error: Could not save changes.", "error");
+      } finally {
+        hideLoading();
       }
     }
   </script>
