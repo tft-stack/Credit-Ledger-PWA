@@ -17,90 +17,119 @@
     .card { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
     h2, h3 { margin: 0 0 12px 0; }
     label { font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase; display: block; margin-bottom: 6px; }
-    select, input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; margin-bottom: 12px; background: #fff; }
+    select, input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; margin-bottom: 12px; background: #fff; }
     input:focus, select:focus { outline: none; border-color: #007bff; }
     
     .month-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 12px; }
-    .month-pill { background: #eef2f5; border: 1px solid #cfd8dc; border-radius: 16px; padding: 6px 0; font-size: 12px; font-weight: 600; text-align: center; cursor: pointer; user-select: none; color: #455a64; }
+    .month-pill { background: #eef2f5; border: 1px solid #cfd8dc; border-radius: 16px; padding: 8px 0; font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; user-select: none; color: #455a64; }
     .month-pill.active { background: #007bff; color: #fff; border-color: #007bff; }
     
     .btn-group { display: flex; gap: 8px; margin-top: 10px; }
     .btn { flex: 1; padding: 14px; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; color: #fff; text-align: center; transition: 0.2s; }
-    .btn-sm { padding: 8px 10px; font-size: 13px; }
+    .btn-sm { padding: 10px 12px; font-size: 14px; }
     .btn:active { transform: scale(0.98); }
     .btn-red { background: #d32f2f; }
     .btn-green { background: #2e7d32; }
     .btn-blue { background: #007bff; }
     .btn-outline { background: transparent; border: 1px solid #007bff; color: #007bff; padding: 8px; }
 
-    .ledger-header { text-align: center; padding-bottom: 12px; border-bottom: 2px dashed #ccc; margin-bottom: 12px; }
-    .ledger-header h2 { margin: 0 0 4px 0; font-size: 18px; }
-    .ledger-header .balance { font-size: 15px; font-weight: bold; }
+    /* Sticky Ledger Header */
+    .sticky-header { 
+      position: sticky; top: -16px; /* Offset the card padding */
+      background: #fff; z-index: 10; 
+      padding: 16px 0 12px 0; 
+      border-bottom: 2px dashed #ccc; margin-bottom: 12px; 
+      text-align: center;
+    }
+    .sticky-header h2 { margin: 0 0 4px 0; font-size: 20px; }
+    .sticky-header .balance { font-size: 16px; font-weight: bold; }
     
     #similarityWarning { font-size: 12px; color: #d32f2f; margin-top: -8px; margin-bottom: 12px; display: none; background: #ffebee; padding: 8px; border-radius: 4px; }
     .suggestion-chip { display: inline-block; background: #ffcdd2; color: #b71c1c; padding: 4px 8px; border-radius: 12px; margin: 2px; cursor: pointer; font-weight: bold; }
+    .recent-chip { background: #eef2f5; padding: 8px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; color: #455a64; cursor: pointer; border: 1px solid #cfd8dc; }
 
-    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; display: flex; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); padding-bottom: env(safe-area-inset-bottom); }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; display: flex; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); padding-bottom: env(safe-area-inset-bottom); z-index: 50; }
     .nav-item { flex: 1; padding: 14px; text-align: center; color: #666; font-size: 13px; font-weight: bold; cursor: pointer; border-top: 3px solid transparent; }
     .nav-item.active { color: #007bff; border-top-color: #007bff; background: #f8f9fa; }
 
     /* Edit Modal Overlay */
     #editModal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; justify-content: center; align-items: center; padding: 20px; }
     
-    @media print { .bottom-nav, .no-print { display: none !important; } body { background: #fff; padding: 0; } .card { box-shadow: none; border: 1px solid #000; margin-bottom: 0; } }
+    @media print { .bottom-nav, .no-print { display: none !important; } body { background: #fff; padding: 0; } .card { box-shadow: none; border: 1px solid #000; margin-bottom: 0; } .sticky-header { position: relative; top: 0; } }
   </style>
 </head>
 <body>
 
   <!-- ==================== SCREEN 1: VIEW ENTRY ==================== -->
   <div id="screen-view" class="screen active">
-    <div class="card no-print">
-      <label>FY Filter</label>
-      <select id="fySelect" onchange="loadLedger()"></select>
-
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <label style="margin-bottom: 0;">Month Filter</label>
-        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 10px; width: auto; border-radius: 4px;" onclick="clearMonthFilters()">Clear</button>
-      </div>
-      
-      <div class="month-grid" id="monthContainer">
-        <div class="month-pill" data-month="3" onclick="toggleMonth(this)">Apr</div>
-        <div class="month-pill" data-month="4" onclick="toggleMonth(this)">May</div>
-        <div class="month-pill" data-month="5" onclick="toggleMonth(this)">Jun</div>
-        <div class="month-pill" data-month="6" onclick="toggleMonth(this)">Jul</div>
-        <div class="month-pill" data-month="7" onclick="toggleMonth(this)">Aug</div>
-        <div class="month-pill" data-month="8" onclick="toggleMonth(this)">Sep</div>
-        <div class="month-pill" data-month="9" onclick="toggleMonth(this)">Oct</div>
-        <div class="month-pill" data-month="10" onclick="toggleMonth(this)">Nov</div>
-        <div class="month-pill" data-month="11" onclick="toggleMonth(this)">Dec</div>
-        <div class="month-pill" data-month="0" onclick="toggleMonth(this)">Jan</div>
-        <div class="month-pill" data-month="1" onclick="toggleMonth(this)">Feb</div>
-        <div class="month-pill" data-month="2" onclick="toggleMonth(this)">Mar</div>
-      </div>
-
+    
+    <!-- Unified Search & Filter Card -->
+    <div class="card no-print" style="margin-bottom: 8px;">
       <label>Customer Name</label>
-      <div style="display: flex; gap: 8px; margin-bottom: 0;">
-        <input type="text" id="searchCustomerInput" list="customerList" placeholder="Start typing name..." onchange="loadLedger()" style="margin-bottom: 0; flex: 1;">
-        <button class="btn btn-blue btn-sm" onclick="loadLedger()" style="padding: 10px 16px;">Search</button>
+      <input type="text" id="searchCustomerInput" list="customerList" placeholder="🔍 Search customer..." onchange="handleSearchChange()" style="margin-bottom: 8px;">
+      
+      <!-- Filter Toggle Link -->
+      <div style="text-align: right;">
+        <span onclick="toggleFilters()" style="color: #007bff; font-size: 14px; font-weight: bold; cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 4px;">
+          ⚙️ Filters <span id="filterArrow">▼</span>
+        </span>
+      </div>
+
+      <!-- Collapsible Filters Panel -->
+      <div id="filtersPanel" style="display: none; background: #f8f9fa; padding: 16px; border-radius: 8px; margin-top: 12px; border: 1px solid #eee;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <label style="margin: 0;">Filter Ledger Options</label>
+          <span onclick="clearFilters()" style="color: #007bff; font-size: 13px; font-weight: bold; cursor: pointer;">Clear all</span>
+        </div>
+
+        <label>FY Filter</label>
+        <select id="fySelect" onchange="loadLedger()"></select>
+        
+        <label>Month Filter</label>
+        <div class="month-grid" id="monthContainer">
+          <div class="month-pill" data-month="3" onclick="toggleMonth(this)">Apr</div>
+          <div class="month-pill" data-month="4" onclick="toggleMonth(this)">May</div>
+          <div class="month-pill" data-month="5" onclick="toggleMonth(this)">Jun</div>
+          <div class="month-pill" data-month="6" onclick="toggleMonth(this)">Jul</div>
+          <div class="month-pill" data-month="7" onclick="toggleMonth(this)">Aug</div>
+          <div class="month-pill" data-month="8" onclick="toggleMonth(this)">Sep</div>
+          <div class="month-pill" data-month="9" onclick="toggleMonth(this)">Oct</div>
+          <div class="month-pill" data-month="10" onclick="toggleMonth(this)">Nov</div>
+          <div class="month-pill" data-month="11" onclick="toggleMonth(this)">Dec</div>
+          <div class="month-pill" data-month="0" onclick="toggleMonth(this)">Jan</div>
+          <div class="month-pill" data-month="1" onclick="toggleMonth(this)">Feb</div>
+          <div class="month-pill" data-month="2" onclick="toggleMonth(this)">Mar</div>
+        </div>
       </div>
     </div>
 
-    <div class="card" id="ledgerCard" style="display:none;">
-      <div class="ledger-header">
+    <!-- Empty State (Recent Customers) -->
+    <div id="emptyState" class="card" style="text-align: center; padding: 30px 16px;">
+      <h3 style="color: #666; margin-bottom: 16px; font-size: 16px;">Recent Customers</h3>
+      <div id="recentCustomersList" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+        <!-- Populated via JS -->
+      </div>
+    </div>
+
+    <!-- Ledger Display Card -->
+    <div class="card" id="ledgerCard" style="display:none; padding-top: 0;">
+      <!-- Sticky Header -->
+      <div class="sticky-header">
         <h2 id="dispCustomerName">Customer</h2>
         <div class="balance" id="dispOverallBalance">Outstanding: ₹0</div>
       </div>
       
-      <!-- New Row-Based Table Header -->
+      <!-- Table Header -->
       <div style="display: flex; border-bottom: 2px dashed #ccc; margin-bottom: 12px; padding-bottom: 4px;">
-        <div style="flex: 1; text-align: center; font-size: 10px; font-weight: bold; color: #666; border-right: 1px dashed #ccc;">PURCHASE</div>
-        <div style="flex: 1; text-align: center; font-size: 10px; font-weight: bold; color: #666;">PAYMENT</div>
+        <div style="flex: 1; text-align: center; font-size: 11px; font-weight: bold; color: #666; border-right: 1px dashed #ccc;">PURCHASE</div>
+        <div style="flex: 1; text-align: center; font-size: 11px; font-weight: bold; color: #666;">PAYMENT</div>
       </div>
 
       <!-- Container for Matched Rows -->
       <div id="ledgerRowsContainer"></div>
 
-      <div style="border-top: 1px dashed #ccc; margin-top: 12px; padding-top: 12px;" class="no-print">
+      <!-- Sticky Bottom Actions (Within Card) -->
+      <div style="border-top: 1px dashed #ccc; margin-top: 16px; padding-top: 12px; position: sticky; bottom: 0; background: #fff; z-index: 10;" class="no-print">
         <div class="btn-group">
           <button class="btn btn-red btn-sm" onclick="routeToAddData('purchase')">Purchase</button>
           <button class="btn btn-green btn-sm" onclick="routeToAddData('payment')">Payment</button>
@@ -127,8 +156,8 @@
         <input type="number" id="entryAmount" placeholder="Amount (₹)">
         
         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
-          <input type="checkbox" id="broughtForward" onchange="toggleBF()" style="width:16px; margin:0;">
-          <label for="broughtForward" style="margin:0; text-transform:none; font-size:13px; color:#444;">Brought forward (Purchased only)</label>
+          <input type="checkbox" id="broughtForward" onchange="toggleBF()" style="width:18px; height:18px; margin:0;">
+          <label for="broughtForward" style="margin:0; text-transform:none; font-size:14px; color:#444;">Brought forward (Purchased only)</label>
         </div>
 
         <input type="date" id="entryDate" required>
@@ -162,8 +191,8 @@
       <input type="number" id="editAmount">
       
       <div id="editBFContainer" style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px; display: none;">
-        <input type="checkbox" id="editBroughtForward" onchange="toggleEditBF()" style="width:16px; margin:0;">
-        <label for="editBroughtForward" style="margin:0; text-transform:none; font-size:13px; color:#444;">Brought forward</label>
+        <input type="checkbox" id="editBroughtForward" onchange="toggleEditBF()" style="width:18px; height: 18px; margin:0;">
+        <label for="editBroughtForward" style="margin:0; text-transform:none; font-size:14px; color:#444;">Brought forward</label>
       </div>
 
       <label>Date</label>
@@ -185,6 +214,7 @@
     let allCustomers = [];
     let selectedMonths = [];
     let currentLedgerHistory = []; 
+    let recentCustomers = JSON.parse(localStorage.getItem('recentCustomers')) || [];
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').then(() => console.log("Service Worker Registered"));
@@ -206,6 +236,8 @@
 
     window.onload = async function() {
       document.getElementById('entryDate').valueAsDate = new Date();
+      renderRecentCustomers(); // Draw empty state quick links immediately
+      
       const localData = localStorage.getItem('ledgerInitData');
       if (localData) populateInitialUI(JSON.parse(localData));
 
@@ -239,6 +271,19 @@
       if (currentSelection === 'ALL') allOpt.selected = true;
     }
 
+    // --- UI State Toggles ---
+    function toggleFilters() {
+      const panel = document.getElementById('filtersPanel');
+      const arrow = document.getElementById('filterArrow');
+      if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        arrow.innerText = '▲';
+      } else {
+        panel.style.display = 'none';
+        arrow.innerText = '▼';
+      }
+    }
+
     function switchScreen(screen) {
       document.getElementById('screen-view').classList.remove('active');
       document.getElementById('screen-enter').classList.remove('active');
@@ -257,6 +302,53 @@
       switchScreen('enter');
     }
 
+    // --- Search & Recent Customers Logic ---
+    function updateRecentCustomers(name) {
+      // Remove if exists to push to top
+      recentCustomers = recentCustomers.filter(c => c.toLowerCase() !== name.toLowerCase());
+      recentCustomers.unshift(name);
+      if (recentCustomers.length > 6) recentCustomers.pop(); // Keep top 6
+      localStorage.setItem('recentCustomers', JSON.stringify(recentCustomers));
+      renderRecentCustomers();
+    }
+
+    function renderRecentCustomers() {
+      const container = document.getElementById('recentCustomersList');
+      container.innerHTML = '';
+      if (recentCustomers.length === 0) {
+        container.innerHTML = '<span style="font-size:13px; color:#999;">Search a customer to see them here</span>';
+        return;
+      }
+      recentCustomers.forEach(c => {
+        let chip = document.createElement('div');
+        chip.className = 'recent-chip';
+        chip.innerText = c;
+        chip.onclick = () => {
+          document.getElementById('searchCustomerInput').value = c;
+          handleSearchChange();
+        };
+        container.appendChild(chip);
+      });
+    }
+
+    function handleSearchChange() {
+      const name = document.getElementById('searchCustomerInput').value.trim();
+      if (name) {
+        updateRecentCustomers(name);
+        // Auto-collapse filters and hide empty state
+        document.getElementById('filtersPanel').style.display = 'none';
+        document.getElementById('filterArrow').innerText = '▼';
+        document.getElementById('emptyState').style.display = 'none';
+        
+        loadLedger();
+      } else {
+        // Reset to empty state if search cleared
+        document.getElementById('ledgerCard').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'block';
+      }
+    }
+
+    // --- Entry Validation & Submits ---
     function toggleBF() {
       const isBF = document.getElementById('broughtForward').checked;
       const dateInput = document.getElementById('entryDate');
@@ -329,6 +421,8 @@
         let opt = document.createElement('option'); opt.value = name; document.getElementById('customerList').appendChild(opt);
       }
 
+      updateRecentCustomers(name); // Add to recent list right away
+
       await apiPost('addEntry', { customerName: name, type: type, amount: amount, date: date, notes: notes });
 
       try {
@@ -342,10 +436,11 @@
       document.getElementById('entryCustomerInput').value = ''; 
       
       document.getElementById('searchCustomerInput').value = name;
-      loadLedger();
+      handleSearchChange(); // Load ledger and auto-navigate
       switchScreen('view');
     }
 
+    // --- Filters & Ledger Output ---
     function toggleMonth(el) {
       const monthVal = parseInt(el.getAttribute('data-month'));
       if (el.classList.contains('active')) {
@@ -358,9 +453,10 @@
       loadLedger();
     }
 
-    function clearMonthFilters() {
+    function clearFilters() {
       document.querySelectorAll('.month-pill').forEach(el => el.classList.remove('active'));
-      selectedMonths = []; loadLedger();
+      selectedMonths = []; 
+      loadLedger();
     }
 
     async function loadLedger() {
@@ -378,6 +474,8 @@
     function renderLedger(data) {
       currentLedgerHistory = data.history; 
       document.getElementById('ledgerCard').style.display = 'block';
+      document.getElementById('emptyState').style.display = 'none';
+      
       document.getElementById('dispCustomerName').innerText = data.customerName;
       
       const balElem = document.getElementById('dispOverallBalance');
@@ -393,7 +491,7 @@
       container.innerHTML = ''; 
 
       if (data.history.length === 0) {
-        container.innerHTML = '<div style="color:#888; font-size:12px; text-align:center; padding: 16px;">No records</div>';
+        container.innerHTML = '<div style="color:#888; font-size:13px; text-align:center; padding: 20px;">No transactions found for this period.</div>';
         return;
       }
 
@@ -426,18 +524,18 @@
           }
           
           const shortDate = item.date === 'B/F' ? 'B/F' : item.date.substring(0, 5); 
-          const noteHtml = item.notes ? `<div style="font-size:10px; color:#888; margin-top:-6px; margin-bottom:8px; text-align:left;">${item.notes}</div>` : '';
+          const noteHtml = item.notes ? `<div style="font-size:10px; color:#888; margin-top:-6px; margin-bottom:8px; text-align:left; word-wrap: anywhere;">${item.notes}</div>` : '';
           
           return `
             <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed #ccc;' : ''} display: flex; flex-direction: column;">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
                 <div>
                   <div class="ledger-date" style="color: #888; font-size: 11px; margin-bottom: 2px;">${shortDate}</div>
-                  <div style="font-weight: bold; font-size: 13px;">₹${item.amount.toLocaleString('en-IN')}</div>
+                  <div style="font-weight: bold; font-size: 14px;">₹${item.amount.toLocaleString('en-IN')}</div>
                 </div>
-                <div class="action-icons no-print" style="display: flex; gap: 6px;">
-                  <button class="icon-btn" onclick="openModal(${item.id})" style="background: none; border: none; padding: 4px; cursor: pointer; color: #007bff; font-size: 14px; line-height: 1;">✏️</button>
-                  <button class="icon-btn" onclick="deleteEntry(${item.id})" style="background: none; border: none; padding: 4px; cursor: pointer; color: #d32f2f; font-size: 14px; line-height: 1;">🗑️</button>
+                <div class="action-icons no-print" style="display: flex; gap: 4px;">
+                  <button class="icon-btn" onclick="openModal(${item.id})" style="background: none; border: none; padding: 2px; cursor: pointer; color: #007bff; font-size: 14px;">✏️</button>
+                  <button class="icon-btn" onclick="deleteEntry(${item.id})" style="background: none; border: none; padding: 2px; cursor: pointer; color: #d32f2f; font-size: 14px;">🗑️</button>
                 </div>
               </div>
               ${noteHtml}
@@ -447,12 +545,13 @@
 
         const rowDiv = document.createElement('div');
         rowDiv.style.display = 'flex';
-        rowDiv.style.marginBottom = '6px';
+        rowDiv.style.marginBottom = '8px';
         rowDiv.innerHTML = buildCell(row.left, true) + buildCell(row.right, false);
         container.appendChild(rowDiv);
       });
     }
 
+    // --- Modals & Edits ---
     async function deleteEntry(id) {
       if(!confirm("Are you sure you want to delete this entry?")) return;
       const row = currentLedgerHistory.find(r => r.id === id);
