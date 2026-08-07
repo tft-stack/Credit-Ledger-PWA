@@ -52,7 +52,7 @@
 </head>
 <body>
 
-  <!-- ==================== SCREEN 1: VIEW LEDGER ==================== -->
+  <!-- ==================== SCREEN 1: VIEW ENTRY ==================== -->
   <div id="screen-view" class="screen active">
     <div class="card no-print">
       <label>FY Filter</label>
@@ -97,7 +97,7 @@
         <div style="flex: 1; text-align: center; font-size: 10px; font-weight: bold; color: #666;">PAYMENT</div>
       </div>
 
-      <!-- New Container for Matched Rows -->
+      <!-- Container for Matched Rows -->
       <div id="ledgerRowsContainer"></div>
 
       <div style="border-top: 1px dashed #ccc; margin-top: 12px; padding-top: 12px;" class="no-print">
@@ -109,7 +109,7 @@
     </div>
   </div>
 
-  <!-- ==================== SCREEN 2: ENTER DATA ==================== -->
+  <!-- ==================== SCREEN 2: ADD ENTRY ==================== -->
   <div id="screen-enter" class="screen">
     <div class="card">
       <h3>Enter Customer Data</h3>
@@ -146,14 +146,14 @@
 
   <!-- ==================== BOTTOM NAVIGATION ==================== -->
   <div class="bottom-nav no-print">
-    <div id="nav-view" class="nav-item active" onclick="switchScreen('view')">View Ledger</div>
-    <div id="nav-enter" class="nav-item" onclick="switchScreen('enter')">Enter Data</div>
+    <div id="nav-view" class="nav-item active" onclick="switchScreen('view')">View Entry</div>
+    <div id="nav-enter" class="nav-item" onclick="switchScreen('enter')">Add Entry</div>
   </div>
 
   <!-- ==================== EDIT MODAL ==================== -->
   <div id="editModal">
     <div class="card" style="width: 100%; max-width: 350px;">
-      <h3>Edit Transaction</h3>
+      <h3 id="editModalTitle">Edit Transaction</h3>
       <input type="hidden" id="editId">
       <input type="hidden" id="editOldAmount">
       <input type="hidden" id="editType">
@@ -173,7 +173,7 @@
       
       <div class="btn-group">
         <button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-blue btn-sm" onclick="saveEdit()">Save Changes</button>
+        <button class="btn btn-blue btn-sm" onclick="saveEdit()">Save</button>
       </div>
     </div>
   </div>
@@ -464,6 +464,14 @@
 
     function openModal(id) {
       const row = currentLedgerHistory.find(r => r.id === id);
+      
+      const modalTitle = document.getElementById('editModalTitle');
+      if (row.type === 'Goods Purchased') {
+        modalTitle.innerText = 'Edit Purchase Transaction';
+      } else {
+        modalTitle.innerText = 'Edit Payment';
+      }
+      
       document.getElementById('editId').value = id;
       document.getElementById('editOldAmount').value = row.amount;
       document.getElementById('editType').value = row.type;
