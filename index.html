@@ -203,14 +203,34 @@
       return await response.json();
     }
 
-    // --- Initialization ---
+    // --- Initialization & Local Storage Update ---
     window.onload = async function() {
       document.getElementById('entryDate').valueAsDate = new Date();
 
-      const data = await apiGet('getInitialData');
+      // 1. INSTANT LOAD: Check device local storage and populate UI immediately
+      const localData = localStorage.getItem('ledgerInitData');
+      if (localData) {
+        populateInitialUI(JSON.parse(localData));
+      }
+
+      // 2. BACKGROUND FETCH: Get fresh data from Google Sheets API silently
+      try {
+        const freshData = await apiGet('getInitialData');
+        
+        // 3. UPDATE: Save fresh data to device and update UI if things changed
+        localStorage.setItem('ledgerInitData', JSON.stringify(freshData));
+        populateInitialUI(freshData);
+      } catch (error) {
+        console.error("Failed to fetch fresh data from backend: ", error);
+      }
+    };
+
+    // Helper to keep the UI rendering clean and prevent duplicate appends
+    function populateInitialUI(data) {
       allCustomers = data.customers;
       
       const datalist = document.getElementById('customerList');
+      datalist.innerHTML = ''; // Clear existing to prevent duplicates
       allCustomers.forEach(c => {
         let opt = document.createElement('option');
         opt.value = c;
@@ -218,6 +238,9 @@
       });
 
       const fySelect = document.getElementById('fySelect');
+      const currentSelection = fySelect.value; // Store user's current selection before refresh
+      fySelect.innerHTML = ''; // Clear existing
+      
       let allOpt = document.createElement('option');
       allOpt.value = 'ALL';
       allOpt.innerText = 'All Time';
@@ -227,10 +250,20 @@
         let opt = document.createElement('option');
         opt.value = fy;
         opt.innerText = fy;
-        if (fy === data.currentFY) opt.selected = true;
+        
+        // Retain previous user selection, or default to current FY
+        if (!currentSelection && fy === data.currentFY) {
+          opt.selected = true;
+        } else if (currentSelection === fy) {
+          opt.selected = true;
+        }
         fySelect.appendChild(opt);
       });
-    };
+
+      if (currentSelection === 'ALL') {
+         allOpt.selected = true;
+      }
+    }
 
     // --- Navigation Logic ---
     function switchScreen(screen) {
@@ -304,6 +337,12 @@
       }
 
       await apiPost('addEntry', { customerName: name, type: type, amount: amount, date: date, notes: notes });
+
+      // Refresh background data so the local storage is up to date for next launch
+      try {
+        const freshData = await apiGet('getInitialData');
+        localStorage.setItem('ledgerInitData', JSON.stringify(freshData));
+      } catch(e) {}
 
       amountInput.value = '';
       document.getElementById('entryNotes').value = '';
