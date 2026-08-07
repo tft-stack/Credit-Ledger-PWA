@@ -35,7 +35,7 @@
 
     /* Sticky Ledger Header */
     .sticky-header { 
-      position: sticky; top: -16px; /* Offset the card padding */
+      position: sticky; top: -16px; 
       background: #fff; z-index: 10; 
       padding: 16px 0 12px 0; 
       border-bottom: 2px dashed #ccc; margin-bottom: 12px; 
@@ -66,7 +66,12 @@
     <!-- Unified Search & Filter Card -->
     <div class="card no-print" style="margin-bottom: 8px;">
       <label>Customer Name</label>
-      <input type="text" id="searchCustomerInput" list="customerList" placeholder="🔍 Search customer..." onchange="handleSearchChange()" style="margin-bottom: 8px;">
+      
+      <!-- Smart Search Input with embedded Clear button -->
+      <div style="position: relative; margin-bottom: 8px;">
+        <input type="text" id="searchCustomerInput" list="customerList" placeholder="🔍 Search customer..." onchange="handleSearchChange()" oninput="toggleClearSearch()" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
+        <div id="clearSearchBtn" onclick="clearSearch()" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: #e0e0e0; color: #555; border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer;">✕</div>
+      </div>
       
       <!-- Filter Toggle Link -->
       <div style="text-align: right;">
@@ -236,7 +241,7 @@
 
     window.onload = async function() {
       document.getElementById('entryDate').valueAsDate = new Date();
-      renderRecentCustomers(); // Draw empty state quick links immediately
+      renderRecentCustomers(); 
       
       const localData = localStorage.getItem('ledgerInitData');
       if (localData) populateInitialUI(JSON.parse(localData));
@@ -269,6 +274,25 @@
         fySelect.appendChild(opt);
       });
       if (currentSelection === 'ALL') allOpt.selected = true;
+    }
+
+    // --- Search Input Clear Logic ---
+    function toggleClearSearch() {
+      const val = document.getElementById('searchCustomerInput').value;
+      const btn = document.getElementById('clearSearchBtn');
+      if (val.length > 0) {
+        btn.style.display = 'flex';
+      } else {
+        btn.style.display = 'none';
+      }
+    }
+
+    function clearSearch() {
+      const input = document.getElementById('searchCustomerInput');
+      input.value = '';
+      toggleClearSearch();
+      handleSearchChange(); 
+      input.focus(); // Keep keyboard open for immediate typing
     }
 
     // --- UI State Toggles ---
@@ -304,10 +328,9 @@
 
     // --- Search & Recent Customers Logic ---
     function updateRecentCustomers(name) {
-      // Remove if exists to push to top
       recentCustomers = recentCustomers.filter(c => c.toLowerCase() !== name.toLowerCase());
       recentCustomers.unshift(name);
-      if (recentCustomers.length > 6) recentCustomers.pop(); // Keep top 6
+      if (recentCustomers.length > 6) recentCustomers.pop(); 
       localStorage.setItem('recentCustomers', JSON.stringify(recentCustomers));
       renderRecentCustomers();
     }
@@ -333,16 +356,16 @@
 
     function handleSearchChange() {
       const name = document.getElementById('searchCustomerInput').value.trim();
+      toggleClearSearch();
+      
       if (name) {
         updateRecentCustomers(name);
-        // Auto-collapse filters and hide empty state
         document.getElementById('filtersPanel').style.display = 'none';
         document.getElementById('filterArrow').innerText = '▼';
         document.getElementById('emptyState').style.display = 'none';
         
         loadLedger();
       } else {
-        // Reset to empty state if search cleared
         document.getElementById('ledgerCard').style.display = 'none';
         document.getElementById('emptyState').style.display = 'block';
       }
@@ -421,7 +444,7 @@
         let opt = document.createElement('option'); opt.value = name; document.getElementById('customerList').appendChild(opt);
       }
 
-      updateRecentCustomers(name); // Add to recent list right away
+      updateRecentCustomers(name); 
 
       await apiPost('addEntry', { customerName: name, type: type, amount: amount, date: date, notes: notes });
 
@@ -436,7 +459,7 @@
       document.getElementById('entryCustomerInput').value = ''; 
       
       document.getElementById('searchCustomerInput').value = name;
-      handleSearchChange(); // Load ledger and auto-navigate
+      handleSearchChange(); 
       switchScreen('view');
     }
 
