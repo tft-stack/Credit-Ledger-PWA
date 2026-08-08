@@ -87,11 +87,46 @@
     .toast-success { background-color: #2e7d32; }
     .toast-error { background-color: #d32f2f; }
 
-    .flatpickr-calendar { width: 90vw !important; max-width: 310px !important; left: 50% !important; transform: translateX(-50%) !important; border-radius: 12px !important; box-shadow: 0 8px 24px rgba(0,0,0,0.3) !important; padding-bottom: 8px !important; }
+    /* --- STRICT 7-COLUMN FLATPICKR GRID FIX --- */
+    .flatpickr-calendar { 
+      width: 90vw !important; 
+      max-width: 320px !important; 
+      left: 50% !important; 
+      transform: translateX(-50%) !important; 
+      border-radius: 12px !important; 
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3) !important; 
+      padding-bottom: 8px !important; 
+    }
     .flatpickr-calendar:before, .flatpickr-calendar:after { display: none !important; }
-    .flatpickr-innerContainer, .flatpickr-rContainer, .dayContainer, .flatpickr-days { width: 100% !important; min-width: 100% !important; max-width: 100% !important; }
-    .dayContainer { justify-content: space-evenly !important; }
-    .flatpickr-day { max-width: 36px !important; height: 36px !important; line-height: 36px !important; margin: 0 !important; }
+    .flatpickr-innerContainer, .flatpickr-rContainer, .flatpickr-days { 
+      width: 100% !important; 
+      min-width: 100% !important; 
+      max-width: 100% !important; 
+    }
+    .flatpickr-weekdays {
+      width: 100% !important;
+      display: flex !important;
+    }
+    .flatpickr-weekday {
+      flex: 0 0 14.2857% !important;
+      max-width: 14.2857% !important;
+    }
+    .dayContainer { 
+      display: flex !important;
+      flex-wrap: wrap !important;
+      justify-content: flex-start !important;
+      width: 100% !important; 
+      min-width: 100% !important; 
+      max-width: 100% !important; 
+    }
+    .flatpickr-day { 
+      flex: 0 0 14.2857% !important;
+      max-width: 14.2857% !important; 
+      height: 38px !important; 
+      line-height: 38px !important; 
+      margin: 0 !important; 
+      box-sizing: border-box !important;
+    }
 
     .dashboard-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; cursor: pointer; border-bottom: 1px solid var(--border-light); }
     .dashboard-item:last-child { border-bottom: none; }
@@ -115,7 +150,6 @@
     }
 
     function initTheme() {
-      // Use sessionStorage so the manual toggle resets if the app is fully closed and reopened
       const manualTheme = sessionStorage.getItem('themePref');
       if (manualTheme) {
         applyTheme(manualTheme);
@@ -128,13 +162,11 @@
     function toggleTheme() {
       const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      // Save only to sessionStorage
       sessionStorage.setItem('themePref', newTheme);
       applyTheme(newTheme);
     }
 
     initTheme();
-    // Re-check clock theme every minute, but ONLY if the user hasn't set a manual session preference
     setInterval(() => {
       if (!sessionStorage.getItem('themePref')) {
         const hour = new Date().getHours();
@@ -377,7 +409,6 @@
     navigator.serviceWorker.register('sw.js').then(() => console.log("Service Worker Registered"));
   }
 
-  // --- GOOGLE SIGN-IN & 14-DAY PERSISTENCE ---
   window.onload = function() {
     if (localStorage.getItem('savedUserEmail')) localStorage.removeItem('savedUserEmail');
 
@@ -437,13 +468,11 @@
     location.reload(); 
   }
 
-  // --- UI PROFILE POPUP ---
   function toggleProfilePopup() {
     const popup = document.getElementById('profilePopup');
     popup.style.display = popup.style.display === 'none' ? 'flex' : 'none';
   }
 
-  // Close profile popup if clicking outside
   document.addEventListener('click', function(event) {
     const popup = document.getElementById('profilePopup');
     const icon = document.getElementById('profileIcon');
@@ -452,10 +481,7 @@
     }
   });
 
-  // --- REST OF APP LOGIC ---
-
   function initializeApp() {
-    // Reveal top header and set profile info
     document.getElementById('app-header').style.display = 'flex';
     document.getElementById('profileIcon').src = currentUserPic;
     document.getElementById('profileName').innerText = currentUserName;
@@ -467,7 +493,6 @@
     
     renderRecentCustomers(); 
     
-    // Ensure the toggle button icon is correctly initialized
     const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
     document.getElementById('themeToggleBtn').innerText = currentTheme === 'dark' ? '☀️' : '🌙';
     
