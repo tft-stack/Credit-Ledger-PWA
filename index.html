@@ -83,29 +83,34 @@
     .toast-success { background-color: #2e7d32; }
     .toast-error { background-color: #d32f2f; }
 
-    /* Custom Flatpickr Compact Overrides */
+    /* ------------------------------------------- */
+    /* Custom Flatpickr Compact Overrides          */
+    /* ------------------------------------------- */
     .flatpickr-calendar {
-      width: 100% !important;
-      max-width: 320px !important;
-      border-radius: 8px !important;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+      width: 90vw !important; /* Scales to mobile width */
+      max-width: 310px !important; /* Matches standard card input width */
+      left: 50% !important; /* Forces absolute center */
+      transform: translateX(-50%) !important; /* Centers relative to body */
+      border-radius: 12px !important;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2) !important;
+      padding-bottom: 8px !important;
+    }
+    .flatpickr-calendar:before, .flatpickr-calendar:after {
+      display: none !important; /* Removes the awkward tooltip arrow */
     }
     .flatpickr-innerContainer, .flatpickr-rContainer, .dayContainer, .flatpickr-days {
       width: 100% !important;
-      min-width: auto !important;
+      min-width: 100% !important;
       max-width: 100% !important;
     }
+    .dayContainer {
+      justify-content: space-evenly !important; /* Balances dates automatically */
+    }
     .flatpickr-day {
-      height: 32px !important;
-      line-height: 32px !important;
-      max-width: 32px !important;
-      margin: 0 1px !important; /* Tightens the horizontal spacing */
-    }
-    .flatpickr-month {
-      height: 40px !important;
-    }
-    .flatpickr-current-month {
-      padding-top: 4px !important;
+      max-width: 36px !important;
+      height: 36px !important;
+      line-height: 36px !important;
+      margin: 0 !important; /* Removes the weird extra spacing */
     }
 
     @media print { .bottom-nav, .no-print, #toast, #loadingOverlay { display: none !important; } body { background: #fff; padding: 0; } .card { box-shadow: none; border: 1px solid #000; margin-bottom: 0; } .sticky-header { position: relative; top: 0; } }
@@ -166,6 +171,7 @@
       <h3 style="color: #666; margin-bottom: 16px; font-size: 16px;">Recent Customers</h3>
       <div id="recentCustomersList" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"></div>
       
+      <!-- Shortcut to Add Entry -->
       <button class="btn btn-outline" style="margin-top: 24px; font-size: 14px; padding: 10px 20px; border-radius: 20px;" onclick="navToAddEntry()">+ Add New Entry</button>
     </div>
 
@@ -298,14 +304,12 @@
     let currentLedgerHistory = []; 
     let recentCustomers = JSON.parse(localStorage.getItem('recentCustomers')) || [];
     
-    // Flatpickr instances
     let entryDatePicker, editDatePicker;
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').then(() => console.log("Service Worker Registered"));
     }
 
-    // --- Loading & Toast Engine ---
     function showLoading() {
       document.getElementById('loadingOverlay').style.display = 'flex';
     }
@@ -321,7 +325,6 @@
       setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
     }
 
-    // Flatpickr trigger handler
     function openDatePicker(id) {
       if(id === 'entryDate' && !document.getElementById('entryDate').disabled) {
         entryDatePicker.open();
