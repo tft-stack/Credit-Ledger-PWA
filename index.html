@@ -16,14 +16,14 @@
       --bg-color: #f4f6f8; --card-bg: #fff; --text-main: #333; --text-muted: #666;
       --text-light: #888; --border-color: #ccc; --border-light: #eee; --input-bg: #fff;
       --pill-bg: #eef2f5; --pill-border: #cfd8dc; --pill-text: #455a64; --nav-bg: #fff;
-      --chip-bg: #eef2f5; --btn-text: #555;
+      --chip-bg: #eef2f5; --btn-text: #555; --header-bg: #f4f6f8;
     }
     
     [data-theme="dark"] {
       --bg-color: #121212; --card-bg: #1e1e1e; --text-main: #e0e0e0; --text-muted: #aaa;
       --text-light: #777; --border-color: #444; --border-light: #333; --input-bg: #2c2c2c;
       --pill-bg: #2c2c2c; --pill-border: #444; --pill-text: #ccc; --nav-bg: #1e1e1e;
-      --chip-bg: #2c2c2c; --btn-text: #ccc;
+      --chip-bg: #2c2c2c; --btn-text: #ccc; --header-bg: #121212;
     }
 
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -31,6 +31,9 @@
     body { background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; transition: background 0.3s, color 0.3s; }
     
     #app-container { max-width: 650px; margin: 0 auto; padding-bottom: 70px; min-height: 100vh; position: relative; }
+    
+    /* Top Header */
+    #app-header { display: none; justify-content: space-between; align-items: center; padding: 16px 16px 8px 16px; position: sticky; top: 0; z-index: 100; background: var(--header-bg); transition: background 0.3s; }
     
     .screen { display: none; padding: 12px; animation: fadeIn 0.3s; }
     .screen.active { display: block; }
@@ -59,7 +62,7 @@
     .btn-outline-green { background: transparent; border: 1px solid #2e7d32; color: #2e7d32; }
     .btn-outline { background: transparent; border: 1px solid #007bff; color: #007bff; padding: 8px; }
 
-    .sticky-header { position: sticky; top: -16px; background: var(--card-bg); z-index: 10; padding: 16px 0 12px 0; border-bottom: 2px dashed var(--border-color); margin-bottom: 12px; text-align: center; transition: background 0.3s, border-color 0.3s; }
+    .sticky-header { position: sticky; top: 50px; background: var(--card-bg); z-index: 10; padding: 16px 0 12px 0; border-bottom: 2px dashed var(--border-color); margin-bottom: 12px; text-align: center; transition: background 0.3s, border-color 0.3s; }
     .sticky-header h2 { margin: 0 0 4px 0; font-size: 20px; }
     .sticky-header .balance { font-size: 16px; font-weight: bold; }
     
@@ -94,24 +97,50 @@
     .dashboard-item:last-child { border-bottom: none; }
     .dashboard-item:active { opacity: 0.7; }
 
-    @media print { .bottom-nav, .no-print, #toast, #loadingOverlay, #loginOverlay { display: none !important; } body { background: #fff; padding: 0; } .card { box-shadow: none; border: 1px solid #000; margin-bottom: 0; } .sticky-header { position: relative; top: 0; } }
+    @media print { .bottom-nav, .no-print, #toast, #loadingOverlay, #loginOverlay, #app-header { display: none !important; } body { background: #fff; padding: 0; } .card { box-shadow: none; border: 1px solid #000; margin-bottom: 0; } .sticky-header { position: relative; top: 0; } }
   </style>
 
+  <!-- THEME LOGIC -->
   <script>
-    function checkClockForTheme() {
-      const hour = new Date().getHours();
-      const isDarkMode = hour >= 18 || hour < 6; 
-      document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
-      
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
       const fpLink = document.getElementById('flatpickr-theme');
-      if (isDarkMode && fpLink.href.includes('flatpickr.min.css')) {
+      if (theme === 'dark' && fpLink.href.includes('flatpickr.min.css')) {
         fpLink.href = 'https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css';
-      } else if (!isDarkMode && fpLink.href.includes('dark.css')) {
+      } else if (theme === 'light' && fpLink.href.includes('dark.css')) {
         fpLink.href = 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css';
       }
+      const toggleBtn = document.getElementById('themeToggleBtn');
+      if (toggleBtn) toggleBtn.innerText = theme === 'dark' ? '☀️' : '🌙';
     }
-    checkClockForTheme(); 
-    setInterval(checkClockForTheme, 60000); 
+
+    function initTheme() {
+      // Use sessionStorage so the manual toggle resets if the app is fully closed and reopened
+      const manualTheme = sessionStorage.getItem('themePref');
+      if (manualTheme) {
+        applyTheme(manualTheme);
+      } else {
+        const hour = new Date().getHours();
+        applyTheme((hour >= 18 || hour < 6) ? 'dark' : 'light');
+      }
+    }
+
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      // Save only to sessionStorage
+      sessionStorage.setItem('themePref', newTheme);
+      applyTheme(newTheme);
+    }
+
+    initTheme();
+    // Re-check clock theme every minute, but ONLY if the user hasn't set a manual session preference
+    setInterval(() => {
+      if (!sessionStorage.getItem('themePref')) {
+        const hour = new Date().getHours();
+        applyTheme((hour >= 18 || hour < 6) ? 'dark' : 'light');
+      }
+    }, 60000); 
   </script>
 </head>
 <body>
@@ -127,12 +156,31 @@
 </div>
 
 <div id="app-container">
+
+  <!-- APP HEADER (Profile & Theme) -->
+  <div id="app-header">
+    <div style="position: relative;">
+      <img id="profileIcon" src="" alt="Profile" style="width: 38px; height: 38px; border-radius: 50%; cursor: pointer; border: 2px solid var(--border-color); object-fit: cover; display: block;" onclick="toggleProfilePopup()">
+      
+      <!-- Profile Popup Dropdown -->
+      <div id="profilePopup" style="display: none; position: absolute; top: 48px; left: 0; background: var(--card-bg); padding: 16px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 2000; min-width: 220px; border: 1px solid var(--border-light); flex-direction: column;">
+        <div style="font-weight: bold; font-size: 16px; color: var(--text-main); margin-bottom: 4px;" id="profileName">Name</div>
+        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; word-break: break-all;" id="profileEmail">email@example.com</div>
+        <button class="btn btn-outline-red btn-sm" style="width: 100%; padding: 8px; font-size: 13px;" onclick="logout()">🚪 Sign Out</button>
+      </div>
+    </div>
+    
+    <div id="themeToggleBtn" onclick="toggleTheme()" style="font-size: 24px; cursor: pointer; user-select: none; transition: transform 0.2s;">
+      🌙
+    </div>
+  </div>
+
   <div id="loadingOverlay"><div class="spinner"></div></div>
   <div id="toast">Message goes here</div>
 
   <!-- ==================== SCREEN 0: DASHBOARD ==================== -->
   <div id="screen-dashboard" class="screen">
-    <div class="sticky-header" style="margin-bottom: 12px; padding-bottom: 16px; border-bottom: none;">
+    <div class="sticky-header" style="margin-bottom: 12px; padding-bottom: 16px; border-bottom: none; top: 0;">
       <h2>Dashboard</h2>
       <div class="balance" style="color: var(--text-muted); font-size: 14px; font-weight: normal;">Total Outstanding Balance</div>
       <div id="dashboardTotalBalance" style="font-size: 24px; font-weight: bold; color: #d32f2f; margin-top: 8px;">₹0</div>
@@ -179,10 +227,6 @@
           <div class="month-pill" data-month="0" onclick="toggleMonth(this)">Jan</div>
           <div class="month-pill" data-month="1" onclick="toggleMonth(this)">Feb</div>
           <div class="month-pill" data-month="2" onclick="toggleMonth(this)">Mar</div>
-        </div>
-        
-        <div style="text-align: center; margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 16px;">
-          <span onclick="logout()" style="color: #d32f2f; font-size: 13px; font-weight: bold; cursor: pointer;">🚪 Sign Out</span>
         </div>
       </div>
     </div>
@@ -316,13 +360,16 @@
 </div>
 
 <script>
-  const API_URL = "https://script.google.com/macros/s/AKfycbwaZL5E5fePFLabRz5NnXvwFzApxBILHR-8V15csIHCDoDdXIyVzGnz0wP9KhLAaBzg0w/exec"; // ADD YOUR GOOGLE SCRIPT URL HERE
+  const API_URL = "https://script.google.com/macros/s/AKfycbwaZL5E5fePFLabRz5NnXvwFzApxBILHR-8V15csIHCDoDdXIyVzGnz0wP9KhLAaBzg0w/exec"; 
   
   let allCustomers = [];
   let selectedMonths = [];
   let currentLedgerHistory = []; 
   let recentCustomers = JSON.parse(localStorage.getItem('recentCustomers')) || [];
+  
   let currentUserEmail = ""; 
+  let currentUserName = "";
+  let currentUserPic = "";
   
   let entryDatePicker, editDatePicker;
 
@@ -332,37 +379,30 @@
 
   // --- GOOGLE SIGN-IN & 14-DAY PERSISTENCE ---
   window.onload = function() {
-    // 1. Clean up old basic authentication method if it exists
-    if (localStorage.getItem('savedUserEmail')) {
-      localStorage.removeItem('savedUserEmail');
-    }
+    if (localStorage.getItem('savedUserEmail')) localStorage.removeItem('savedUserEmail');
 
-    // 2. Check for the new session object
     const sessionString = localStorage.getItem('ledgerSession');
-    
     if (sessionString) {
       try {
         const sessionData = JSON.parse(sessionString);
         const now = Date.now();
         const fourteenDaysInMs = 14 * 24 * 60 * 60 * 1000;
         
-        // Check if session is younger than 14 days
         if (now - sessionData.timestamp < fourteenDaysInMs) {
           currentUserEmail = sessionData.email;
+          currentUserName = sessionData.name || "User";
+          currentUserPic = sessionData.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUserName)}&background=007bff&color=fff`;
+          
           document.getElementById('loginOverlay').style.display = 'none'; 
           initializeApp();
-          return; // Session is valid, exit the onload checks early
+          return; 
         } else {
-          // Session expired
           localStorage.removeItem('ledgerSession');
         }
       } catch (e) {
-        // If data is corrupted, wipe it
         localStorage.removeItem('ledgerSession');
       }
     }
-    
-    // If no valid session was found, the code reaches here and the loginOverlay remains visible
   };
 
   function parseJwt(token) {
@@ -377,16 +417,17 @@
   function handleCredentialResponse(response) {
     const data = parseJwt(response.credential);
     currentUserEmail = data.email;
+    currentUserName = data.name;
+    currentUserPic = data.picture;
     
-    // Create the session object with exact timestamp
     const sessionData = {
       email: currentUserEmail,
+      name: currentUserName,
+      picture: currentUserPic,
       timestamp: Date.now()
     };
     
-    // Save to local storage
     localStorage.setItem('ledgerSession', JSON.stringify(sessionData));
-    
     document.getElementById('loginOverlay').style.display = 'none'; 
     initializeApp();
   }
@@ -396,14 +437,39 @@
     location.reload(); 
   }
 
+  // --- UI PROFILE POPUP ---
+  function toggleProfilePopup() {
+    const popup = document.getElementById('profilePopup');
+    popup.style.display = popup.style.display === 'none' ? 'flex' : 'none';
+  }
+
+  // Close profile popup if clicking outside
+  document.addEventListener('click', function(event) {
+    const popup = document.getElementById('profilePopup');
+    const icon = document.getElementById('profileIcon');
+    if (popup && popup.style.display === 'flex' && !popup.contains(event.target) && event.target !== icon) {
+      popup.style.display = 'none';
+    }
+  });
+
   // --- REST OF APP LOGIC ---
 
   function initializeApp() {
+    // Reveal top header and set profile info
+    document.getElementById('app-header').style.display = 'flex';
+    document.getElementById('profileIcon').src = currentUserPic;
+    document.getElementById('profileName').innerText = currentUserName;
+    document.getElementById('profileEmail').innerText = currentUserEmail;
+
     const fpConfig = { disableMobile: true, dateFormat: "Y-m-d" };
     entryDatePicker = flatpickr("#entryDate", { ...fpConfig, defaultDate: "today" });
     editDatePicker = flatpickr("#editDate", fpConfig);
     
     renderRecentCustomers(); 
+    
+    // Ensure the toggle button icon is correctly initialized
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    document.getElementById('themeToggleBtn').innerText = currentTheme === 'dark' ? '☀️' : '🌙';
     
     const localData = localStorage.getItem('ledgerInitData');
     if (localData) populateInitialUI(JSON.parse(localData));
