@@ -6,6 +6,11 @@
   <title>Credit Ledger</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#007bff">
+  
+  <!-- Custom Calendar (Flatpickr) CSS & JS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: #f4f6f8; margin: 0; padding: 0; color: #333; padding-bottom: 70px; }
@@ -194,10 +199,10 @@
           <label for="broughtForward" style="margin:0; text-transform:none; font-size:14px; color:#444;">Brought forward</label>
         </div>
 
-        <!-- Date Input with Calendar Icon -->
+        <!-- Custom JS Date Input with Pointer-event managed Icon -->
         <div style="position: relative; margin-bottom: 12px;">
-          <input type="date" id="entryDate" required style="margin-bottom: 0; padding-right: 40px;">
-          <div onclick="openDatePicker('entryDate')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px;">📅</div>
+          <input type="text" id="entryDate" required style="margin-bottom: 0; padding-right: 40px; background: #fff;" placeholder="Select Date" readonly>
+          <div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 18px;">📅</div>
         </div>
 
         <input type="text" id="entryNotes" placeholder="Notes (Optional)">
@@ -233,8 +238,8 @@
 
       <label>Date</label>
       <div style="position: relative; margin-bottom: 12px;">
-        <input type="date" id="editDate" required style="margin-bottom: 0; padding-right: 40px;">
-        <div onclick="openDatePicker('editDate')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px;">📅</div>
+        <input type="text" id="editDate" required style="margin-bottom: 0; padding-right: 40px; background: #fff;" placeholder="Select Date" readonly>
+        <div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 18px;">📅</div>
       </div>
       
       <label>Notes</label>
@@ -269,6 +274,9 @@
     let selectedMonths = [];
     let currentLedgerHistory = []; 
     let recentCustomers = JSON.parse(localStorage.getItem('recentCustomers')) || [];
+    
+    // Flatpickr instances
+    let entryDatePicker, editDatePicker;
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').then(() => console.log("Service Worker Registered"));
@@ -290,14 +298,6 @@
       setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
     }
 
-    // Date Picker Fallback Handler
-    function openDatePicker(id) {
-      const el = document.getElementById(id);
-      if(!el.disabled) {
-        try { el.showPicker(); } catch(e) { el.focus(); }
-      }
-    }
-
     async function apiGet(action, params = {}) {
       const query = new URLSearchParams({ action, ...params }).toString();
       const response = await fetch(`${API_URL}?${query}`, { method: 'GET', redirect: 'follow' });
@@ -313,7 +313,15 @@
     }
 
     window.onload = async function() {
-      document.getElementById('entryDate').valueAsDate = new Date();
+      // Initialize Custom Calendars (Bypasses Android Native UI)
+      const fpConfig = { 
+        disableMobile: true, // Forces flatpickr UI on mobile (auto-closes, no Set button)
+        dateFormat: "Y-m-d"
+      };
+      
+      entryDatePicker = flatpickr("#entryDate", { ...fpConfig, defaultDate: "today" });
+      editDatePicker = flatpickr("#editDate", fpConfig);
+      
       renderRecentCustomers(); 
       
       const localData = localStorage.getItem('ledgerInitData');
@@ -414,7 +422,7 @@
       
       setAddType('Goods Purchased');
       document.getElementById('broughtForward').checked = false;
-      toggleBF(); // Sets date back to today's date
+      toggleBF(); // Sets custom date back to today
       
       document.getElementById('entryAmount').value = '';
       document.getElementById('entryNotes').value = '';
@@ -425,7 +433,6 @@
     function routeToAddData(targetType) {
       const currentCust = document.getElementById('searchCustomerInput').value;
       
-      // Clear form inputs
       document.getElementById('entryAmount').value = '';
       document.getElementById('entryNotes').value = '';
       document.getElementById('broughtForward').checked = false;
@@ -492,11 +499,13 @@
       const isBF = document.getElementById('broughtForward').checked;
       const dateInput = document.getElementById('entryDate');
       if (isBF) {
-        dateInput.value = '';
+        entryDatePicker.clear();
         dateInput.disabled = true;
+        dateInput.style.background = "#e9ecef";
       } else {
         dateInput.disabled = false;
-        dateInput.valueAsDate = new Date();
+        dateInput.style.background = "#fff";
+        entryDatePicker.setDate(new Date());
       }
     }
 
@@ -504,11 +513,13 @@
       const isBF = document.getElementById('editBroughtForward').checked;
       const dateInput = document.getElementById('editDate');
       if (isBF) {
-        dateInput.value = '';
+        editDatePicker.clear();
         dateInput.disabled = true;
+        dateInput.style.background = "#e9ecef";
       } else {
         dateInput.disabled = false;
-        if(!dateInput.value) dateInput.valueAsDate = new Date();
+        dateInput.style.background = "#fff";
+        if(!dateInput.value) editDatePicker.setDate(new Date());
       }
     }
 
@@ -783,9 +794,9 @@
       const dateInput = document.getElementById('editDate');
       if (row.rawDate && !isBF) {
         const d = new Date(row.rawDate);
-        dateInput.value = d.toLocaleDateString('en-CA');
+        editDatePicker.setDate(d);
       } else {
-        dateInput.value = '';
+        editDatePicker.clear();
       }
 
       toggleEditBF(); 
