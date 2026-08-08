@@ -116,6 +116,7 @@
 </head>
 <body>
 
+<!-- Login Overlay -->
 <div id="loginOverlay">
   <div class="card" style="width: 100%; max-width: 400px; padding: 30px 20px;">
     <h2>Credit Ledger</h2>
@@ -178,6 +179,10 @@
           <div class="month-pill" data-month="0" onclick="toggleMonth(this)">Jan</div>
           <div class="month-pill" data-month="1" onclick="toggleMonth(this)">Feb</div>
           <div class="month-pill" data-month="2" onclick="toggleMonth(this)">Mar</div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+          <span onclick="logout()" style="color: #d32f2f; font-size: 13px; font-weight: bold; cursor: pointer;">🚪 Sign Out</span>
         </div>
       </div>
     </div>
@@ -311,7 +316,7 @@
 </div>
 
 <script>
-  const API_URL = "https://script.google.com/macros/s/AKfycbwaZL5E5fePFLabRz5NnXvwFzApxBILHR-8V15csIHCDoDdXIyVzGnz0wP9KhLAaBzg0w/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycbwaZL5E5fePFLabRz5NnXvwFzApxBILHR-8V15csIHCDoDdXIyVzGnz0wP9KhLAaBzg0w/exec"; // ADD YOUR GOOGLE SCRIPT URL HERE
   
   let allCustomers = [];
   let selectedMonths = [];
@@ -325,6 +330,41 @@
     navigator.serviceWorker.register('sw.js').then(() => console.log("Service Worker Registered"));
   }
 
+  // --- GOOGLE SIGN-IN & 14-DAY PERSISTENCE ---
+  window.onload = function() {
+    // 1. Clean up old basic authentication method if it exists
+    if (localStorage.getItem('savedUserEmail')) {
+      localStorage.removeItem('savedUserEmail');
+    }
+
+    // 2. Check for the new session object
+    const sessionString = localStorage.getItem('ledgerSession');
+    
+    if (sessionString) {
+      try {
+        const sessionData = JSON.parse(sessionString);
+        const now = Date.now();
+        const fourteenDaysInMs = 14 * 24 * 60 * 60 * 1000;
+        
+        // Check if session is younger than 14 days
+        if (now - sessionData.timestamp < fourteenDaysInMs) {
+          currentUserEmail = sessionData.email;
+          document.getElementById('loginOverlay').style.display = 'none'; 
+          initializeApp();
+          return; // Session is valid, exit the onload checks early
+        } else {
+          // Session expired
+          localStorage.removeItem('ledgerSession');
+        }
+      } catch (e) {
+        // If data is corrupted, wipe it
+        localStorage.removeItem('ledgerSession');
+      }
+    }
+    
+    // If no valid session was found, the code reaches here and the loginOverlay remains visible
+  };
+
   function parseJwt(token) {
     var base64Url = token.split('.')[1];
     var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -337,9 +377,26 @@
   function handleCredentialResponse(response) {
     const data = parseJwt(response.credential);
     currentUserEmail = data.email;
+    
+    // Create the session object with exact timestamp
+    const sessionData = {
+      email: currentUserEmail,
+      timestamp: Date.now()
+    };
+    
+    // Save to local storage
+    localStorage.setItem('ledgerSession', JSON.stringify(sessionData));
+    
     document.getElementById('loginOverlay').style.display = 'none'; 
     initializeApp();
   }
+
+  function logout() {
+    localStorage.removeItem('ledgerSession');
+    location.reload(); 
+  }
+
+  // --- REST OF APP LOGIC ---
 
   function initializeApp() {
     const fpConfig = { disableMobile: true, dateFormat: "Y-m-d" };
