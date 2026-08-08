@@ -83,6 +83,31 @@
     .toast-success { background-color: #2e7d32; }
     .toast-error { background-color: #d32f2f; }
 
+    /* Custom Flatpickr Compact Overrides */
+    .flatpickr-calendar {
+      width: 100% !important;
+      max-width: 320px !important;
+      border-radius: 8px !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    }
+    .flatpickr-innerContainer, .flatpickr-rContainer, .dayContainer, .flatpickr-days {
+      width: 100% !important;
+      min-width: auto !important;
+      max-width: 100% !important;
+    }
+    .flatpickr-day {
+      height: 32px !important;
+      line-height: 32px !important;
+      max-width: 32px !important;
+      margin: 0 1px !important; /* Tightens the horizontal spacing */
+    }
+    .flatpickr-month {
+      height: 40px !important;
+    }
+    .flatpickr-current-month {
+      padding-top: 4px !important;
+    }
+
     @media print { .bottom-nav, .no-print, #toast, #loadingOverlay { display: none !important; } body { background: #fff; padding: 0; } .card { box-shadow: none; border: 1px solid #000; margin-bottom: 0; } .sticky-header { position: relative; top: 0; } }
   </style>
 </head>
@@ -141,7 +166,6 @@
       <h3 style="color: #666; margin-bottom: 16px; font-size: 16px;">Recent Customers</h3>
       <div id="recentCustomersList" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"></div>
       
-      <!-- Shortcut to Add Entry -->
       <button class="btn btn-outline" style="margin-top: 24px; font-size: 14px; padding: 10px 20px; border-radius: 20px;" onclick="navToAddEntry()">+ Add New Entry</button>
     </div>
 
@@ -199,10 +223,9 @@
           <label for="broughtForward" style="margin:0; text-transform:none; font-size:14px; color:#444;">Brought forward</label>
         </div>
 
-        <!-- Custom JS Date Input with Pointer-event managed Icon -->
         <div style="position: relative; margin-bottom: 12px;">
           <input type="text" id="entryDate" required style="margin-bottom: 0; padding-right: 40px; background: #fff;" placeholder="Select Date" readonly>
-          <div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 18px;">📅</div>
+          <div onclick="openDatePicker('entryDate')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px;">📅</div>
         </div>
 
         <input type="text" id="entryNotes" placeholder="Notes (Optional)">
@@ -239,7 +262,7 @@
       <label>Date</label>
       <div style="position: relative; margin-bottom: 12px;">
         <input type="text" id="editDate" required style="margin-bottom: 0; padding-right: 40px; background: #fff;" placeholder="Select Date" readonly>
-        <div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 18px;">📅</div>
+        <div onclick="openDatePicker('editDate')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px;">📅</div>
       </div>
       
       <label>Notes</label>
@@ -298,6 +321,15 @@
       setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
     }
 
+    // Flatpickr trigger handler
+    function openDatePicker(id) {
+      if(id === 'entryDate' && !document.getElementById('entryDate').disabled) {
+        entryDatePicker.open();
+      } else if (id === 'editDate' && !document.getElementById('editDate').disabled) {
+        editDatePicker.open();
+      }
+    }
+
     async function apiGet(action, params = {}) {
       const query = new URLSearchParams({ action, ...params }).toString();
       const response = await fetch(`${API_URL}?${query}`, { method: 'GET', redirect: 'follow' });
@@ -313,9 +345,8 @@
     }
 
     window.onload = async function() {
-      // Initialize Custom Calendars (Bypasses Android Native UI)
       const fpConfig = { 
-        disableMobile: true, // Forces flatpickr UI on mobile (auto-closes, no Set button)
+        disableMobile: true, 
         dateFormat: "Y-m-d"
       };
       
@@ -414,7 +445,6 @@
       document.getElementById('nav-' + screen).classList.add('active');
     }
 
-    // Default loader for explicitly opening the "Add Entry" tab
     function navToAddEntry() {
       document.getElementById('entryCustomerInput').value = '';
       toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');
@@ -422,7 +452,7 @@
       
       setAddType('Goods Purchased');
       document.getElementById('broughtForward').checked = false;
-      toggleBF(); // Sets custom date back to today
+      toggleBF(); 
       
       document.getElementById('entryAmount').value = '';
       document.getElementById('entryNotes').value = '';
@@ -722,7 +752,6 @@
       });
     }
 
-    // --- Custom Delete Modal Logic ---
     function promptDelete(id) {
       document.getElementById('deleteId').value = id;
       document.getElementById('deleteModal').style.display = 'flex';
@@ -755,7 +784,6 @@
       }
     }
 
-    // --- Edit Logic ---
     function openModal(id) {
       const row = currentLedgerHistory.find(r => r.id === id);
       
