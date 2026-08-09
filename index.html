@@ -151,7 +151,6 @@
 </head>
 <body>
 
-<!-- Login Overlay -->
 <div id="loginOverlay">
   <div class="card" style="width: 100%; max-width: 400px; padding: 30px 20px;">
     <h2>Credit Ledger</h2>
@@ -163,17 +162,20 @@
 
 <div id="app-container">
 
-  <!-- APP HEADER (Profile & Theme) -->
   <div id="app-header">
     <div style="position: relative;">
       <img id="profileIcon" src="" alt="Profile" style="width: 38px; height: 38px; border-radius: 50%; cursor: pointer; border: 2px solid var(--border-color); object-fit: cover; display: block;" onclick="toggleProfilePopup()">
+      
       <div id="profilePopup" style="display: none; position: absolute; top: 48px; left: 0; background: var(--card-bg); padding: 16px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 2000; min-width: 220px; border: 1px solid var(--border-light); flex-direction: column;">
         <div style="font-weight: bold; font-size: 16px; color: var(--text-main); margin-bottom: 4px;" id="profileName">Name</div>
         <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; word-break: break-all;" id="profileEmail">email@example.com</div>
         <button class="btn btn-outline-red btn-sm" style="width: 100%; padding: 8px; font-size: 13px;" onclick="logout()">🚪 Sign Out</button>
       </div>
     </div>
-    <div id="themeToggleBtn" onclick="toggleTheme()" style="font-size: 24px; cursor: pointer; user-select: none; transition: transform 0.2s;">🌙</div>
+    
+    <div id="themeToggleBtn" onclick="toggleTheme()" style="font-size: 24px; cursor: pointer; user-select: none; transition: transform 0.2s;">
+      🌙
+    </div>
   </div>
 
   <div id="loadingOverlay"><div class="spinner"></div></div>
@@ -237,13 +239,21 @@
 
     <div class="card" id="ledgerCard" style="display:none; padding-top: 0;">
       <div class="sticky-header">
-        <h2 id="dispCustomerName">Customer</h2>
-        <div class="balance" id="dispOverallBalance">Outstanding: ₹0</div>
         
-        <!-- Updated Statement Button -->
-        <div style="margin-top: 8px;" class="no-print">
-          <button class="btn btn-outline btn-sm" style="width: auto; padding: 6px 16px; font-size: 13px; border-radius: 20px;" onclick="viewStatement()">📄 View & Share Statement</button>
+        <!-- Updated Header Block with Inline PDF Icon -->
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+          <h2 id="dispCustomerName" style="margin: 0; padding: 0 32px;">Customer</h2>
+          <div class="no-print" style="position: absolute; right: 0; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;" onclick="viewStatement()" title="Download PDF Statement">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="12" y1="18" x2="12" y2="12"></line>
+              <polyline points="9 15 12 18 15 15"></polyline>
+            </svg>
+          </div>
         </div>
+        <div class="balance" id="dispOverallBalance">Outstanding: ₹0</div>
+
       </div>
       
       <div style="display: flex; border-bottom: 2px dashed var(--border-color); margin-bottom: 12px; padding-bottom: 4px;">
@@ -945,15 +955,15 @@
 
     // Optimize for Thermal Receipt Printer (80mm roll) and Fix Right-Shift
     element.style.display = 'block';
-    element.style.width = '280px'; // 280px perfectly maps to an 80mm roll
+    element.style.width = '280px'; 
     element.style.maxWidth = '280px';
     element.style.padding = '10px';
-    element.style.margin = '0'; // Removes centering margins that cause shifts
+    element.style.margin = '0'; 
     element.style.boxSizing = 'border-box';
     element.style.boxShadow = 'none';
     element.style.background = '#fff'; 
     element.style.color = '#000';
-    element.style.transform = 'none'; // Strips any UI scale/translate
+    element.style.transform = 'none'; 
 
     const headerDiv = document.createElement('div');
     headerDiv.style.textAlign = 'center';
@@ -966,7 +976,6 @@
     `;
     element.insertBefore(headerDiv, element.firstChild);
 
-    // Calculate Totals for Purchase & Payment
     let totalPurchase = 0;
     let totalPayment = 0;
     currentLedgerHistory.forEach(r => {
@@ -974,7 +983,6 @@
       if (r.type === 'Amount Received') totalPayment += parseFloat(r.amount) || 0;
     });
 
-    // Inject Totals Div at the bottom (Left Aligned to match columns)
     const totalsDiv = document.createElement('div');
     totalsDiv.style.display = 'flex';
     totalsDiv.style.borderTop = '2px dashed #000';
@@ -988,7 +996,6 @@
     `;
     element.appendChild(totalsDiv);
 
-    // 1. Attach to DOM temporarily JUST to measure the exact height
     element.style.position = 'absolute';
     element.style.top = '0';
     element.style.left = '0';
@@ -997,22 +1004,19 @@
     
     const pxHeight = element.offsetHeight;
     
-    // 2. Remove immediately so html2pdf uses its own safe internal iframe
     document.body.removeChild(element);
     
-    // Reset styles for safe rendering
     element.style.position = 'relative';
     element.style.zIndex = 'auto';
 
-    const mmHeight = (pxHeight * 0.264583) + 12; // px to mm + margin buffer
+    const mmHeight = (pxHeight * 0.264583) + 12; 
 
     const filename = `${custName.replace(/\s+/g, '_')}_Statement.pdf`;
 
     const opt = {
-      margin:       [4, 2, 4, 2], // 4mm top/bottom, 2mm left/right to ensure centering
+      margin:       [4, 2, 4, 2], 
       filename:     filename,
       image:        { type: 'jpeg', quality: 0.98 },
-      // scrollX/Y 0 forces the capture to ignore your phone's scroll position, fixing the right-shift
       html2canvas:  { scale: 2, useCORS: true, backgroundColor: "#ffffff", scrollX: 0, scrollY: 0 }, 
       jsPDF:        { unit: 'mm', format: [80, mmHeight], orientation: 'portrait' }
     };
@@ -1025,7 +1029,6 @@
 
       hideLoading();
 
-      // Trigger automatic native file download which will prompt "Open"
       const link = document.createElement('a');
       link.href = pdfUrl;
       link.target = '_blank';
