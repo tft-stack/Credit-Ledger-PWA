@@ -943,13 +943,17 @@
     const element = document.getElementById('ledgerCard').cloneNode(true);
     element.querySelectorAll('.no-print, .action-icons').forEach(el => el.remove());
 
-    // Optimize for Thermal Receipt Printer (80mm roll ~ 300px width)
+    // Optimize for Thermal Receipt Printer (80mm roll) and Fix Right-Shift
     element.style.display = 'block';
-    element.style.width = '300px';
+    element.style.width = '280px'; // 280px perfectly maps to an 80mm roll
+    element.style.maxWidth = '280px';
     element.style.padding = '10px';
+    element.style.margin = '0'; // Removes centering margins that cause shifts
+    element.style.boxSizing = 'border-box';
     element.style.boxShadow = 'none';
     element.style.background = '#fff'; 
     element.style.color = '#000';
+    element.style.transform = 'none'; // Strips any UI scale/translate
 
     const headerDiv = document.createElement('div');
     headerDiv.style.textAlign = 'center';
@@ -970,7 +974,7 @@
       if (r.type === 'Amount Received') totalPayment += parseFloat(r.amount) || 0;
     });
 
-    // Inject Totals Div at the bottom
+    // Inject Totals Div at the bottom (Left Aligned to match columns)
     const totalsDiv = document.createElement('div');
     totalsDiv.style.display = 'flex';
     totalsDiv.style.borderTop = '2px dashed #000';
@@ -979,13 +983,12 @@
     totalsDiv.style.fontWeight = 'bold';
     totalsDiv.style.color = '#000';
     totalsDiv.innerHTML = `
-      <div style="flex: 1; text-align: center; border-right: 1px dashed #ccc; font-size: 13px;">Total: ₹${totalPurchase.toLocaleString('en-IN')}</div>
-      <div style="flex: 1; text-align: center; font-size: 13px;">Total: ₹${totalPayment.toLocaleString('en-IN')}</div>
+      <div style="flex: 1; text-align: left; padding-left: 6px; border-right: 1px dashed #ccc; font-size: 13px;">Total: ₹${totalPurchase.toLocaleString('en-IN')}</div>
+      <div style="flex: 1; text-align: left; padding-left: 6px; font-size: 13px;">Total: ₹${totalPayment.toLocaleString('en-IN')}</div>
     `;
     element.appendChild(totalsDiv);
 
     // 1. Attach to DOM temporarily JUST to measure the exact height
-    // Using z-index -1000 ensures it renders behind your app interface safely
     element.style.position = 'absolute';
     element.style.top = '0';
     element.style.left = '0';
@@ -994,28 +997,28 @@
     
     const pxHeight = element.offsetHeight;
     
-    // 2. Remove immediately so html2pdf uses its own safe internal iframe rendering!
+    // 2. Remove immediately so html2pdf uses its own safe internal iframe
     document.body.removeChild(element);
     
     // Reset styles for safe rendering
     element.style.position = 'relative';
     element.style.zIndex = 'auto';
 
-    const mmHeight = (pxHeight * 0.264583) + 15; // px to mm + margin buffer
+    const mmHeight = (pxHeight * 0.264583) + 12; // px to mm + margin buffer
 
     const filename = `${custName.replace(/\s+/g, '_')}_Statement.pdf`;
 
     const opt = {
-      margin:       [5, 5, 5, 5],
+      margin:       [4, 2, 4, 2], // 4mm top/bottom, 2mm left/right to ensure centering
       filename:     filename,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+      // scrollX/Y 0 forces the capture to ignore your phone's scroll position, fixing the right-shift
+      html2canvas:  { scale: 2, useCORS: true, backgroundColor: "#ffffff", scrollX: 0, scrollY: 0 }, 
       jsPDF:        { unit: 'mm', format: [80, mmHeight], orientation: 'portrait' }
     };
 
     showLoading();
     try {
-      // Because 'element' is now detached, html2pdf will mount it cleanly off-screen
       const worker = html2pdf().set(opt).from(element);
       const pdfBlob = await worker.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
