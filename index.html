@@ -10,6 +10,8 @@
   <link id="flatpickr-theme" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- Library for Client-Side PDF Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
     :root {
@@ -249,6 +251,10 @@
       <div class="sticky-header">
         <h2 id="dispCustomerName">Customer</h2>
         <div class="balance" id="dispOverallBalance">Outstanding: ₹0</div>
+        <!-- Export / Share PDF Action Button -->
+        <div style="margin-top: 8px;" class="no-print">
+          <button class="btn btn-outline btn-sm" style="width: auto; padding: 6px 16px; font-size: 13px; border-radius: 20px;" onclick="exportPDF()">📄 Share / Export PDF</button>
+        </div>
       </div>
       
       <div style="display: flex; border-bottom: 2px dashed var(--border-color); margin-bottom: 12px; padding-bottom: 4px;">
@@ -858,7 +864,6 @@
     }
   }
 
-  // --- REVISED LEDGER ROW PAIRING ALGORITHM ---
   function renderLedger(data) {
     currentLedgerHistory = data.history; 
     document.getElementById('ledgerCard').style.display = 'block';
@@ -883,18 +888,15 @@
       return;
     }
 
-    // 1. Separate & sort Purchases and Payments in ascending order of date
     let purchases = data.history.filter(r => r.type === 'Goods Purchased');
     let payments = data.history.filter(r => r.type === 'Amount Received');
 
     purchases.sort((a, b) => (a.rawDate || 0) - (b.rawDate || 0));
     payments.sort((a, b) => (a.rawDate || 0) - (b.rawDate || 0));
 
-    // Initialize rows with purchases
     let pairedRows = purchases.map(pur => ({ left: pur, right: null }));
     let remainingPayments = [...payments];
 
-    // Step 2: Exact Amount Matching (Align side-by-side if amounts match)
     pairedRows.forEach(row => {
       let matchIndex = remainingPayments.findIndex(pay => pay.amount === row.left.amount);
       if (matchIndex !== -1) {
@@ -902,19 +904,16 @@
       }
     });
 
-    // Step 3: Fill empty slots of remaining purchases with unmatched payments (Sorted by Date)
     pairedRows.forEach(row => {
       if (!row.right && remainingPayments.length > 0) {
         row.right = remainingPayments.shift();
       }
     });
 
-    // Step 4: Append any leftover payments beyond total purchase rows
     while (remainingPayments.length > 0) {
       pairedRows.push({ left: null, right: remainingPayments.shift() });
     }
 
-    // Render HTML
     pairedRows.forEach(row => {
       const buildCell = (item, isLeft) => {
         if (!item) return `<div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''}"></div>`;
@@ -945,6 +944,66 @@
       rowDiv.innerHTML = buildCell(row.left, true) + buildCell(row.right, false);
       container.appendChild(rowDiv);
     });
+  }
+
+  // --- PDF EXPORT & NATIVE SHARE LOGIC ---
+  async function exportPDF() {
+    const custName = document.getElementById('dispCustomerName').innerText;
+    if (!custName) return;
+
+    // Clone the ledger element
+    const element = document.getElementById('ledgerCard').cloneNode(true);
+    
+    // Remove unwanted interactive elements from PDF
+    element.querySelectorAll('.no-print, .action-icons').forEach(el => el.remove());
+
+    // Inject formal Header for PDF document
+    const headerDiv = document.createElement('div');
+    headerDiv.style.textAlign = 'center';
+    headerDiv.style.marginBottom = '16px';
+    headerDiv.style.borderBottom = '2px solid #333';
+    headerDiv.style.paddingBottom = '10px';
+    headerDiv.innerHTML = `
+      <h1 style="margin:0; font-size: 22px; color: #007bff;">Credit Ledger Statement</h1>
+      <p style="margin: 4px 0 0 0; font-size: 12px; color: #666;">Generated on: ${new Date().toLocaleDateString('en-IN')}</p>
+    `;
+    element.insertBefore(headerDiv, element.firstChild);
+
+    const filename = `${custName.replace(/\s+/g, '_')}_Statement.pdf`;
+
+    const opt = {
+      margin:       10,
+      filename:     filename,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    showLoading();
+    try {
+      const worker = html2pdf().set(opt).from(element);
+      const pdfBlob = await worker.output('blob');
+      const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+      hideLoading();
+
+      // Trigger Web Share API (WhatsApp/Email/Print share sheet) on Mobile
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `${custName} Ledger Statement`,
+          text: `Credit Ledger Statement for ${custName}`
+        });
+      } else {
+        // Fallback to direct file download
+        worker.save();
+        showToast("PDF Downloaded!", "success");
+      }
+    } catch (err) {
+      hideLoading();
+      showToast("Failed to export PDF", "error");
+      console.error(err);
+    }
   }
 
   function promptDelete(id) {
