@@ -944,6 +944,7 @@
     element.querySelectorAll('.no-print, .action-icons').forEach(el => el.remove());
 
     // Optimize for Thermal Receipt Printer (80mm roll ~ 300px width)
+    element.style.display = 'block';
     element.style.width = '300px';
     element.style.padding = '10px';
     element.style.boxShadow = 'none';
@@ -983,15 +984,23 @@
     `;
     element.appendChild(totalsDiv);
 
-    // Attach to DOM temporarily so html2canvas can capture it
+    // 1. Attach to DOM temporarily JUST to measure the exact height
+    // Using z-index -1000 ensures it renders behind your app interface safely
     element.style.position = 'absolute';
-    element.style.left = '-9999px';
+    element.style.top = '0';
+    element.style.left = '0';
+    element.style.zIndex = '-1000';
     document.body.appendChild(element);
     
-    // Brief timeout to ensure browser renders the DOM node before measuring
-    await new Promise(resolve => setTimeout(resolve, 50));
-
     const pxHeight = element.offsetHeight;
+    
+    // 2. Remove immediately so html2pdf uses its own safe internal iframe rendering!
+    document.body.removeChild(element);
+    
+    // Reset styles for safe rendering
+    element.style.position = 'relative';
+    element.style.zIndex = 'auto';
+
     const mmHeight = (pxHeight * 0.264583) + 15; // px to mm + margin buffer
 
     const filename = `${custName.replace(/\s+/g, '_')}_Statement.pdf`;
@@ -1006,6 +1015,7 @@
 
     showLoading();
     try {
+      // Because 'element' is now detached, html2pdf will mount it cleanly off-screen
       const worker = html2pdf().set(opt).from(element);
       const pdfBlob = await worker.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
@@ -1027,11 +1037,6 @@
       hideLoading();
       showToast("Failed to generate PDF", "error");
       console.error(err);
-    } finally {
-      // CLEANUP: Safely remove the cloned element ONLY after PDF generation finishes
-      if (document.body.contains(element)) {
-        document.body.removeChild(element);
-      }
     }
   }
 
