@@ -934,8 +934,18 @@
     }
   }
 
-  // Handle showing the Save button dynamically when checkboxes are ticked
-  function handleSettleCheck() {
+  // Handle showing the Save button dynamically and syncing matched pairs
+  function handleSettleCheck(element) {
+    // 1. Sync the sibling checkbox if this is a matched pair
+    if (element && element.hasAttribute('data-sibling-id')) {
+      const siblingId = element.getAttribute('data-sibling-id');
+      const siblingBox = document.getElementById(`check_${siblingId}`);
+      if (siblingBox) {
+        siblingBox.checked = element.checked; 
+      }
+    }
+
+    // 2. Show/Hide the Save Button
     const checkedCount = document.querySelectorAll('.settle-checkbox:checked').length;
     const saveBtn = document.getElementById('saveSettledBtnContainer');
     if (checkedCount > 0) {
@@ -1020,17 +1030,29 @@
     }
 
     pairedRows.forEach(row => {
+      // Determine if this row contains an exactly matched Purchase/Payment pair
+      const isExactMatch = (row.left && row.right && row.left.amount === row.right.amount);
+      const leftId = row.left ? row.left.id : null;
+      const rightId = row.right ? row.right.id : null;
+
       const buildCell = (item, isLeft) => {
         if (!item) return `<div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''}"></div>`;
         
         const shortDate = item.date === 'B/F' ? 'B/F' : item.date.substring(0, 5); 
         const noteHtml = item.notes ? `<div style="font-size:10px; color: var(--text-light); margin-top:-6px; margin-bottom:8px; text-align:left; word-wrap: anywhere;">${item.notes}</div>` : '';
         
+        // Link siblings if they are a perfect match
+        let siblingAttr = '';
+        if (isExactMatch) {
+            siblingAttr = `data-sibling-id="${isLeft ? rightId : leftId}"`;
+        }
+        
+        // Note: Added `id="check_${item.id}"` and passed `this` to `handleSettleCheck(this)`
         return `
           <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
               <div style="display: flex; align-items: flex-start; gap: 8px;">
-                <input type="checkbox" class="settle-checkbox no-print" value="${item.id}" onchange="handleSettleCheck()" style="width:16px; height:16px; margin-top:2px; cursor: pointer; accent-color: #2e7d32;">
+                <input type="checkbox" id="check_${item.id}" class="settle-checkbox no-print" value="${item.id}" ${siblingAttr} onchange="handleSettleCheck(this)" style="width:16px; height:16px; margin-top:2px; cursor: pointer; accent-color: #2e7d32;">
                 <div>
                   <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px;">${shortDate}</div>
                   <div style="font-weight: bold; font-size: 14px; color: var(--text-main);">₹${item.amount.toLocaleString('en-IN')}</div>
