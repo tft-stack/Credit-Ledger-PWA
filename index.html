@@ -50,6 +50,12 @@
     .month-pill { background: var(--pill-bg); border: 1px solid var(--pill-border); border-radius: 16px; padding: 8px 0; font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; user-select: none; color: var(--pill-text); transition: background 0.3s, color 0.3s, border-color 0.3s; }
     .month-pill.active { background: #007bff; color: #fff; border-color: #007bff; }
     
+    /* New Dashboard Alphabet Filter Styling */
+    .alphabet-filter { display: flex; overflow-x: auto; gap: 8px; padding: 12px 16px; scrollbar-width: none; border-bottom: 1px solid var(--border-light); background: var(--card-bg); }
+    .alphabet-filter::-webkit-scrollbar { display: none; }
+    .alpha-pill { padding: 4px 12px; background: var(--pill-bg); border-radius: 16px; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px solid var(--pill-border); color: var(--pill-text); flex-shrink: 0; transition: 0.2s; }
+    .alpha-pill.active { background: #007bff; color: #fff; border-color: #007bff; }
+    
     .btn-group { display: flex; gap: 8px; margin-top: 10px; }
     .btn { flex: 1; padding: 14px; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; color: #fff; text-align: center; transition: 0.2s; }
     .btn-sm { padding: 10px 12px; font-size: 14px; }
@@ -183,12 +189,38 @@
 
   <!-- ==================== SCREEN 0: DASHBOARD ==================== -->
   <div id="screen-dashboard" class="screen">
-    <div class="sticky-header" style="margin-bottom: 12px; padding-bottom: 16px; border-bottom: none; top: 0;">
-      <h2>Dashboard</h2>
-      <div class="balance" style="color: var(--text-muted); font-size: 14px; font-weight: normal;">Total Outstanding Balance</div>
-      <div id="dashboardTotalBalance" style="font-size: 24px; font-weight: bold; color: #d32f2f; margin-top: 8px;">₹0</div>
+    <div class="sticky-header" style="margin-bottom: 0; padding: 16px 0 0 0; border-bottom: none; top: 0;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px;">
+        <h2 style="margin:0;">Dashboard</h2>
+        <!-- Compact Search Icon & Input -->
+        <div style="position: relative;">
+          <span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:12px;">🔍</span>
+          <input type="text" id="dashboardSearch" placeholder="Search..." style="margin:0; padding: 6px 10px 6px 26px; font-size: 13px; width: 130px; border-radius: 16px;" oninput="applyDashboardFilters()">
+        </div>
+      </div>
+      
+      <div class="balance" style="color: var(--text-muted); font-size: 14px; font-weight: normal; margin-top: 16px;">Total Outstanding</div>
+      <div id="dashboardTotalBalance" style="font-size: 24px; font-weight: bold; color: #d32f2f; margin-top: 4px;">₹0</div>
+      <div id="dashboardCustomerCount" style="font-size: 12px; font-weight: bold; color: var(--text-muted); margin-top: 4px;">0 Unique Customers</div>
+      
+      <!-- Sorting Controls -->
+      <div style="padding: 0 16px; margin-top: 16px;">
+        <select id="dashboardSort" onchange="applyDashboardFilters()" style="margin:0; padding: 8px; font-size: 13px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+          <option value="amt-desc">Sort: Amount (High to Low)</option>
+          <option value="amt-asc">Sort: Amount (Low to High)</option>
+          <option value="name-asc">Sort: Name (A to Z)</option>
+          <option value="name-desc">Sort: Name (Z to A)</option>
+        </select>
+      </div>
+
+      <!-- Alphabet Filter Row -->
+      <div class="alphabet-filter" id="alphabetFilter" style="margin-top: 12px;">
+        <!-- Populated via JS -->
+      </div>
     </div>
-    <div class="card" style="padding: 0; overflow: hidden;" id="dashboardContainer"></div>
+    
+    <div class="card" style="padding: 0; overflow: hidden; border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -1px;" id="dashboardContainer"></div>
   </div>
 
   <!-- ==================== SCREEN 1: VIEW ENTRY ==================== -->
@@ -243,14 +275,12 @@
         
         <!-- Header Block with Edit Customer Name Pencil Icon and PDF Download Icon -->
         <div style="position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
-          <!-- Edit Customer Name Icon (Left) -->
           <div class="no-print" style="position: absolute; left: 0; cursor: pointer; padding: 4px; font-size: 16px;" onclick="openEditCustomerModal()" title="Edit Customer Name">
             ✏️
           </div>
 
           <h2 id="dispCustomerName" style="margin: 0; padding: 0 32px;">Customer</h2>
 
-          <!-- PDF Statement Download Icon (Right) -->
           <div class="no-print" style="position: absolute; right: 0; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;" onclick="viewStatement()" title="Download PDF Statement">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -261,7 +291,6 @@
           </div>
         </div>
         <div class="balance" id="dispOverallBalance">Outstanding: ₹0</div>
-
       </div>
       
       <div style="display: flex; border-bottom: 2px dashed var(--border-color); margin-bottom: 12px; padding-bottom: 4px;">
@@ -404,6 +433,10 @@
   let currentUserName = "";
   let currentUserPic = "";
   
+  // Dashboard globals
+  let currentDashboardData = [];
+  let dashboardActiveAlphabet = 'ALL';
+  
   let entryDatePicker, editDatePicker;
 
   if ('serviceWorker' in navigator) {
@@ -493,6 +526,7 @@
     editDatePicker = flatpickr("#editDate", fpConfig);
     
     renderRecentCustomers(); 
+    initAlphabetFilter();
     
     const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
     document.getElementById('themeToggleBtn').innerText = currentTheme === 'dark' ? '☀️' : '🌙';
@@ -612,12 +646,32 @@
     document.getElementById('nav-' + screen).classList.add('active');
   }
 
+  // --- DASHBOARD FUNCTIONS ---
+  function initAlphabetFilter() {
+    const container = document.getElementById('alphabetFilter');
+    container.innerHTML = `<div class="alpha-pill active" onclick="setAlphabetFilter('ALL', this)">All</div>`;
+    for (let i = 65; i <= 90; i++) {
+      let letter = String.fromCharCode(i);
+      container.innerHTML += `<div class="alpha-pill" onclick="setAlphabetFilter('${letter}', this)">${letter}</div>`;
+    }
+  }
+
+  function setAlphabetFilter(letter, element) {
+    dashboardActiveAlphabet = letter;
+    document.querySelectorAll('.alpha-pill').forEach(el => el.classList.remove('active'));
+    element.classList.add('active');
+    applyDashboardFilters();
+  }
+
   async function navToDashboard() {
     switchScreen('dashboard');
     showLoading();
     try {
       const data = await apiGet('getDashboardData');
-      renderDashboard(data);
+      if (data && data.length >= 0) {
+        currentDashboardData = data;
+      }
+      applyDashboardFilters();
     } catch(e) {
       showToast("Failed to load dashboard data.", "error");
     } finally {
@@ -625,30 +679,62 @@
     }
   }
 
-  function renderDashboard(data) {
+  function applyDashboardFilters() {
     const container = document.getElementById('dashboardContainer');
     const totalElem = document.getElementById('dashboardTotalBalance');
+    const countElem = document.getElementById('dashboardCustomerCount');
+    const searchQ = document.getElementById('dashboardSearch').value.toLowerCase().trim();
+    const sortOpt = document.getElementById('dashboardSort').value;
+
+    let filtered = currentDashboardData.filter(cust => {
+      // 1. Only include customers with non-zero outstanding balances
+      if (cust.balance === 0) return false; 
+      
+      // 2. Filter by Search Query
+      if (searchQ && !cust.name.toLowerCase().includes(searchQ)) return false;
+
+      // 3. Filter by Alphabet
+      if (dashboardActiveAlphabet !== 'ALL' && !cust.name.toUpperCase().startsWith(dashboardActiveAlphabet)) return false;
+
+      return true;
+    });
+
+    // Apply Sorting
+    filtered.sort((a, b) => {
+      if (sortOpt === 'amt-desc') return b.balance - a.balance;
+      if (sortOpt === 'amt-asc') return a.balance - b.balance;
+      if (sortOpt === 'name-asc') return a.name.localeCompare(b.name);
+      if (sortOpt === 'name-desc') return b.name.localeCompare(a.name);
+    });
+
+    // Recalculate Totals
+    let totalOutstanding = 0;
+    filtered.forEach(c => totalOutstanding += c.balance);
+
+    // Update UI Header
+    totalElem.innerText = `₹${totalOutstanding.toLocaleString('en-IN')}`;
+    countElem.innerText = `${filtered.length} Unique Customers`;
+
     container.innerHTML = '';
     
-    if(!data || data.length === 0) {
-      container.innerHTML = '<div style="text-align:center; padding: 30px 16px; color: var(--text-light);">No outstanding balances.</div>';
-      totalElem.innerText = '₹0';
+    if (filtered.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding: 40px 16px; color: var(--text-light); font-size: 14px;">No matching records found.</div>';
       return;
     }
-    
-    let totalOutstanding = 0;
 
-    data.forEach(cust => {
-      totalOutstanding += cust.balance;
+    filtered.forEach((cust, index) => {
       let lastPayText = cust.lastPaymentAmount 
           ? `Last Pay: ₹${cust.lastPaymentAmount.toLocaleString('en-IN')} on ${cust.lastPaymentDate}` 
           : `<span style="color: #d32f2f;">No payments recorded</span>`;
           
       let html = `
         <div class="dashboard-item" onclick="jumpToCustomer('${cust.name}')">
-          <div>
-            <div style="font-weight: bold; font-size: 15px; color: var(--text-main); margin-bottom: 4px;">${cust.name}</div>
-            <div style="font-size: 12px; color: var(--text-muted);">${lastPayText}</div>
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="font-size: 12px; font-weight: bold; color: var(--text-muted); width: 20px; text-align: center;">${index + 1}</div>
+            <div>
+              <div style="font-weight: bold; font-size: 15px; color: var(--text-main); margin-bottom: 4px;">${cust.name}</div>
+              <div style="font-size: 12px; color: var(--text-muted);">${lastPayText}</div>
+            </div>
           </div>
           <div style="text-align: right;">
             <div style="font-weight: bold; font-size: 16px; color: #d32f2f;">₹${cust.balance.toLocaleString('en-IN')}</div>
@@ -657,8 +743,6 @@
       `;
       container.innerHTML += html;
     });
-
-    totalElem.innerText = `₹${totalOutstanding.toLocaleString('en-IN')}`;
   }
 
   function jumpToCustomer(name) {
@@ -668,6 +752,7 @@
     handleSearchChange();
   }
 
+  // --- ADD ENTRY & VIEW FUNCTIONS ---
   function navToAddEntry() {
     document.getElementById('entryCustomerInput').value = '';
     toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');
