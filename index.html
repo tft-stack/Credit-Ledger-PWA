@@ -200,7 +200,9 @@
         <div id="clearSearchBtn" onclick="clearSearch('searchCustomerInput', 'clearSearchBtn'); handleSearchChange();" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--border-color); color: var(--btn-text); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer; transition: background 0.3s, color 0.3s;">✕</div>
       </div>
       
-      <div style="text-align: right;">
+      <!-- Moved "+ Add New Entry" Button Directly Under Customer Name Section -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+        <button class="btn btn-outline btn-sm" style="width: auto; padding: 6px 14px; font-size: 13px; border-radius: 20px;" onclick="navToAddEntry()">+ Add New Entry</button>
         <span onclick="toggleFilters()" style="color: #007bff; font-size: 14px; font-weight: bold; cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 4px;">
           ⚙️ Filters <span id="filterArrow">▼</span>
         </span>
@@ -231,18 +233,24 @@
       </div>
     </div>
 
-    <div id="emptyState" class="card" style="text-align: center; padding: 30px 16px;">
+    <div id="emptyState" class="card" style="text-align: center; padding: 20px 16px;">
       <h3 style="color: var(--text-muted); margin-bottom: 16px; font-size: 16px;">Recent Customers</h3>
       <div id="recentCustomersList" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"></div>
-      <button class="btn btn-outline" style="margin-top: 24px; font-size: 14px; padding: 10px 20px; border-radius: 20px;" onclick="navToAddEntry()">+ Add New Entry</button>
     </div>
 
     <div class="card" id="ledgerCard" style="display:none; padding-top: 0;">
       <div class="sticky-header">
         
-        <!-- Updated Header Block with Inline PDF Icon -->
+        <!-- Header Block with Edit Customer Name Pencil Icon and PDF Download Icon -->
         <div style="position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+          <!-- Edit Customer Name Icon (Left) -->
+          <div class="no-print" style="position: absolute; left: 0; cursor: pointer; padding: 4px; font-size: 16px;" onclick="openEditCustomerModal()" title="Edit Customer Name">
+            ✏️
+          </div>
+
           <h2 id="dispCustomerName" style="margin: 0; padding: 0 32px;">Customer</h2>
+
+          <!-- PDF Statement Download Icon (Right) -->
           <div class="no-print" style="position: absolute; right: 0; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;" onclick="viewStatement()" title="Download PDF Statement">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -317,7 +325,20 @@
 
   <datalist id="customerList"></datalist>
 
-  <!-- ==================== EDIT MODAL ==================== -->
+  <!-- ==================== EDIT CUSTOMER NAME MODAL ==================== -->
+  <div id="editCustomerModal" class="modal-overlay">
+    <div class="card" style="width: 100%; max-width: 350px;">
+      <h3>Edit Customer Name</h3>
+      <label>Customer Name</label>
+      <input type="text" id="editCustomerNameInput" placeholder="Enter customer name">
+      <div class="btn-group">
+        <button class="btn btn-outline btn-sm" onclick="closeEditCustomerModal()">Cancel</button>
+        <button class="btn btn-blue btn-sm" onclick="saveCustomerName()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== EDIT TRANSACTION MODAL ==================== -->
   <div id="editModal" class="modal-overlay">
     <div class="card" style="width: 100%; max-width: 350px;">
       <h3 id="editModalTitle">Edit Transaction</h3>
@@ -944,16 +965,68 @@
     });
   }
 
+  // --- EDIT CUSTOMER NAME FUNCTIONS ---
+  function openEditCustomerModal() {
+    const currentName = document.getElementById('dispCustomerName').innerText;
+    if (!currentName) return;
+    document.getElementById('editCustomerNameInput').value = currentName;
+    document.getElementById('editCustomerModal').style.display = 'flex';
+  }
+
+  function closeEditCustomerModal() {
+    document.getElementById('editCustomerModal').style.display = 'none';
+  }
+
+  async function saveCustomerName() {
+    const oldName = document.getElementById('dispCustomerName').innerText.trim();
+    const newName = document.getElementById('editCustomerNameInput').value.trim();
+
+    if (!newName) { alert("Customer name cannot be empty."); return; }
+    if (oldName === newName) { closeEditCustomerModal(); return; }
+
+    closeEditCustomerModal();
+    showLoading();
+
+    try {
+      const res = await apiPost('updateCustomerName', { oldName: oldName, newName: newName });
+      if (res.status === 'success' || !res.error) {
+        showToast("Customer Name Updated!", "success");
+
+        allCustomers = allCustomers.map(c => c.toLowerCase() === oldName.toLowerCase() ? newName : c);
+        recentCustomers = recentCustomers.map(c => c.toLowerCase() === oldName.toLowerCase() ? newName : c);
+        localStorage.setItem('recentCustomers', JSON.stringify(recentCustomers));
+        renderRecentCustomers();
+
+        const datalist = document.getElementById('customerList');
+        datalist.innerHTML = ''; 
+        allCustomers.forEach(c => {
+          let opt = document.createElement('option'); opt.value = c; datalist.appendChild(opt);
+        });
+
+        document.getElementById('searchCustomerInput').value = newName;
+        toggleClearSearch('searchCustomerInput', 'clearSearchBtn');
+        await loadLedger();
+
+        const freshData = await apiGet('getInitialData');
+        localStorage.setItem('ledgerInitData', JSON.stringify(freshData));
+      } else {
+        showToast("Failed to update name: " + (res.error || "Unknown error"), "error");
+      }
+    } catch (e) {
+      showToast("Network Error: Could not update customer name.", "error");
+    } finally {
+      hideLoading();
+    }
+  }
+
   // --- NATIVE PDF GENERATION FOR RECEIPT PRINTER ---
   async function viewStatement() {
     const custName = document.getElementById('dispCustomerName').innerText;
     if (!custName) return;
 
-    // Clone ledger and prepare for PDF format
     const element = document.getElementById('ledgerCard').cloneNode(true);
     element.querySelectorAll('.no-print, .action-icons').forEach(el => el.remove());
 
-    // Optimize for Thermal Receipt Printer (80mm roll) and Fix Right-Shift
     element.style.display = 'block';
     element.style.width = '280px'; 
     element.style.maxWidth = '280px';
