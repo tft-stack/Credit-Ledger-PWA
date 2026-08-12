@@ -1047,20 +1047,18 @@
             siblingAttr = `data-sibling-id="${isLeft ? rightId : leftId}"`;
         }
         
-        // Note: Added `id="check_${item.id}"` and passed `this` to `handleSettleCheck(this)`
+        // Checkbox moved to the right with margin-left: 8px to prevent accidental deletes
         return `
           <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-              <div style="display: flex; align-items: flex-start; gap: 8px;">
-                <input type="checkbox" id="check_${item.id}" class="settle-checkbox no-print" value="${item.id}" ${siblingAttr} onchange="handleSettleCheck(this)" style="width:16px; height:16px; margin-top:2px; cursor: pointer; accent-color: #2e7d32;">
-                <div>
-                  <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px;">${shortDate}</div>
-                  <div style="font-weight: bold; font-size: 14px; color: var(--text-main);">₹${item.amount.toLocaleString('en-IN')}</div>
-                </div>
+              <div>
+                <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px;">${shortDate}</div>
+                <div style="font-weight: bold; font-size: 14px; color: var(--text-main);">₹${item.amount.toLocaleString('en-IN')}</div>
               </div>
-              <div class="action-icons no-print" style="display: flex; gap: 4px;">
+              <div class="action-icons no-print" style="display: flex; align-items: center; gap: 4px;">
                 <button class="icon-btn" onclick="openModal(${item.id})" style="background: none; border: none; padding: 2px; cursor: pointer; color: #007bff; font-size: 14px;">✏️</button>
                 <button class="icon-btn" onclick="promptDelete(${item.id})" style="background: none; border: none; padding: 2px; cursor: pointer; color: #d32f2f; font-size: 14px;">🗑️</button>
+                <input type="checkbox" id="check_${item.id}" class="settle-checkbox" value="${item.id}" ${siblingAttr} onchange="handleSettleCheck(this)" style="width:18px; height:18px; margin-left: 8px; cursor: pointer; accent-color: #2e7d32;">
               </div>
             </div>
             ${noteHtml}
