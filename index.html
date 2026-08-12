@@ -42,7 +42,7 @@
     .card { background: var(--card-bg); border-radius: 10px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); transition: background 0.3s; }
     h2, h3 { margin: 0 0 12px 0; }
     label { font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 6px; }
-    select, input { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 15px; margin-bottom: 12px; background: var(--input-bg); color: var(--text-main); transition: background 0.3s, color 0.3s, border-color 0.3s; }
+    select, input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 15px; margin-bottom: 12px; background: var(--input-bg); color: var(--text-main); transition: background 0.3s, color 0.3s, border-color 0.3s; }
     input:focus, select:focus { outline: none; border-color: #007bff; }
     input::placeholder { color: var(--text-light); }
     
@@ -50,7 +50,6 @@
     .month-pill { background: var(--pill-bg); border: 1px solid var(--pill-border); border-radius: 16px; padding: 8px 0; font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; user-select: none; color: var(--pill-text); transition: background 0.3s, color 0.3s, border-color 0.3s; }
     .month-pill.active { background: #007bff; color: #fff; border-color: #007bff; }
     
-    /* New Dashboard Alphabet Filter Styling */
     .alphabet-filter { display: flex; overflow-x: auto; gap: 8px; padding: 12px 16px; scrollbar-width: none; border-bottom: 1px solid var(--border-light); background: var(--card-bg); }
     .alphabet-filter::-webkit-scrollbar { display: none; }
     .alpha-pill { padding: 4px 12px; background: var(--pill-bg); border-radius: 16px; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px solid var(--pill-border); color: var(--pill-text); flex-shrink: 0; transition: 0.2s; }
@@ -93,15 +92,7 @@
     .toast-success { background-color: #2e7d32; }
     .toast-error { background-color: #d32f2f; }
 
-    .flatpickr-calendar { 
-      width: 90vw !important; 
-      max-width: 320px !important; 
-      left: 50% !important; 
-      transform: translateX(-50%) !important; 
-      border-radius: 12px !important; 
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3) !important; 
-      padding-bottom: 8px !important; 
-    }
+    .flatpickr-calendar { width: 90vw !important; max-width: 320px !important; left: 50% !important; transform: translateX(-50%) !important; border-radius: 12px !important; box-shadow: 0 8px 24px rgba(0,0,0,0.3) !important; padding-bottom: 8px !important; }
     .flatpickr-calendar:before, .flatpickr-calendar:after { display: none !important; }
     .flatpickr-innerContainer, .flatpickr-rContainer, .flatpickr-days { width: 100% !important; min-width: 100% !important; max-width: 100% !important; }
     .flatpickr-weekdays { width: 100% !important; display: flex !important; }
@@ -131,12 +122,8 @@
 
     function initTheme() {
       const manualTheme = sessionStorage.getItem('themePref');
-      if (manualTheme) {
-        applyTheme(manualTheme);
-      } else {
-        const hour = new Date().getHours();
-        applyTheme((hour >= 18 || hour < 6) ? 'dark' : 'light');
-      }
+      if (manualTheme) { applyTheme(manualTheme); } 
+      else { const hour = new Date().getHours(); applyTheme((hour >= 18 || hour < 6) ? 'dark' : 'light'); }
     }
 
     function toggleTheme() {
@@ -171,17 +158,13 @@
   <div id="app-header">
     <div style="position: relative;">
       <img id="profileIcon" src="" alt="Profile" style="width: 38px; height: 38px; border-radius: 50%; cursor: pointer; border: 2px solid var(--border-color); object-fit: cover; display: block;" onclick="toggleProfilePopup()">
-      
       <div id="profilePopup" style="display: none; position: absolute; top: 48px; left: 0; background: var(--card-bg); padding: 16px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 2000; min-width: 220px; border: 1px solid var(--border-light); flex-direction: column;">
         <div style="font-weight: bold; font-size: 16px; color: var(--text-main); margin-bottom: 4px;" id="profileName">Name</div>
         <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; word-break: break-all;" id="profileEmail">email@example.com</div>
         <button class="btn btn-outline-red btn-sm" style="width: 100%; padding: 8px; font-size: 13px;" onclick="logout()">🚪 Sign Out</button>
       </div>
     </div>
-    
-    <div id="themeToggleBtn" onclick="toggleTheme()" style="font-size: 24px; cursor: pointer; user-select: none; transition: transform 0.2s;">
-      🌙
-    </div>
+    <div id="themeToggleBtn" onclick="toggleTheme()" style="font-size: 24px; cursor: pointer; user-select: none; transition: transform 0.2s;">🌙</div>
   </div>
 
   <div id="loadingOverlay"><div class="spinner"></div></div>
@@ -193,18 +176,16 @@
       
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px;">
         <h2 style="margin:0;">Dashboard</h2>
-        <!-- Compact Search Icon & Input -->
         <div style="position: relative;">
           <span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:12px;">🔍</span>
           <input type="text" id="dashboardSearch" placeholder="Search..." style="margin:0; padding: 6px 10px 6px 26px; font-size: 13px; width: 130px; border-radius: 16px;" oninput="applyDashboardFilters()">
         </div>
       </div>
       
-      <div class="balance" style="color: var(--text-muted); font-size: 14px; font-weight: normal; margin-top: 16px;">Total Outstanding</div>
+      <div class="balance" style="color: var(--text-muted); font-size: 14px; font-weight: normal; margin-top: 16px;">Total Pending Outstanding</div>
       <div id="dashboardTotalBalance" style="font-size: 24px; font-weight: bold; color: #d32f2f; margin-top: 4px;">₹0</div>
       <div id="dashboardCustomerCount" style="font-size: 12px; font-weight: bold; color: var(--text-muted); margin-top: 4px;">0 Unique Customers</div>
       
-      <!-- Sorting Controls -->
       <div style="padding: 0 16px; margin-top: 16px;">
         <select id="dashboardSort" onchange="applyDashboardFilters()" style="margin:0; padding: 8px; font-size: 13px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
           <option value="amt-desc">Sort: Amount (High to Low)</option>
@@ -214,10 +195,7 @@
         </select>
       </div>
 
-      <!-- Alphabet Filter Row -->
-      <div class="alphabet-filter" id="alphabetFilter" style="margin-top: 12px;">
-        <!-- Populated via JS -->
-      </div>
+      <div class="alphabet-filter" id="alphabetFilter" style="margin-top: 12px;"></div>
     </div>
     
     <div class="card" style="padding: 0; overflow: hidden; border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -1px;" id="dashboardContainer"></div>
@@ -232,7 +210,6 @@
         <div id="clearSearchBtn" onclick="clearSearch('searchCustomerInput', 'clearSearchBtn'); handleSearchChange();" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--border-color); color: var(--btn-text); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer; transition: background 0.3s, color 0.3s;">✕</div>
       </div>
       
-      <!-- Moved "+ Add New Entry" Button Directly Under Customer Name Section -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
         <button class="btn btn-outline btn-sm" style="width: auto; padding: 6px 14px; font-size: 13px; border-radius: 20px;" onclick="navToAddEntry()">+ Add New Entry</button>
         <span onclick="toggleFilters()" style="color: #007bff; font-size: 14px; font-weight: bold; cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 4px;">
@@ -273,14 +250,9 @@
     <div class="card" id="ledgerCard" style="display:none; padding-top: 0;">
       <div class="sticky-header">
         
-        <!-- Header Block with Edit Customer Name Pencil Icon and PDF Download Icon -->
         <div style="position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
-          <div class="no-print" style="position: absolute; left: 0; cursor: pointer; padding: 4px; font-size: 16px;" onclick="openEditCustomerModal()" title="Edit Customer Name">
-            ✏️
-          </div>
-
+          <div class="no-print" style="position: absolute; left: 0; cursor: pointer; padding: 4px; font-size: 16px;" onclick="openEditCustomerModal()" title="Edit Customer Name">✏️</div>
           <h2 id="dispCustomerName" style="margin: 0; padding: 0 32px;">Customer</h2>
-
           <div class="no-print" style="position: absolute; right: 0; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;" onclick="viewStatement()" title="Download PDF Statement">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -300,7 +272,13 @@
 
       <div id="ledgerRowsContainer"></div>
 
+      <!-- New Sticky Footer with Contextual "Save Paid" Button -->
       <div style="border-top: 1px dashed var(--border-color); margin-top: 16px; padding-top: 12px; position: sticky; bottom: 0; background: var(--card-bg); z-index: 10;" class="no-print">
+        
+        <div id="saveSettledBtnContainer" style="display: none; margin-bottom: 10px;">
+          <button class="btn btn-blue btn-sm" style="width: 100%; padding: 10px; border-radius: 8px; font-size: 14px;" onclick="submitSettled()">✔️ Save Selected as Paid</button>
+        </div>
+        
         <div class="btn-group">
           <button class="btn btn-red btn-sm" onclick="routeToAddData('purchase')">Purchase</button>
           <button class="btn btn-green btn-sm" onclick="routeToAddData('payment')">Payment</button>
@@ -313,7 +291,6 @@
   <div id="screen-enter" class="screen">
     <div class="card">
       <h3>Add Entry</h3>
-      
       <label>Customer Name</label>
       <div style="position: relative; margin-bottom: 8px;">
         <input type="text" id="entryCustomerInput" list="customerList" placeholder="🔍 Search or type new..." oninput="checkSimilarity(this.value); toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
@@ -327,25 +304,20 @@
 
       <div style="background: var(--bg-color); padding: 12px; border-radius: 8px; border: 1px solid var(--border-light); margin-top: 12px; transition: background 0.3s, border-color 0.3s;">
         <label>New Entry</label>
-        
         <div style="display: flex; gap: 8px; margin-bottom: 16px;">
           <button id="typeTogglePurchase" class="btn btn-red btn-sm" style="flex: 1;" onclick="setAddType('Goods Purchased')">Purchase</button>
           <button id="typeTogglePayment" class="btn btn-outline-green btn-sm" style="flex: 1;" onclick="setAddType('Amount Received')">Payment</button>
         </div>
-        
         <input type="hidden" id="entryTypeSelected" value="Goods Purchased">
         <input type="number" id="entryAmount" placeholder="Amount (₹)">
-        
         <div id="addBFContainer" style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
           <input type="checkbox" id="broughtForward" onchange="toggleBF()" style="width:18px; height:18px; margin:0;">
           <label for="broughtForward" style="margin:0; text-transform:none; font-size:14px; color: var(--text-main);">Brought forward</label>
         </div>
-
         <div style="position: relative; margin-bottom: 12px;">
           <input type="text" id="entryDate" required style="margin-bottom: 0; padding-right: 40px; background: var(--input-bg);" placeholder="Select Date" readonly>
           <div onclick="openDatePicker('entryDate')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px;">📅</div>
         </div>
-
         <input type="text" id="entryNotes" placeholder="Notes (Optional)">
         <button class="btn btn-blue" style="width: 100%; margin-top: 10px;" onclick="submitEntry()">Save Entry</button>
       </div>
@@ -687,31 +659,23 @@
     const sortOpt = document.getElementById('dashboardSort').value;
 
     let filtered = currentDashboardData.filter(cust => {
-      // 1. Only include customers with non-zero outstanding balances
       if (cust.balance === 0) return false; 
-      
-      // 2. Filter by Search Query
       if (searchQ && !cust.name.toLowerCase().includes(searchQ)) return false;
-
-      // 3. Filter by Alphabet
       if (dashboardActiveAlphabet !== 'ALL' && !cust.name.toUpperCase().startsWith(dashboardActiveAlphabet)) return false;
-
       return true;
     });
 
-    // Apply Sorting
     filtered.sort((a, b) => {
       if (sortOpt === 'amt-desc') return b.balance - a.balance;
       if (sortOpt === 'amt-asc') return a.balance - b.balance;
       if (sortOpt === 'name-asc') return a.name.localeCompare(b.name);
       if (sortOpt === 'name-desc') return b.name.localeCompare(a.name);
+      return 0;
     });
 
-    // Recalculate Totals
     let totalOutstanding = 0;
     filtered.forEach(c => totalOutstanding += c.balance);
 
-    // Update UI Header
     totalElem.innerText = `₹${totalOutstanding.toLocaleString('en-IN')}`;
     countElem.innerText = `${filtered.length} Unique Customers`;
 
@@ -961,8 +925,45 @@
     
     showLoading();
     try {
+      // Hide Save Button
+      document.getElementById('saveSettledBtnContainer').style.display = 'none';
       const data = await apiGet('getFilteredLedger', { customerName: name, selectedFY: fy, selectedMonths: selectedMonths.join(',') });
       renderLedger(data);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  // Handle showing the Save button dynamically when checkboxes are ticked
+  function handleSettleCheck() {
+    const checkedCount = document.querySelectorAll('.settle-checkbox:checked').length;
+    const saveBtn = document.getElementById('saveSettledBtnContainer');
+    if (checkedCount > 0) {
+      saveBtn.style.display = 'block';
+    } else {
+      saveBtn.style.display = 'none';
+    }
+  }
+
+  // Sends the checked row IDs to the backend
+  async function submitSettled() {
+    const checkedBoxes = document.querySelectorAll('.settle-checkbox:checked');
+    let idsToUpdate = [];
+    checkedBoxes.forEach(box => idsToUpdate.push(parseInt(box.value)));
+
+    if (idsToUpdate.length === 0) return;
+
+    showLoading();
+    try {
+      const res = await apiPost('saveSettledState', { ids: idsToUpdate });
+      if (res.status === 'success' || !res.error) {
+        showToast(`${idsToUpdate.length} Items Marked as Paid!`, "success");
+        await loadLedger(); // Refresh to hide settled items and calc new totals
+      } else {
+        showToast("Failed to update status.", "error");
+      }
+    } catch (e) {
+      showToast("Network Error.", "error");
     } finally {
       hideLoading();
     }
@@ -977,7 +978,7 @@
     
     const balElem = document.getElementById('dispOverallBalance');
     if (data.overallBalance >= 0) {
-      balElem.innerText = `Outstanding: ₹${data.overallBalance.toLocaleString('en-IN')}`;
+      balElem.innerText = `Pending: ₹${data.overallBalance.toLocaleString('en-IN')}`;
       balElem.style.color = '#d32f2f';
     } else {
       balElem.innerText = `Advance: ₹${Math.abs(data.overallBalance).toLocaleString('en-IN')}`;
@@ -988,7 +989,7 @@
     container.innerHTML = ''; 
 
     if (data.history.length === 0) {
-      container.innerHTML = '<div style="color: var(--text-light); font-size:13px; text-align:center; padding: 20px;">No transactions found for this period.</div>';
+      container.innerHTML = '<div style="color: var(--text-light); font-size:13px; text-align:center; padding: 20px;">No pending transactions found.</div>';
       return;
     }
 
@@ -1028,9 +1029,12 @@
         return `
           <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-              <div>
-                <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px;">${shortDate}</div>
-                <div style="font-weight: bold; font-size: 14px; color: var(--text-main);">₹${item.amount.toLocaleString('en-IN')}</div>
+              <div style="display: flex; align-items: flex-start; gap: 8px;">
+                <input type="checkbox" class="settle-checkbox no-print" value="${item.id}" onchange="handleSettleCheck()" style="width:16px; height:16px; margin-top:2px; cursor: pointer; accent-color: #2e7d32;">
+                <div>
+                  <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px;">${shortDate}</div>
+                  <div style="font-weight: bold; font-size: 14px; color: var(--text-main);">₹${item.amount.toLocaleString('en-IN')}</div>
+                </div>
               </div>
               <div class="action-icons no-print" style="display: flex; gap: 4px;">
                 <button class="icon-btn" onclick="openModal(${item.id})" style="background: none; border: none; padding: 2px; cursor: pointer; color: #007bff; font-size: 14px;">✏️</button>
@@ -1306,7 +1310,6 @@
       hideLoading();
     }
   }
-  
 </script>
 </body>
 </html>
