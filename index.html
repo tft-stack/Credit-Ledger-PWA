@@ -408,6 +408,7 @@
   // Dashboard globals
   let currentDashboardData = [];
   let dashboardActiveAlphabet = 'ALL';
+  let isDashboardStale = true;
   
   let entryDatePicker, editDatePicker;
 
@@ -637,20 +638,35 @@
 
   async function navToDashboard() {
     switchScreen('dashboard');
-    showLoading();
-    try {
-      const data = await apiGet('getDashboardData');
-      if (data && data.length >= 0) {
-        currentDashboardData = data;
-      }
+
+    // 1. INSTANT LOAD: If we already have data, render it immediately!
+    if (currentDashboardData && currentDashboardData.length > 0) {
       applyDashboardFilters();
-    } catch(e) {
-      showToast("Failed to load dashboard data.", "error");
-    } finally {
-      hideLoading();
+    }
+
+    // 2. SMART FETCH: Only call the server if data is missing or a change was made
+    if (isDashboardStale || !currentDashboardData || currentDashboardData.length === 0) {
+      
+      // Only show the blocking loading spinner if the screen is completely empty
+      if (!currentDashboardData || currentDashboardData.length === 0) {
+        showLoading(); 
+      }
+      
+      try {
+        const data = await apiGet('getDashboardData');
+        if (data && data.length >= 0) {
+          currentDashboardData = data;
+          isDashboardStale = false; // Reset the flag because we now have fresh data
+          applyDashboardFilters(); // Silently update the UI with fresh data
+        }
+      } catch(e) {
+        showToast("Failed to sync latest dashboard.", "error");
+      } finally {
+        hideLoading();
+      }
     }
   }
-
+  
   function applyDashboardFilters() {
     const container = document.getElementById('dashboardContainer');
     const totalElem = document.getElementById('dashboardTotalBalance');
@@ -873,7 +889,8 @@
       const result = await apiPost('addEntry', { customerName: name, type: type, amount: amount, date: date, notes: notes });
       if(result.status === 'success' || !result.error) {
          showToast("Entry Saved Successfully!", "success");
-         
+         isDashboardStale = true;
+        
          document.getElementById('entryAmount').value = '';
          document.getElementById('entryNotes').value = '';
          document.getElementById('similarityWarning').style.display = 'none';
@@ -968,6 +985,7 @@
       const res = await apiPost('saveSettledState', { ids: idsToUpdate });
       if (res.status === 'success' || !res.error) {
         showToast(`${idsToUpdate.length} Items Marked as Paid!`, "success");
+        isDashboardStale = true;
         await loadLedger(); // Refresh to hide settled items and calc new totals
       } else {
         showToast("Failed to update status.", "error");
@@ -1100,6 +1118,7 @@
       const res = await apiPost('updateCustomerName', { oldName: oldName, newName: newName });
       if (res.status === 'success' || !res.error) {
         showToast("Customer Name Updated!", "success");
+        isDashboardStale = true;
 
         allCustomers = allCustomers.map(c => c.toLowerCase() === oldName.toLowerCase() ? newName : c);
         recentCustomers = recentCustomers.map(c => c.toLowerCase() === oldName.toLowerCase() ? newName : c);
@@ -1245,8 +1264,9 @@
     try {
       const res = await apiPost('deleteEntry', { id: id, customerName: custName, amount: row.amount, type: row.type });
       if(res.status === 'success' || !res.error) {
-         showToast("Transaction Deleted", "success");
-         await loadLedger();
+        showToast("Transaction Deleted", "success");
+        isDashboardStale = true;
+        await loadLedger();
       } else {
          showToast("Failed to delete.", "error");
       }
@@ -1320,6 +1340,7 @@
       });
       if (res.status === 'success' || !res.error) {
         showToast("Changes Saved Successfully!", "success");
+        isDashboardStale = true;
         await loadLedger();
       } else {
         showToast("Failed to save changes.", "error");
