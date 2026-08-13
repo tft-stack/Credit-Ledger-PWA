@@ -1034,21 +1034,31 @@
 
   function addDetailRow() {
     const container = document.getElementById('detailsContainer');
+    const rows = document.querySelectorAll('.detail-row');
+    
+    // 1. Determine the default date
+    let defaultDate = new Date().toISOString().split('T')[0]; // Defaults to today
+    
+    // If there is already at least one row, grab the date from the FIRST row
+    if (rows.length > 0) {
+      const firstDateInput = rows[0].querySelector('.detail-date').value;
+      if (firstDateInput) {
+        defaultDate = firstDateInput;
+      }
+    }
+
     const rowDiv = document.createElement('div');
     rowDiv.className = 'detail-row';
-    
-    // Default to today's date
-    const today = new Date().toISOString().split('T')[0];
 
     rowDiv.innerHTML = `
       <button type="button" class="detail-remove-btn" onclick="removeDetailRow(this)" title="Remove Item">✕</button>
       
-      <label>Fruit / Product</label>
+      <label>Fruit</label>
       <input type="text" class="detail-fruit" placeholder="e.g., Apple, Mango" oninput="calculateDetails()" style="margin-bottom: 10px;">
       
       <div class="detail-grid">
         <div>
-          <label>Quantity (Kg/Box)</label>
+          <label>Quantity</label>
           <input type="number" class="detail-qty" placeholder="0" min="0" step="0.01" oninput="calculateDetails()">
         </div>
         <div>
@@ -1060,7 +1070,7 @@
       <div class="detail-grid" style="align-items: center; margin-bottom: 0;">
         <div>
           <label>Date of Purchase</label>
-          <input type="date" class="detail-date" value="${today}">
+          <input type="date" class="detail-date" value="${defaultDate}" onchange="syncMainDate()">
         </div>
         <div style="text-align: right; padding-right: 4px;">
           <div style="font-size: 11px; color: var(--text-muted);">Row Total</div>
@@ -1070,7 +1080,23 @@
     `;
     
     container.appendChild(rowDiv);
-    calculateDetails(); // Trigger calculation immediately
+    calculateDetails(); 
+    
+    // 2. If this is the FIRST row being added, sync its date to the main broad entry date
+    if (rows.length === 0) {
+       syncMainDate();
+    }
+  }
+
+  // Helper function to sync the broad entry date with the first detailed row
+  function syncMainDate() {
+    const rows = document.querySelectorAll('.detail-row');
+    if (rows.length > 0) {
+      const firstDate = rows[0].querySelector('.detail-date').value;
+      if (firstDate) {
+        document.getElementById('entryDate').value = firstDate;
+      }
+    }
   }
 
   function removeDetailRow(btn) {
