@@ -139,10 +139,10 @@
     }
 
     /* Detailed Items UI Styles */
-    /* Compact Single-Row Detailed Items UI */
+    /* Clean Display Grid for Saved Items */
     .compact-header {
-      display: none; /* Shown via JS when rows > 0 */
-      grid-template-columns: 2.2fr 1.2fr 1.5fr 2fr 1.5fr 45px; 
+      display: none; 
+      grid-template-columns: 2fr 1fr 1.3fr 1.3fr 1.5fr 75px; 
       gap: 4px;
       margin-bottom: 6px;
       font-size: 9px;
@@ -150,56 +150,42 @@
       color: var(--text-muted);
       text-transform: uppercase;
       text-align: center;
-      line-height: 1.1;
     }
     .compact-header div:first-child { text-align: left; }
     .compact-header div:nth-child(5) { text-align: right; }
 
     .compact-row {
       display: grid;
-      grid-template-columns: 2.2fr 1.2fr 1.5fr 2fr 1.5fr 45px; 
+      grid-template-columns: 2fr 1fr 1.3fr 1.3fr 1.5fr 75px; 
       gap: 4px;
       align-items: center;
-      margin-bottom: 6px;
-    }
-    .compact-row input {
-      width: 100%;
-      padding: 6px 2px;
+      margin-bottom: 8px;
       font-size: 12px;
-      margin: 0;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      background: var(--card-bg);
       color: var(--text-main);
       text-align: center;
+      padding: 6px 0;
+      border-bottom: 1px dashed var(--border-light);
     }
-    .compact-row input.detail-fruit { text-align: left; padding-left: 4px; }
-    .compact-row input.detail-date { font-size: 10px; padding: 6px 0; }
+    .compact-row div:first-of-type { text-align: left; font-weight: bold; }
     
-    .compact-row .detail-total {
-      font-size: 12px;
-      font-weight: bold;
-      color: #007bff;
-      text-align: right;
-    }
-
     /* Action Buttons (Small circles) */
     .item-action-btn {
-      width: 20px;
-      height: 20px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
-      font-size: 13px;
+      font-size: 12px;
       cursor: pointer;
       border: none;
       color: white;
       box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
-    .btn-remove { background: #d32f2f; }
-    .btn-add-row { background: #28a745; margin-left: 4px; }
+    .btn-modify { background: #f39c12; } /* Orange for Edit */
+    .btn-remove { background: #d32f2f; } /* Red for Delete */
+    .btn-add-row { background: #28a745; } /* Green for Add */
     
   </style>
 
@@ -281,7 +267,7 @@
 
       <div class="alphabet-filter" id="alphabetFilter" style="margin-top: 12px; border-bottom: none;"></div>
       
-      <!-- NEW: Clickable Header Row for Sorting -->
+      <!-- Clickable Header Row for Sorting -->
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: var(--pill-bg); border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase;">
         <div style="width: 20px; text-align: center;">S No.</div>
         <div style="flex: 1; padding-left: 14px; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 4px;" onclick="toggleDashboardSort('name')">
@@ -386,7 +372,7 @@
 
       <div id="ledgerRowsContainer"></div>
 
-      <!-- New Sticky Footer with Contextual "Save Paid" Button -->
+      <!-- Sticky Footer with Contextual "Save Paid" Button -->
       <div style="border-top: 1px dashed var(--border-color); margin-top: 16px; padding-top: 12px; position: sticky; bottom: 0; background: var(--card-bg); z-index: 10;" class="no-print">
         
         <div id="saveSettledBtnContainer" style="display: none; margin-bottom: 10px;">
@@ -454,8 +440,8 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
           <span style="font-size: 13px; font-weight: bold; color: var(--text-muted);">Enter Item Details</span>
           
-          <!-- New Icon-Only Add Button -->
-          <button type="button" id="initialAddBtn" onclick="addDetailRow()" style="background: #007bff; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Add Items">
+          <!-- Icon-Only Add Button targeting the Modal -->
+          <button type="button" id="initialAddBtn" onclick="openItemModal()" style="background: #007bff; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Add Items">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -463,7 +449,7 @@
           </button>
         </div>
 
-        <!-- Dynamic Header (Matches the new labels) -->
+        <!-- Dynamic Header -->
         <div id="detailsHeader" class="compact-header">
           <div>Fruit</div>
           <div>Quantity</div>
@@ -547,6 +533,35 @@
       <div class="btn-group">
         <button class="btn btn-outline btn-sm" onclick="closeDeleteModal()">Cancel</button>
         <button class="btn btn-red btn-sm" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ITEM DETAIL MODAL ==================== -->
+  <div id="itemModalOverlay" class="modal-overlay no-print" style="z-index: 100;">
+    <div class="card modal" style="width: 90%; max-width: 350px; background: var(--card-bg); padding: 20px; border-radius: 10px;">
+      <h3 style="margin-top: 0; margin-bottom: 16px;">Item Details</h3>
+      
+      <label>Fruit</label>
+      <input type="text" id="modalFruit" placeholder="e.g., Apple, Mango" style="width: 100%; margin-bottom: 12px; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+        <div>
+          <label>Quantity</label>
+          <input type="number" id="modalQty" placeholder="0" min="0" step="0.01" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+        </div>
+        <div>
+          <label>Unit Price (₹)</label>
+          <input type="number" id="modalPrice" placeholder="0" min="0" step="0.01" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+        </div>
+      </div>
+      
+      <label>Purchase Date</label>
+      <input type="date" id="modalDate" style="width: 100%; margin-bottom: 20px; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+      
+      <div style="display: flex; gap: 10px;">
+        <button class="btn btn-outline" style="flex: 1;" onclick="closeItemModal()">Cancel</button>
+        <button class="btn btn-blue" style="flex: 1;" onclick="saveItemModal()">Save</button>
       </div>
     </div>
   </div>
@@ -807,10 +822,8 @@
 
   function toggleDashboardSort(col) {
     if (dashboardSortCol === col) {
-      // Toggle direction if clicking the same column
       dashboardSortDir = dashboardSortDir === 'asc' ? 'desc' : 'asc';
     } else {
-      // Switch column, set default directions (amount=high to low, name=A-Z)
       dashboardSortCol = col;
       dashboardSortDir = col === 'amount' ? 'desc' : 'asc';
     }
@@ -820,22 +833,18 @@
   function resetViewEntry() {
     document.getElementById('searchCustomerInput').value = '';
     toggleClearSearch('searchCustomerInput', 'clearSearchBtn');
-    clearFilters(); // Resets month/FY filters back to default
-    handleSearchChange(); // Refreshes the view state
+    clearFilters(); 
+    handleSearchChange(); 
   }
 
   async function navToDashboard() {
     switchScreen('dashboard');
 
-    // 1. INSTANT LOAD: If we already have data, render it immediately!
     if (currentDashboardData && currentDashboardData.length > 0) {
       applyDashboardFilters();
     }
 
-    // 2. SMART FETCH: Only call the server if data is missing or a change was made
     if (isDashboardStale || !currentDashboardData || currentDashboardData.length === 0) {
-      
-      // Only show the blocking loading spinner if the screen is completely empty
       if (!currentDashboardData || currentDashboardData.length === 0) {
         showLoading(); 
       }
@@ -844,8 +853,8 @@
         const data = await apiGet('getDashboardData');
         if (data && data.length >= 0) {
           currentDashboardData = data;
-          isDashboardStale = false; // Reset the flag because we now have fresh data
-          applyDashboardFilters(); // Silently update the UI with fresh data
+          isDashboardStale = false; 
+          applyDashboardFilters(); 
         }
       } catch(e) {
         showToast("Failed to sync latest dashboard.", "error");
@@ -860,14 +869,12 @@
     const totalElem = document.getElementById('dashboardTotalBalance');
     const countElem = document.getElementById('dashboardCustomerCount');
 
-    // 1. Filter by Alphabet only (Search bar removed)
     let filtered = currentDashboardData.filter(cust => {
       if (cust.balance === 0) return false; 
       if (dashboardActiveAlphabet !== 'ALL' && !cust.name.toUpperCase().startsWith(dashboardActiveAlphabet)) return false;
       return true;
     });
 
-    // 2. Sort based on Clickable Headers
     filtered.sort((a, b) => {
       if (dashboardSortCol === 'amount') {
         return dashboardSortDir === 'asc' ? a.balance - b.balance : b.balance - a.balance;
@@ -876,7 +883,6 @@
       }
     });
 
-    // 3. Update UI Sorting Arrows
     document.getElementById('sortIconName').innerText = dashboardSortCol === 'name' ? (dashboardSortDir === 'asc' ? '▲' : '▼') : '';
     document.getElementById('sortIconAmount').innerText = dashboardSortCol === 'amount' ? (dashboardSortDir === 'asc' ? '▲' : '▼') : '';
 
@@ -1056,48 +1062,111 @@
   }
 
   // ==========================================
-  // DETAILED ITEMS (POS LOGIC)
+  // ITEM DETAIL MODAL LOGIC
   // ==========================================
+  let editingRow = null; 
 
-  function addDetailRow() {
-    const container = document.getElementById('detailsContainer');
-    const rows = document.querySelectorAll('.detail-row');
+  function openItemModal(btn = null) {
+    const modal = document.getElementById('itemModalOverlay');
     
-    // Determine the default date
+    // Determine default date (Today, or the date from row 1)
     let defaultDate = new Date().toISOString().split('T')[0];
+    const rows = document.querySelectorAll('.detail-row');
     if (rows.length > 0) {
       const firstDateInput = rows[0].querySelector('.detail-date').value;
       if (firstDateInput) defaultDate = firstDateInput;
     }
 
-    const rowDiv = document.createElement('div');
-    rowDiv.className = 'compact-row detail-row';
-
-    // The new Single-Line Compact Row
-    rowDiv.innerHTML = `
-      <input type="text" class="detail-fruit" placeholder="Fruit" oninput="calculateDetails()">
-      <input type="number" class="detail-qty" placeholder="Qty" min="0" step="0.01" oninput="calculateDetails()">
-      <input type="number" class="detail-price" placeholder="Price" min="0" step="0.01" oninput="calculateDetails()">
-      <input type="date" class="detail-date" value="${defaultDate}" onchange="syncMainDate()">
-      <div class="detail-total">₹0</div>
-      
-      <div style="display: flex; align-items: center; justify-content: flex-end;">
-        <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this)" title="Remove">✕</button>
-        <button type="button" class="item-action-btn btn-add-row" onclick="addDetailRow()" title="Add Row">＋</button>
-      </div>
-    `;
-    
-    container.appendChild(rowDiv);
-    
-    updateRowButtons(); // Magic function to move the + button
-    calculateDetails(); 
-    
-    if (rows.length === 0) {
-       syncMainDate();
+    if (btn) {
+      // EDIT MODE: Populate modal with existing row data
+      editingRow = btn.closest('.detail-row');
+      document.getElementById('modalFruit').value = editingRow.querySelector('.detail-fruit').value;
+      document.getElementById('modalQty').value = editingRow.querySelector('.detail-qty').value;
+      document.getElementById('modalPrice').value = editingRow.querySelector('.detail-price').value;
+      document.getElementById('modalDate').value = editingRow.querySelector('.detail-date').value;
+    } else {
+      // ADD MODE: Clear modal for new entry
+      editingRow = null;
+      document.getElementById('modalFruit').value = '';
+      document.getElementById('modalQty').value = '';
+      document.getElementById('modalPrice').value = '';
+      document.getElementById('modalDate').value = defaultDate;
     }
+    
+    modal.style.display = 'flex';
   }
 
-  // Helper function to sync the broad entry date with the first detailed row
+  function closeItemModal() {
+    document.getElementById('itemModalOverlay').style.display = 'none';
+    editingRow = null;
+  }
+
+  function saveItemModal() {
+    const fruit = document.getElementById('modalFruit').value.trim();
+    const qty = parseFloat(document.getElementById('modalQty').value) || 0;
+    const price = parseFloat(document.getElementById('modalPrice').value) || 0;
+    const date = document.getElementById('modalDate').value;
+    
+    if (!fruit) {
+      alert("Please enter a Fruit name.");
+      return;
+    }
+
+    const total = qty * price;
+    
+    // Format date beautifully for display (DD/MM)
+    let dispDate = date;
+    if(date) {
+      let d = new Date(date);
+      dispDate = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth()+1)).slice(-2);
+    }
+
+    if (editingRow) {
+      // UPDATE EXISTING ROW
+      editingRow.querySelector('.detail-fruit').value = fruit;
+      editingRow.querySelector('.detail-qty').value = qty;
+      editingRow.querySelector('.detail-price').value = price;
+      editingRow.querySelector('.detail-date').value = date;
+
+      editingRow.querySelector('.disp-fruit').innerText = fruit;
+      editingRow.querySelector('.disp-qty').innerText = qty;
+      editingRow.querySelector('.disp-price').innerText = '₹' + price;
+      editingRow.querySelector('.disp-date').innerText = dispDate;
+      editingRow.querySelector('.detail-total').innerText = '₹' + total.toLocaleString('en-IN');
+    } else {
+      // CREATE NEW ROW
+      const container = document.getElementById('detailsContainer');
+      const rowDiv = document.createElement('div');
+      rowDiv.className = 'compact-row detail-row';
+
+      // We use hidden inputs so calculateDetails() and submitEntry() can still read the raw values easily
+      rowDiv.innerHTML = `
+        <input type="hidden" class="detail-fruit" value="${fruit}">
+        <input type="hidden" class="detail-qty" value="${qty}">
+        <input type="hidden" class="detail-price" value="${price}">
+        <input type="hidden" class="detail-date" value="${date}">
+        
+        <div class="disp-fruit" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${fruit}</div>
+        <div class="disp-qty">${qty}</div>
+        <div class="disp-price">₹${price}</div>
+        <div class="disp-date">${dispDate}</div>
+        <div class="detail-total" style="font-weight: bold; color: #007bff; text-align: right;">₹${total.toLocaleString('en-IN')}</div>
+        
+        <div style="display: flex; gap: 4px; justify-content: flex-end;">
+          <button type="button" class="item-action-btn btn-modify" onclick="openItemModal(this)" title="Modify">✎</button>
+          <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this)" title="Remove">✕</button>
+          <button type="button" class="item-action-btn btn-add-row" onclick="openItemModal()" title="Add Row">＋</button>
+        </div>
+      `;
+      container.appendChild(rowDiv);
+    }
+
+    closeItemModal();
+    updateRowButtons();
+    calculateDetails();
+    syncMainDate(); 
+  }
+
   function syncMainDate() {
     const rows = document.querySelectorAll('.detail-row');
     if (rows.length > 0) {
@@ -1111,11 +1180,10 @@
   function removeDetailRow(btn) {
     const row = btn.closest('.detail-row');
     row.remove();
-    updateRowButtons(); // Re-evaluates which row is now the last row
+    updateRowButtons(); 
     calculateDetails();
   }
 
-  // NEW: Controls visibility of headers and the moving "+" button
   function updateRowButtons() {
     const rows = document.querySelectorAll('.detail-row');
     const header = document.getElementById('detailsHeader');
@@ -1123,17 +1191,15 @@
 
     if (rows.length === 0) {
       header.style.display = 'none';
-      initialAddBtn.style.display = 'flex'; // Bring back the top button
+      initialAddBtn.style.display = 'flex'; 
       return;
     } else {
       header.style.display = 'grid';
-      initialAddBtn.style.display = 'none'; // Hide the top button
+      initialAddBtn.style.display = 'none'; 
     }
 
-    // Loop through all rows to manage the + button
     rows.forEach((row, index) => {
       const addBtn = row.querySelector('.btn-add-row');
-      // If it is the LAST row, show the green '+', otherwise hide it
       if (index === rows.length - 1) {
         addBtn.style.display = 'inline-flex';
       } else {
@@ -1146,37 +1212,31 @@
     const rows = document.querySelectorAll('.detail-row');
     const broadAmountInput = document.getElementById('entryAmount');
     
-    // If there are no detailed rows, unlock the broad amount field
     if (rows.length === 0) {
       broadAmountInput.readOnly = false;
-      broadAmountInput.style.backgroundColor = ""; // Reset to default
+      broadAmountInput.style.backgroundColor = ""; 
       return;
     }
 
     let grandTotal = 0;
     
-    // Calculate total across all dynamic rows
     rows.forEach(row => {
       const qty = parseFloat(row.querySelector('.detail-qty').value) || 0;
       const price = parseFloat(row.querySelector('.detail-price').value) || 0;
       const total = qty * price;
       
       grandTotal += total;
-      
-      // Update individual row total display
-      row.querySelector('.detail-total').innerText = '₹' + total.toLocaleString('en-IN');
     });
 
-    // Override the broad amount field and lock it down
     broadAmountInput.value = grandTotal;
     broadAmountInput.readOnly = true;
-    broadAmountInput.style.backgroundColor = "var(--bg-color)"; // Make it look disabled/read-only
+    broadAmountInput.style.backgroundColor = "var(--bg-color)"; 
   }
 
-  // Clear details when resetting the form
   function clearDetailsContainer() {
     document.getElementById('detailsContainer').innerHTML = '';
     calculateDetails();
+    updateRowButtons();
   }
   
   async function submitEntry() {
@@ -1192,9 +1252,6 @@
 
     if (isBF && type === 'Goods Purchased') { notes = "(Brought Forward) " + notes; }
 
-    // ==========================================
-    // NEW: EXTRACT DETAILED ROWS (IF ANY)
-    // ==========================================
     let detailsArray = [];
     const detailRows = document.querySelectorAll('.detail-row');
     if (detailRows.length > 0) {
@@ -1205,13 +1262,11 @@
         const itemDate = row.querySelector('.detail-date').value;
         const total = qty * price;
         
-        // Only save the row if it actually has data
         if (fruit || total > 0) {
           detailsArray.push({ fruit: fruit, qty: qty, price: price, date: itemDate, total: total });
         }
       });
     }
-    // ==========================================
 
     showLoading(); 
 
@@ -1222,7 +1277,6 @@
     updateRecentCustomers(name); 
 
     try {
-      // NEW: Added the 'details' array to the backend payload
       const result = await apiPost('addEntry', { 
         customerName: name, 
         type: type, 
@@ -1242,7 +1296,6 @@
          document.getElementById('broughtForward').checked = false;
          toggleBF(); 
 
-         // NEW: Clear the detailed items UI for the next entry
          if (typeof clearDetailsContainer === 'function') {
            clearDetailsContainer();
          }
@@ -1292,7 +1345,6 @@
     
     showLoading();
     try {
-      // Hide Save Button
       document.getElementById('saveSettledBtnContainer').style.display = 'none';
       const data = await apiGet('getFilteredLedger', { customerName: name, selectedFY: fy, selectedMonths: selectedMonths.join(',') });
       renderLedger(data);
@@ -1301,9 +1353,7 @@
     }
   }
 
-  // Handle showing the Save button dynamically and syncing matched pairs
   function handleSettleCheck(element) {
-    // 1. Sync the sibling checkbox if this is a matched pair
     if (element && element.hasAttribute('data-sibling-id')) {
       const siblingId = element.getAttribute('data-sibling-id');
       const siblingBox = document.getElementById(`check_${siblingId}`);
@@ -1312,7 +1362,6 @@
       }
     }
 
-    // 2. Show/Hide the Save Button
     const checkedCount = document.querySelectorAll('.settle-checkbox:checked').length;
     const saveBtn = document.getElementById('saveSettledBtnContainer');
     if (checkedCount > 0) {
@@ -1322,7 +1371,6 @@
     }
   }
 
-  // Sends the checked row IDs to the backend
   async function submitSettled() {
     const checkedBoxes = document.querySelectorAll('.settle-checkbox:checked');
     let idsToUpdate = [];
@@ -1336,7 +1384,7 @@
       if (res.status === 'success' || !res.error) {
         showToast(`${idsToUpdate.length} Items Marked as Paid!`, "success");
         isDashboardStale = true;
-        await loadLedger(); // Refresh to hide settled items and calc new totals
+        await loadLedger(); 
       } else {
         showToast("Failed to update status.", "error");
       }
@@ -1398,7 +1446,6 @@
     }
 
     pairedRows.forEach(row => {
-      // Determine if this row contains an exactly matched Purchase/Payment pair
       const isExactMatch = (row.left && row.right && row.left.amount === row.right.amount);
       const leftId = row.left ? row.left.id : null;
       const rightId = row.right ? row.right.id : null;
@@ -1409,13 +1456,11 @@
         const shortDate = item.date === 'B/F' ? 'B/F' : item.date.substring(0, 5); 
         const noteHtml = item.notes ? `<div style="font-size:10px; color: var(--text-light); margin-top:-6px; margin-bottom:8px; text-align:left; word-wrap: anywhere;">${item.notes}</div>` : '';
         
-        // Link siblings if they are a perfect match
         let siblingAttr = '';
         if (isExactMatch) {
             siblingAttr = `data-sibling-id="${isLeft ? rightId : leftId}"`;
         }
         
-        // Checkbox moved to the right with margin-left: 8px to prevent accidental deletes
         return `
           <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
@@ -1442,7 +1487,6 @@
     });
   }
 
-  // --- EDIT CUSTOMER NAME FUNCTIONS ---
   function openEditCustomerModal() {
     const currentName = document.getElementById('dispCustomerName').innerText;
     if (!currentName) return;
@@ -1497,7 +1541,6 @@
     }
   }
 
-  // --- NATIVE PDF GENERATION FOR RECEIPT PRINTER ---
   async function viewStatement() {
     const custName = document.getElementById('dispCustomerName').innerText;
     if (!custName) return;
