@@ -172,46 +172,46 @@
 
   <!-- ==================== SCREEN 0: DASHBOARD ==================== -->
   <div id="screen-dashboard" class="screen">
-    <div class="sticky-header" style="margin-bottom: 0; padding: 16px 0 0 0; border-bottom: none; top: 0;">
+  <div class="sticky-header" style="margin-bottom: 0; padding: 16px 0 0 0; border-bottom: none; top: 0;">
       
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px;">
         <h2 style="margin:0;">Dashboard</h2>
-        <div style="position: relative;">
-          <span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:12px;">🔍</span>
-          <input type="text" id="dashboardSearch" placeholder="Search..." style="margin:0; padding: 6px 10px 6px 26px; font-size: 13px; width: 130px; border-radius: 16px;" oninput="applyDashboardFilters()">
-        </div>
+        <!-- Search bar removed -->
       </div>
       
       <div class="balance" style="color: var(--text-muted); font-size: 14px; font-weight: normal; margin-top: 16px;">Total Pending Outstanding</div>
       <div id="dashboardTotalBalance" style="font-size: 24px; font-weight: bold; color: #d32f2f; margin-top: 4px;">₹0</div>
       <div id="dashboardCustomerCount" style="font-size: 12px; font-weight: bold; color: var(--text-muted); margin-top: 4px;">0 Unique Customers</div>
-      
-      <div style="padding: 0 16px; margin-top: 16px;">
-        <select id="dashboardSort" onchange="applyDashboardFilters()" style="margin:0; padding: 8px; font-size: 13px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-          <option value="amt-desc">Sort: Amount (High to Low)</option>
-          <option value="amt-asc">Sort: Amount (Low to High)</option>
-          <option value="name-asc">Sort: Name (A to Z)</option>
-          <option value="name-desc">Sort: Name (Z to A)</option>
-        </select>
-      </div>
 
-      <div class="alphabet-filter" id="alphabetFilter" style="margin-top: 12px;"></div>
+      <div class="alphabet-filter" id="alphabetFilter" style="margin-top: 12px; border-bottom: none;"></div>
+      
+      <!-- NEW: Clickable Header Row for Sorting -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: var(--pill-bg); border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase;">
+        <div style="width: 20px; text-align: center;">S No.</div>
+        <div style="flex: 1; padding-left: 14px; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 4px;" onclick="toggleDashboardSort('name')">
+          Name <span id="sortIconName" style="color: #007bff; font-size: 14px;"></span>
+        </div>
+        <div style="text-align: right; cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: flex-end; gap: 4px;" onclick="toggleDashboardSort('amount')">
+          Amount <span id="sortIconAmount" style="color: #007bff; font-size: 14px;">▼</span>
+        </div>
+      </div>
     </div>
     
     <div class="card" style="padding: 0; overflow: hidden; border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -1px;" id="dashboardContainer"></div>
   </div>
 
-  <!-- ==================== SCREEN 1: VIEW ENTRY ==================== -->
+<!-- ==================== SCREEN 1: VIEW ENTRY ==================== -->
   <div id="screen-view" class="screen active">
-    <div class="card no-print" style="margin-bottom: 8px;">
+    
+    <!-- 1. Customer Name Search Card -->
+    <div class="card no-print" style="margin-bottom: 12px;">
       <label>Customer Name</label>
       <div style="position: relative; margin-bottom: 8px;">
         <input type="text" id="searchCustomerInput" list="customerList" placeholder="🔍 Search customer..." onchange="handleSearchChange()" oninput="toggleClearSearch('searchCustomerInput', 'clearSearchBtn')" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
         <div id="clearSearchBtn" onclick="clearSearch('searchCustomerInput', 'clearSearchBtn'); handleSearchChange();" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--border-color); color: var(--btn-text); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer; transition: background 0.3s, color 0.3s;">✕</div>
       </div>
       
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-        <button class="btn btn-outline btn-sm" style="width: auto; padding: 6px 14px; font-size: 13px; border-radius: 20px;" onclick="navToAddEntry()">+ Add New Entry</button>
+      <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 10px;">
         <span onclick="toggleFilters()" style="color: #007bff; font-size: 14px; font-weight: bold; cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 4px;">
           ⚙️ Filters <span id="filterArrow">▼</span>
         </span>
@@ -242,6 +242,13 @@
       </div>
     </div>
 
+    <!-- 2. Action Buttons (Moved Outside) -->
+    <div class="no-print" style="display: flex; gap: 8px; margin-bottom: 12px;">
+      <button class="btn btn-outline btn-sm" style="flex: 1; border-radius: 8px; border-color: var(--border-color); color: var(--text-main);" onclick="resetViewEntry()">🔄 Refresh Page</button>
+      <button class="btn btn-blue btn-sm" style="flex: 1; border-radius: 8px;" onclick="navToAddEntry()">+ Add New Entry</button>
+    </div>
+
+    <!-- 3. Recent Customers Box -->
     <div id="emptyState" class="card" style="text-align: center; padding: 20px 16px;">
       <h3 style="color: var(--text-muted); margin-bottom: 16px; font-size: 16px;">Recent Customers</h3>
       <div id="recentCustomersList" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"></div>
@@ -409,6 +416,8 @@
   let currentDashboardData = [];
   let dashboardActiveAlphabet = 'ALL';
   let isDashboardStale = true;
+  let dashboardSortCol = 'amount'; // Tracks current sort column
+  let dashboardSortDir = 'desc';   // Tracks current sort direction
   
   let entryDatePicker, editDatePicker;
 
@@ -636,6 +645,25 @@
     applyDashboardFilters();
   }
 
+  function toggleDashboardSort(col) {
+    if (dashboardSortCol === col) {
+      // Toggle direction if clicking the same column
+      dashboardSortDir = dashboardSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      // Switch column, set default directions (amount=high to low, name=A-Z)
+      dashboardSortCol = col;
+      dashboardSortDir = col === 'amount' ? 'desc' : 'asc';
+    }
+    applyDashboardFilters();
+  }
+
+  function resetViewEntry() {
+    document.getElementById('searchCustomerInput').value = '';
+    toggleClearSearch('searchCustomerInput', 'clearSearchBtn');
+    clearFilters(); // Resets month/FY filters back to default
+    handleSearchChange(); // Refreshes the view state
+  }
+
   async function navToDashboard() {
     switchScreen('dashboard');
 
@@ -671,23 +699,26 @@
     const container = document.getElementById('dashboardContainer');
     const totalElem = document.getElementById('dashboardTotalBalance');
     const countElem = document.getElementById('dashboardCustomerCount');
-    const searchQ = document.getElementById('dashboardSearch').value.toLowerCase().trim();
-    const sortOpt = document.getElementById('dashboardSort').value;
 
+    // 1. Filter by Alphabet only (Search bar removed)
     let filtered = currentDashboardData.filter(cust => {
       if (cust.balance === 0) return false; 
-      if (searchQ && !cust.name.toLowerCase().includes(searchQ)) return false;
       if (dashboardActiveAlphabet !== 'ALL' && !cust.name.toUpperCase().startsWith(dashboardActiveAlphabet)) return false;
       return true;
     });
 
+    // 2. Sort based on Clickable Headers
     filtered.sort((a, b) => {
-      if (sortOpt === 'amt-desc') return b.balance - a.balance;
-      if (sortOpt === 'amt-asc') return a.balance - b.balance;
-      if (sortOpt === 'name-asc') return a.name.localeCompare(b.name);
-      if (sortOpt === 'name-desc') return b.name.localeCompare(a.name);
-      return 0;
+      if (dashboardSortCol === 'amount') {
+        return dashboardSortDir === 'asc' ? a.balance - b.balance : b.balance - a.balance;
+      } else {
+        return dashboardSortDir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+      }
     });
+
+    // 3. Update UI Sorting Arrows
+    document.getElementById('sortIconName').innerText = dashboardSortCol === 'name' ? (dashboardSortDir === 'asc' ? '▲' : '▼') : '';
+    document.getElementById('sortIconAmount').innerText = dashboardSortCol === 'amount' ? (dashboardSortDir === 'asc' ? '▲' : '▼') : '';
 
     let totalOutstanding = 0;
     filtered.forEach(c => totalOutstanding += c.balance);
