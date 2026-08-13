@@ -139,54 +139,67 @@
     }
 
     /* Detailed Items UI Styles */
-    .detail-row {
-      background: var(--bg-color);
-      border: 1px dashed var(--border-light);
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 12px;
-      position: relative;
-    }
-    .detail-remove-btn {
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      background: #d32f2f;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      font-size: 12px;
+    /* Compact Single-Row Detailed Items UI */
+    .compact-header {
+      display: none; /* Shown via JS when rows > 0 */
+      grid-template-columns: 2.2fr 1.2fr 1.5fr 2fr 1.5fr 45px; 
+      gap: 4px;
+      margin-bottom: 6px;
+      font-size: 9px;
       font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-    .detail-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-    .detail-row label {
-      font-size: 11px;
       color: var(--text-muted);
-      margin-bottom: 4px;
-      display: block;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.1;
     }
-    .detail-row input {
+    .compact-header div:first-child { text-align: left; }
+    .compact-header div:nth-child(5) { text-align: right; }
+
+    .compact-row {
+      display: grid;
+      grid-template-columns: 2.2fr 1.2fr 1.5fr 2fr 1.5fr 45px; 
+      gap: 4px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .compact-row input {
       width: 100%;
-      padding: 8px;
-      font-size: 13px;
-      margin-bottom: 0;
+      padding: 6px 2px;
+      font-size: 12px;
+      margin: 0;
       border: 1px solid var(--border-color);
-      border-radius: 6px;
+      border-radius: 4px;
       background: var(--card-bg);
       color: var(--text-main);
+      text-align: center;
     }
+    .compact-row input.detail-fruit { text-align: left; padding-left: 4px; }
+    .compact-row input.detail-date { font-size: 10px; padding: 6px 0; }
+    
+    .compact-row .detail-total {
+      font-size: 12px;
+      font-weight: bold;
+      color: #007bff;
+      text-align: right;
+    }
+
+    /* Action Buttons (Small circles) */
+    .item-action-btn {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 13px;
+      cursor: pointer;
+      border: none;
+      color: white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .btn-remove { background: #d32f2f; }
+    .btn-add-row { background: #28a745; margin-left: 4px; }
     
   </style>
 
@@ -436,18 +449,32 @@
       <input type="number" id="entryAmount" placeholder="Enter broad amount..." required style="transition: background 0.3s;">
 
       <!-- Expandable Detailed Items Section -->
-      <div id="detailedItemsWrapper" style="margin-top: 16px; margin-bottom: 16px;">
+      <div id="detailedItemsWrapper" style="margin-top: 16px; margin-bottom: 16px; overflow-x: auto;">
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <span style="font-size: 13px; font-weight: bold; color: var(--text-muted);">Itemized Details</span>
-          <button type="button" class="btn btn-outline btn-sm" onclick="addDetailRow()" style="padding: 4px 10px; font-size: 12px; border-radius: 6px;">
-            📦 + Add Items
+          <span style="font-size: 13px; font-weight: bold; color: var(--text-muted);">Enter Item Details</span>
+          
+          <!-- New Icon-Only Add Button -->
+          <button type="button" id="initialAddBtn" onclick="addDetailRow()" style="background: #007bff; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Add Items">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
           </button>
         </div>
 
-        <!-- The container where dynamic rows will appear -->
-        <div id="detailsContainer"></div>
+        <!-- Dynamic Header (Matches the new labels) -->
+        <div id="detailsHeader" class="compact-header">
+          <div>Fruit</div>
+          <div>Quantity</div>
+          <div>Unit Price</div>
+          <div>Purchase Date</div>
+          <div>Total</div>
+          <div></div>
+        </div>
 
+        <!-- The container where dynamic rows will appear -->
+        <div id="detailsContainer" style="min-width: 320px;"></div>
       </div>
         
         <div id="addBFContainer" style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
@@ -1036,53 +1063,35 @@
     const container = document.getElementById('detailsContainer');
     const rows = document.querySelectorAll('.detail-row');
     
-    // 1. Determine the default date
-    let defaultDate = new Date().toISOString().split('T')[0]; // Defaults to today
-    
-    // If there is already at least one row, grab the date from the FIRST row
+    // Determine the default date
+    let defaultDate = new Date().toISOString().split('T')[0];
     if (rows.length > 0) {
       const firstDateInput = rows[0].querySelector('.detail-date').value;
-      if (firstDateInput) {
-        defaultDate = firstDateInput;
-      }
+      if (firstDateInput) defaultDate = firstDateInput;
     }
 
     const rowDiv = document.createElement('div');
-    rowDiv.className = 'detail-row';
+    rowDiv.className = 'compact-row detail-row';
 
+    // The new Single-Line Compact Row
     rowDiv.innerHTML = `
-      <button type="button" class="detail-remove-btn" onclick="removeDetailRow(this)" title="Remove Item">✕</button>
+      <input type="text" class="detail-fruit" placeholder="Fruit" oninput="calculateDetails()">
+      <input type="number" class="detail-qty" placeholder="Qty" min="0" step="0.01" oninput="calculateDetails()">
+      <input type="number" class="detail-price" placeholder="Price" min="0" step="0.01" oninput="calculateDetails()">
+      <input type="date" class="detail-date" value="${defaultDate}" onchange="syncMainDate()">
+      <div class="detail-total">₹0</div>
       
-      <label>Fruit</label>
-      <input type="text" class="detail-fruit" placeholder="e.g., Apple, Mango" oninput="calculateDetails()" style="margin-bottom: 10px;">
-      
-      <div class="detail-grid">
-        <div>
-          <label>Quantity</label>
-          <input type="number" class="detail-qty" placeholder="0" min="0" step="0.01" oninput="calculateDetails()">
-        </div>
-        <div>
-          <label>Price per unit (₹)</label>
-          <input type="number" class="detail-price" placeholder="0" min="0" step="0.01" oninput="calculateDetails()">
-        </div>
-      </div>
-
-      <div class="detail-grid" style="align-items: center; margin-bottom: 0;">
-        <div>
-          <label>Date of Purchase</label>
-          <input type="date" class="detail-date" value="${defaultDate}" onchange="syncMainDate()">
-        </div>
-        <div style="text-align: right; padding-right: 4px;">
-          <div style="font-size: 11px; color: var(--text-muted);">Row Total</div>
-          <div class="detail-total" style="font-size: 16px; font-weight: bold; color: #007bff;">₹0</div>
-        </div>
+      <div style="display: flex; align-items: center; justify-content: flex-end;">
+        <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this)" title="Remove">✕</button>
+        <button type="button" class="item-action-btn btn-add-row" onclick="addDetailRow()" title="Add Row">＋</button>
       </div>
     `;
     
     container.appendChild(rowDiv);
+    
+    updateRowButtons(); // Magic function to move the + button
     calculateDetails(); 
     
-    // 2. If this is the FIRST row being added, sync its date to the main broad entry date
     if (rows.length === 0) {
        syncMainDate();
     }
@@ -1100,11 +1109,39 @@
   }
 
   function removeDetailRow(btn) {
-    const row = btn.parentElement;
+    const row = btn.closest('.detail-row');
     row.remove();
-    calculateDetails(); // Recalculate grand total after removal
+    updateRowButtons(); // Re-evaluates which row is now the last row
+    calculateDetails();
   }
 
+  // NEW: Controls visibility of headers and the moving "+" button
+  function updateRowButtons() {
+    const rows = document.querySelectorAll('.detail-row');
+    const header = document.getElementById('detailsHeader');
+    const initialAddBtn = document.getElementById('initialAddBtn');
+
+    if (rows.length === 0) {
+      header.style.display = 'none';
+      initialAddBtn.style.display = 'flex'; // Bring back the top button
+      return;
+    } else {
+      header.style.display = 'grid';
+      initialAddBtn.style.display = 'none'; // Hide the top button
+    }
+
+    // Loop through all rows to manage the + button
+    rows.forEach((row, index) => {
+      const addBtn = row.querySelector('.btn-add-row');
+      // If it is the LAST row, show the green '+', otherwise hide it
+      if (index === rows.length - 1) {
+        addBtn.style.display = 'inline-flex';
+      } else {
+        addBtn.style.display = 'none';
+      }
+    });
+  }
+  
   function calculateDetails() {
     const rows = document.querySelectorAll('.detail-row');
     const broadAmountInput = document.getElementById('entryAmount');
