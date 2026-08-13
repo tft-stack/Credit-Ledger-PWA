@@ -137,6 +137,56 @@
       transform: scale(0.92);
       background: #0056b3;
     }
+
+    /* Detailed Items UI Styles */
+    .detail-row {
+      background: var(--bg-color);
+      border: 1px dashed var(--border-light);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+    .detail-remove-btn {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #d32f2f;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 12px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .detail-row label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      display: block;
+    }
+    .detail-row input {
+      width: 100%;
+      padding: 8px;
+      font-size: 13px;
+      margin-bottom: 0;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--card-bg);
+      color: var(--text-main);
+    }
     
   </style>
 
@@ -380,7 +430,26 @@
           <button id="typeTogglePayment" class="btn btn-outline-green btn-sm" style="flex: 1;" onclick="setAddType('Amount Received')">Payment</button>
         </div>
         <input type="hidden" id="entryTypeSelected" value="Goods Purchased">
-        <input type="number" id="entryAmount" placeholder="Amount (₹)">
+        
+      <!-- Broad Amount Field -->
+      <label>Amount (₹)</label>
+      <input type="number" id="entryAmount" placeholder="Enter broad amount..." required style="transition: background 0.3s;">
+
+      <!-- Expandable Detailed Items Section -->
+      <div id="detailedItemsWrapper" style="margin-top: 16px; margin-bottom: 16px;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <span style="font-size: 13px; font-weight: bold; color: var(--text-muted);">Itemized Details</span>
+          <button type="button" class="btn btn-outline btn-sm" onclick="addDetailRow()" style="padding: 4px 10px; font-size: 12px; border-radius: 6px;">
+            📦 + Add Items
+          </button>
+        </div>
+
+        <!-- The container where dynamic rows will appear -->
+        <div id="detailsContainer"></div>
+
+      </div>
+        
         <div id="addBFContainer" style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
           <input type="checkbox" id="broughtForward" onchange="toggleBF()" style="width:18px; height:18px; margin:0;">
           <label for="broughtForward" style="margin:0; text-transform:none; font-size:14px; color: var(--text-main);">Brought forward</label>
@@ -959,6 +1028,94 @@
     }
   }
 
+  // ==========================================
+  // DETAILED ITEMS (POS LOGIC)
+  // ==========================================
+
+  function addDetailRow() {
+    const container = document.getElementById('detailsContainer');
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'detail-row';
+    
+    // Default to today's date
+    const today = new Date().toISOString().split('T')[0];
+
+    rowDiv.innerHTML = `
+      <button type="button" class="detail-remove-btn" onclick="removeDetailRow(this)" title="Remove Item">✕</button>
+      
+      <label>Fruit / Product</label>
+      <input type="text" class="detail-fruit" placeholder="e.g., Apple, Mango" oninput="calculateDetails()" style="margin-bottom: 10px;">
+      
+      <div class="detail-grid">
+        <div>
+          <label>Quantity (Kg/Box)</label>
+          <input type="number" class="detail-qty" placeholder="0" min="0" step="0.01" oninput="calculateDetails()">
+        </div>
+        <div>
+          <label>Price per unit (₹)</label>
+          <input type="number" class="detail-price" placeholder="0" min="0" step="0.01" oninput="calculateDetails()">
+        </div>
+      </div>
+
+      <div class="detail-grid" style="align-items: center; margin-bottom: 0;">
+        <div>
+          <label>Date of Purchase</label>
+          <input type="date" class="detail-date" value="${today}">
+        </div>
+        <div style="text-align: right; padding-right: 4px;">
+          <div style="font-size: 11px; color: var(--text-muted);">Row Total</div>
+          <div class="detail-total" style="font-size: 16px; font-weight: bold; color: #007bff;">₹0</div>
+        </div>
+      </div>
+    `;
+    
+    container.appendChild(rowDiv);
+    calculateDetails(); // Trigger calculation immediately
+  }
+
+  function removeDetailRow(btn) {
+    const row = btn.parentElement;
+    row.remove();
+    calculateDetails(); // Recalculate grand total after removal
+  }
+
+  function calculateDetails() {
+    const rows = document.querySelectorAll('.detail-row');
+    const broadAmountInput = document.getElementById('entryAmount');
+    
+    // If there are no detailed rows, unlock the broad amount field
+    if (rows.length === 0) {
+      broadAmountInput.readOnly = false;
+      broadAmountInput.style.backgroundColor = ""; // Reset to default
+      return;
+    }
+
+    let grandTotal = 0;
+    
+    // Calculate total across all dynamic rows
+    rows.forEach(row => {
+      const qty = parseFloat(row.querySelector('.detail-qty').value) || 0;
+      const price = parseFloat(row.querySelector('.detail-price').value) || 0;
+      const total = qty * price;
+      
+      grandTotal += total;
+      
+      // Update individual row total display
+      row.querySelector('.detail-total').innerText = '₹' + total.toLocaleString('en-IN');
+    });
+
+    // Override the broad amount field and lock it down
+    broadAmountInput.value = grandTotal;
+    broadAmountInput.readOnly = true;
+    broadAmountInput.style.backgroundColor = "var(--bg-color)"; // Make it look disabled/read-only
+  }
+
+  // Clear details when resetting the form
+  function clearDetailsContainer() {
+    document.getElementById('detailsContainer').innerHTML = '';
+    calculateDetails();
+  }
+  
   async function submitEntry() {
     const name = document.getElementById('entryCustomerInput').value.trim();
     const amount = document.getElementById('entryAmount').value;
@@ -972,6 +1129,27 @@
 
     if (isBF && type === 'Goods Purchased') { notes = "(Brought Forward) " + notes; }
 
+    // ==========================================
+    // NEW: EXTRACT DETAILED ROWS (IF ANY)
+    // ==========================================
+    let detailsArray = [];
+    const detailRows = document.querySelectorAll('.detail-row');
+    if (detailRows.length > 0) {
+      detailRows.forEach(row => {
+        const fruit = row.querySelector('.detail-fruit').value.trim();
+        const qty = parseFloat(row.querySelector('.detail-qty').value) || 0;
+        const price = parseFloat(row.querySelector('.detail-price').value) || 0;
+        const itemDate = row.querySelector('.detail-date').value;
+        const total = qty * price;
+        
+        // Only save the row if it actually has data
+        if (fruit || total > 0) {
+          detailsArray.push({ fruit: fruit, qty: qty, price: price, date: itemDate, total: total });
+        }
+      });
+    }
+    // ==========================================
+
     showLoading(); 
 
     if (!allCustomers.includes(name)) {
@@ -981,7 +1159,16 @@
     updateRecentCustomers(name); 
 
     try {
-      const result = await apiPost('addEntry', { customerName: name, type: type, amount: amount, date: date, notes: notes });
+      // NEW: Added the 'details' array to the backend payload
+      const result = await apiPost('addEntry', { 
+        customerName: name, 
+        type: type, 
+        amount: amount, 
+        date: date, 
+        notes: notes,
+        details: detailsArray
+      });
+      
       if(result.status === 'success' || !result.error) {
          showToast("Entry Saved Successfully!", "success");
          isDashboardStale = true;
@@ -991,6 +1178,11 @@
          document.getElementById('similarityWarning').style.display = 'none';
          document.getElementById('broughtForward').checked = false;
          toggleBF(); 
+
+         // NEW: Clear the detailed items UI for the next entry
+         if (typeof clearDetailsContainer === 'function') {
+           clearDetailsContainer();
+         }
 
          document.getElementById('entryCustomerInput').value = ''; 
          toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');
