@@ -522,7 +522,16 @@
     <div class="card" style="width: 100%; max-width: 350px;">
       <h3>Edit Customer Name</h3>
       <label>Customer Name</label>
-      <input type="text" id="editCustomerNameInput" placeholder="Enter customer name" oninput="this.value = this.value.replace(/[^a-zA-Z0-9 ]/g, '')">
+      
+      <!-- Added checkEditSimilarity to oninput -->
+      <input type="text" id="editCustomerNameInput" placeholder="Enter customer name" oninput="this.value = this.value.replace(/[^a-zA-Z0-9 ]/g, ''); checkEditSimilarity(this.value);">
+      
+      <!-- NEW: Similarity Warning Box for Edit Modal -->
+      <div id="editSimilarityWarning" style="font-size: 12px; color: #d32f2f; margin-top: -8px; margin-bottom: 12px; display: none; background: #ffebee; padding: 8px; border-radius: 4px;">
+        <strong>Similar names found:</strong><br>
+        <div id="editSimilarityChips" style="margin-top: 5px;"></div>
+      </div>
+
       <div class="btn-group">
         <button class="btn btn-outline btn-sm" onclick="closeEditCustomerModal()">Cancel</button>
         <button class="btn btn-blue btn-sm" onclick="saveCustomerName()">Save</button>
@@ -1131,6 +1140,35 @@
     }
   }
 
+  function checkEditSimilarity(inputStr) {
+    const warningBox = document.getElementById('editSimilarityWarning');
+    const chipContainer = document.getElementById('editSimilarityChips');
+    const oldName = document.getElementById('dispCustomerName').innerText.trim().toLowerCase();
+    const lowerInput = inputStr.toLowerCase().trim();
+    
+    warningBox.style.display = 'none'; 
+    chipContainer.innerHTML = '';
+    
+    if (lowerInput.length < 3) return;
+
+    // Find similar names, but ignore the customer's current name
+    const similar = allCustomers.filter(c => c.toLowerCase().includes(lowerInput) && c.toLowerCase() !== oldName);
+    
+    if (similar.length > 0) {
+      warningBox.style.display = 'block';
+      similar.forEach(c => {
+        let chip = document.createElement('span'); 
+        chip.className = 'suggestion-chip'; 
+        chip.innerText = c;
+        chip.onclick = function() {
+          document.getElementById('editCustomerNameInput').value = c;
+          warningBox.style.display = 'none';
+        };
+        chipContainer.appendChild(chip);
+      });
+    }
+  }
+
   // ==========================================
   // ITEM DETAIL MODAL LOGIC
   // ==========================================
@@ -1315,7 +1353,7 @@
   }
   
   async function submitEntry() {
-    const name = document.getElementById('entryCustomerInput').value.trim();
+    let name = document.getElementById('entryCustomerInput').value.trim();
     const amount = document.getElementById('entryAmount').value;
     const isBF = document.getElementById('broughtForward').checked;
     const date = document.getElementById('entryDate').value;
@@ -1326,6 +1364,23 @@
     if (!isBF && !date) { alert('Date is mandatory unless Brought Forward is checked.'); return; }
 
     if (isBF && type === 'Goods Purchased') { notes = "(Brought Forward) " + notes; }
+
+    // ==========================================
+    // NEW: STRICT DUPLICATE & SIMILARITY ENFORCEMENT
+    // ==========================================
+    const existingExact = allCustomers.find(c => c.toLowerCase() === name.toLowerCase());
+    
+    if (existingExact) {
+      // 1. AUTO-CORRECT: If it's an exact match (just wrong casing), force the correct casing!
+      name = existingExact; 
+    } else {
+      // 2. NEW CUSTOMER: Check if the similarity warning is visible
+      const warningBox = document.getElementById('similarityWarning');
+      if (warningBox.style.display === 'block') {
+        const proceed = confirm(`"${name}" is very similar to an existing customer. Are you sure you want to create a brand new account?`);
+        if (!proceed) return; // Stop if they realize they made a mistake
+      }
+    }
 
     let detailsArray = [];
     const detailRows = document.querySelectorAll('.detail-row');
@@ -1601,6 +1656,23 @@
 
     if (!newName) { alert("Customer name cannot be empty."); return; }
     if (oldName === newName) { closeEditCustomerModal(); return; }
+
+    // ==========================================
+    // NEW: STRICT DUPLICATE PREVENTION
+    // ==========================================
+    const duplicateCheck = allCustomers.find(c => c.toLowerCase() === newName.toLowerCase() && c.toLowerCase() !== oldName.toLowerCase());
+    if (duplicateCheck) {
+      alert(`The name "${duplicateCheck}" already exists in your ledger! You cannot merge accounts this way. Please choose a different name.`);
+      return;
+    }
+
+    // ENFORCE SIMILARITY WARNING
+    const warningBox = document.getElementById('editSimilarityWarning');
+    if (warningBox.style.display === 'block') {
+      const proceed = confirm(`"${newName}" is very similar to an existing customer. Are you sure you want to proceed?`);
+      if (!proceed) return; 
+    }
+    // ==========================================
 
     closeEditCustomerModal();
     showLoading();
