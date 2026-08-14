@@ -341,7 +341,7 @@
     <div class="card no-print" style="margin-bottom: 12px;">
       <label>Customer Name</label>
       <div style="position: relative; margin-bottom: 8px;">
-        <input type="text" id="searchCustomerInput" list="customerList" placeholder="🔍 Search customer..." onchange="handleSearchChange()" oninput="toggleClearSearch('searchCustomerInput', 'clearSearchBtn')" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
+        <input type="text" id="searchCustomerInput" list="customerList" placeholder="🔍 Search customer..." onchange="handleSearchChange()" oninput="this.value = this.value.replace(/[^a-zA-Z0-9 ]/g, ''); toggleClearSearch('searchCustomerInput', 'clearSearchBtn')" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
         <div id="clearSearchBtn" onclick="clearSearch('searchCustomerInput', 'clearSearchBtn'); handleSearchChange();" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--border-color); color: var(--btn-text); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer; transition: background 0.3s, color 0.3s;">✕</div>
       </div>
       
@@ -453,7 +453,7 @@
       <h3>Add Entry</h3>
       <label>Customer Name</label>
       <div style="position: relative; margin-bottom: 8px;">
-        <input type="text" id="entryCustomerInput" list="customerList" placeholder="🔍 Search or type new..." oninput="checkSimilarity(this.value); toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
+        <input type="text" id="entryCustomerInput" list="customerList" placeholder="🔍 Search or type new..." oninput="this.value = this.value.replace(/[^a-zA-Z0-9 ]/g, ''); checkSimilarity(this.value); toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
         <div id="clearAddSearchBtn" onclick="clearSearch('entryCustomerInput', 'clearAddSearchBtn')" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--border-color); color: var(--btn-text); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer; transition: background 0.3s, color 0.3s;">✕</div>
       </div>
       
@@ -472,7 +472,7 @@
         
       <!-- Broad Amount Field -->
       <label>Amount (₹)</label>
-      <input type="number" id="entryAmount" placeholder="Enter broad amount..." required style="transition: background 0.3s;">
+      <input type="number" id="entryAmount" placeholder="Enter broad amount..." required style="transition: background 0.3s;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
 
       <!-- Expandable Detailed Items Section -->
       <div id="detailedItemsWrapper" style="margin-top: 16px; margin-bottom: 16px;">
@@ -522,7 +522,7 @@
     <div class="card" style="width: 100%; max-width: 350px;">
       <h3>Edit Customer Name</h3>
       <label>Customer Name</label>
-      <input type="text" id="editCustomerNameInput" placeholder="Enter customer name">
+      <input type="text" id="editCustomerNameInput" placeholder="Enter customer name" oninput="this.value = this.value.replace(/[^a-zA-Z0-9 ]/g, '')">
       <div class="btn-group">
         <button class="btn btn-outline btn-sm" onclick="closeEditCustomerModal()">Cancel</button>
         <button class="btn btn-blue btn-sm" onclick="saveCustomerName()">Save</button>
@@ -539,7 +539,7 @@
       <input type="hidden" id="editType">
       
       <label>Amount</label>
-      <input type="number" id="editAmount">
+      <input type="number" id="editAmount" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
       
       <div id="editBFContainer" style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px; display: none;">
         <input type="checkbox" id="editBroughtForward" onchange="toggleEditBF()" style="width:18px; height: 18px; margin:0;">
@@ -599,11 +599,11 @@
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
         <div>
           <label>Quantity</label>
-          <input type="number" id="modalQty" placeholder="0" min="0" step="0.01" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0;">
+          <input type="number" id="modalQty" placeholder="0" min="0" step="0.01" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
         </div>
         <div>
           <label>Unit Price (₹)</label>
-          <input type="number" id="modalPrice" placeholder="0" min="0" step="0.01" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0;">
+          <input type="number" id="modalPrice" placeholder="0" min="0" step="0.01" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
         </div>
       </div>
       
@@ -1449,9 +1449,31 @@
   async function submitSettled() {
     const checkedBoxes = document.querySelectorAll('.settle-checkbox:checked');
     let idsToUpdate = [];
-    checkedBoxes.forEach(box => idsToUpdate.push(parseInt(box.value)));
+    
+    let totalPurchaseSelected = 0;
+    let totalPaymentSelected = 0;
+
+    checkedBoxes.forEach(box => {
+      idsToUpdate.push(parseInt(box.value));
+      
+      // Tally up the selected amounts based on type
+      let type = box.getAttribute('data-type');
+      let amt = parseFloat(box.getAttribute('data-amount')) || 0;
+      
+      if (type === 'Goods Purchased') {
+        totalPurchaseSelected += amt;
+      } else if (type === 'Amount Received') {
+        totalPaymentSelected += amt;
+      }
+    });
 
     if (idsToUpdate.length === 0) return;
+
+    // VALIDATION: Ensure selected purchases exactly equal selected payments
+    if (totalPurchaseSelected !== totalPaymentSelected) {
+      showToast(`Mismatch! Purchases: ₹${totalPurchaseSelected} | Payments: ₹${totalPaymentSelected}`, "error");
+      return; // Stop execution, don't mark as paid
+    }
 
     showLoading();
     try {
@@ -1546,7 +1568,7 @@
               <div class="action-icons no-print" style="display: flex; align-items: center; gap: 4px;">
                 <button class="icon-btn" onclick="openModal(${item.id})" style="background: none; border: none; padding: 2px; cursor: pointer; color: #007bff; font-size: 14px;">✏️</button>
                 <button class="icon-btn" onclick="promptDelete(${item.id})" style="background: none; border: none; padding: 2px; cursor: pointer; color: #d32f2f; font-size: 14px;">🗑️</button>
-                <input type="checkbox" id="check_${item.id}" class="settle-checkbox" value="${item.id}" ${siblingAttr} onchange="handleSettleCheck(this)" style="width:18px; height:18px; margin-left: 8px; cursor: pointer; accent-color: #2e7d32;">
+               <input type="checkbox" id="check_${item.id}" class="settle-checkbox" value="${item.id}" data-type="${item.type}" data-amount="${item.amount}" ${siblingAttr} onchange="handleSettleCheck(this)" style="width:18px; height:18px; margin-left: 8px; cursor: pointer; accent-color: #2e7d32;">
               </div>
             </div>
             ${noteHtml}
