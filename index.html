@@ -540,24 +540,34 @@
   <!-- ==================== ITEM DETAIL MODAL ==================== -->
   <div id="itemModalOverlay" class="modal-overlay no-print" style="z-index: 100;">
     <div class="card modal" style="width: 90%; max-width: 350px; background: var(--card-bg); padding: 20px; border-radius: 10px;">
-      <h3 style="margin-top: 0; margin-bottom: 16px;">Item Details</h3>
+      <h3 style="margin-top: 0; margin-bottom: 16px;">Add Purchase Details</h3>
       
-      <label>Fruit</label>
-      <input type="text" id="modalFruit" placeholder="e.g., Apple, Mango" style="width: 100%; margin-bottom: 12px; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
-      
+      <!-- Row 1: Fruit and Date -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
         <div>
-          <label>Quantity</label>
-          <input type="number" id="modalQty" placeholder="0" min="0" step="0.01" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+          <label>Fruit</label>
+          <input type="text" id="modalFruit" placeholder="Apple, Mango" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0;">
         </div>
         <div>
-          <label>Unit Price (₹)</label>
-          <input type="number" id="modalPrice" placeholder="0" min="0" step="0.01" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+          <label>Date</label>
+          <div style="position: relative;">
+            <input type="text" id="modalDate" style="width: 100%; padding: 10px; padding-right: 34px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--input-bg); margin-bottom: 0;" placeholder="Select Date" readonly>
+            <div onclick="openDatePicker('modalDate')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px;">📅</div>
+          </div>
         </div>
       </div>
       
-      <label>Purchase Date</label>
-      <input type="date" id="modalDate" style="width: 100%; margin-bottom: 20px; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+      <!-- Row 2: Quantity and Unit Price -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+        <div>
+          <label>Quantity</label>
+          <input type="number" id="modalQty" placeholder="0" min="0" step="0.01" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0;">
+        </div>
+        <div>
+          <label>Unit Price (₹)</label>
+          <input type="number" id="modalPrice" placeholder="0" min="0" step="0.01" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0;">
+        </div>
+      </div>
       
       <div style="display: flex; gap: 10px;">
         <button class="btn btn-outline" style="flex: 1;" onclick="closeItemModal()">Cancel</button>
@@ -594,7 +604,7 @@
   let dashboardSortCol = 'amount'; // Tracks current sort column
   let dashboardSortDir = 'desc';   // Tracks current sort direction
   
-  let entryDatePicker, editDatePicker;
+  let entryDatePicker, editDatePicker, modalDatePicker;
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(() => console.log("Service Worker Registered"));
@@ -681,6 +691,7 @@
     const fpConfig = { disableMobile: true, dateFormat: "Y-m-d" };
     entryDatePicker = flatpickr("#entryDate", { ...fpConfig, defaultDate: "today" });
     editDatePicker = flatpickr("#editDate", fpConfig);
+    modalDatePicker = flatpickr("#modalDate", fpConfig); // NEW: Initialize modal calendar
     
     renderRecentCustomers(); 
     initAlphabetFilter();
@@ -709,6 +720,7 @@
   function openDatePicker(id) {
     if(id === 'entryDate' && !document.getElementById('entryDate').disabled) { entryDatePicker.open(); } 
     else if (id === 'editDate' && !document.getElementById('editDate').disabled) { editDatePicker.open(); }
+    else if (id === 'modalDate' && !document.getElementById('modalDate').disabled) { modalDatePicker.open(); }
   }
 
   async function apiGet(action, params = {}) {
@@ -1083,14 +1095,14 @@
       document.getElementById('modalFruit').value = editingRow.querySelector('.detail-fruit').value;
       document.getElementById('modalQty').value = editingRow.querySelector('.detail-qty').value;
       document.getElementById('modalPrice').value = editingRow.querySelector('.detail-price').value;
-      document.getElementById('modalDate').value = editingRow.querySelector('.detail-date').value;
+      modalDatePicker.setDate(editingRow.querySelector('.detail-date').value); // UPDATED
     } else {
       // ADD MODE: Clear modal for new entry
       editingRow = null;
       document.getElementById('modalFruit').value = '';
       document.getElementById('modalQty').value = '';
       document.getElementById('modalPrice').value = '';
-      document.getElementById('modalDate').value = defaultDate;
+      modalDatePicker.setDate(defaultDate); // UPDATED
     }
     
     modal.style.display = 'flex';
