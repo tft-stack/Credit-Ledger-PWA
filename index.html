@@ -142,8 +142,9 @@
     /* Clean 2-Row Display Grid for Saved Items */
     .compact-header {
       display: none; 
-      grid-template-columns: 2.5fr 1fr 1.5fr 2fr; 
-      gap: 6px;
+      /* Fruit takes remaining space, Qty/Price/Total take only what they need */
+      grid-template-columns: 1fr auto auto auto; 
+      gap: 14px;
       margin-bottom: 8px;
       font-size: 10px;
       font-weight: bold;
@@ -163,15 +164,16 @@
     }
     .compact-row-top {
       display: grid;
-      grid-template-columns: 2.5fr 1fr 1.5fr 2fr; 
-      gap: 6px;
+      grid-template-columns: 1fr auto auto auto; 
+      gap: 14px;
       align-items: center;
       font-size: 13px;
       color: var(--text-main);
       text-align: center;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
-    .compact-row-top div:first-of-type { text-align: left; font-weight: bold; }
+    /* Allow Fruit text to wrap naturally to the next line */
+    .compact-row-top div:first-of-type { text-align: left; font-weight: bold; word-break: break-word; }
     .compact-row-top div:last-of-type { text-align: right; font-weight: bold; color: #007bff; }
     
     .compact-row-bottom {
@@ -189,22 +191,24 @@
       border-radius: 12px;
       border: 1px solid var(--pill-border);
     }
-    
-    /* Action Buttons (Small circles) */
+
+    /* Action Buttons (Larger, touch-friendly rounded squares) */
     .item-action-btn {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
-      font-size: 12px;
+      font-size: 16px;
       cursor: pointer;
       border: none;
       color: white;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+      transition: transform 0.2s;
     }
+    .item-action-btn:active { transform: scale(0.92); }
     .btn-modify { background: #f39c12; } /* Orange for Edit */
     .btn-remove { background: #d32f2f; } /* Red for Delete */
     .btn-add-row { background: #28a745; } /* Green for Add */
@@ -1184,7 +1188,8 @@
         <input type="hidden" class="detail-date" value="${date}">
         
         <div class="compact-row-top">
-          <div class="disp-fruit" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${fruit}</div>
+          <!-- Text wrapping enabled for long fruit names -->
+          <div class="disp-fruit">${fruit}</div>
           <div class="disp-qty">${qty}</div>
           <div class="disp-price">₹${price}</div>
           <div class="detail-total">₹${total.toLocaleString('en-IN')}</div>
@@ -1193,8 +1198,9 @@
         <div class="compact-row-bottom">
           <div class="disp-date-pill">📅 Date: <span class="disp-date">${dispDate}</span></div>
           <div style="display: flex; gap: 8px; justify-content: flex-end;">
-            <button type="button" class="item-action-btn btn-modify" onclick="openItemModal(this)" title="Modify">✎</button>
+            <!-- Buttons strictly reordered: Delete, Modify, Add -->
             <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this)" title="Remove">✕</button>
+            <button type="button" class="item-action-btn btn-modify" onclick="openItemModal(this)" title="Modify">✎</button>
             <button type="button" class="item-action-btn btn-add-row" onclick="openItemModal()" title="Add Row">＋</button>
           </div>
         </div>
