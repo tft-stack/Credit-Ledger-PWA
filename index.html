@@ -139,34 +139,56 @@
     }
 
     /* Detailed Items UI Styles */
-    /* Clean Display Grid for Saved Items */
+    /* Clean 2-Row Display Grid for Saved Items */
     .compact-header {
       display: none; 
-      grid-template-columns: 2fr 1fr 1.3fr 1.3fr 1.5fr 75px; 
-      gap: 4px;
-      margin-bottom: 6px;
-      font-size: 9px;
+      grid-template-columns: 2.5fr 1fr 1.5fr 2fr; 
+      gap: 6px;
+      margin-bottom: 8px;
+      font-size: 10px;
       font-weight: bold;
       color: var(--text-muted);
       text-transform: uppercase;
       text-align: center;
     }
     .compact-header div:first-child { text-align: left; }
-    .compact-header div:nth-child(5) { text-align: right; }
+    .compact-header div:last-child { text-align: right; }
 
     .compact-row {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1.3fr 1.3fr 1.5fr 75px; 
-      gap: 4px;
-      align-items: center;
-      margin-bottom: 8px;
-      font-size: 12px;
-      color: var(--text-main);
-      text-align: center;
-      padding: 6px 0;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 12px;
+      padding: 10px 0;
       border-bottom: 1px dashed var(--border-light);
     }
-    .compact-row div:first-of-type { text-align: left; font-weight: bold; }
+    .compact-row-top {
+      display: grid;
+      grid-template-columns: 2.5fr 1fr 1.5fr 2fr; 
+      gap: 6px;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-main);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .compact-row-top div:first-of-type { text-align: left; font-weight: bold; }
+    .compact-row-top div:last-of-type { text-align: right; font-weight: bold; color: #007bff; }
+    
+    .compact-row-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .disp-date-pill {
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--text-muted);
+      background: var(--pill-bg);
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--pill-border);
+    }
     
     /* Action Buttons (Small circles) */
     .item-action-btn {
@@ -435,7 +457,7 @@
       <input type="number" id="entryAmount" placeholder="Enter broad amount..." required style="transition: background 0.3s;">
 
       <!-- Expandable Detailed Items Section -->
-      <div id="detailedItemsWrapper" style="margin-top: 16px; margin-bottom: 16px; overflow-x: auto;">
+      <div id="detailedItemsWrapper" style="margin-top: 16px; margin-bottom: 16px;">
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
           <span style="font-size: 13px; font-weight: bold; color: var(--text-muted);">Enter Item Details</span>
@@ -449,18 +471,16 @@
           </button>
         </div>
 
-        <!-- Dynamic Header -->
+        <!-- Dynamic Header (4 Columns only) -->
         <div id="detailsHeader" class="compact-header">
           <div>Fruit</div>
-          <div>Quantity</div>
-          <div>Unit Price</div>
-          <div>Purchase Date</div>
+          <div>Qty</div>
+          <div>Price</div>
           <div>Total</div>
-          <div></div>
         </div>
 
         <!-- The container where dynamic rows will appear -->
-        <div id="detailsContainer" style="min-width: 320px;"></div>
+        <div id="detailsContainer"></div>
       </div>
         
         <div id="addBFContainer" style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
@@ -779,15 +799,21 @@
     const purBtn = document.getElementById('typeTogglePurchase');
     const payBtn = document.getElementById('typeTogglePayment');
     const bfContainer = document.getElementById('addBFContainer');
+    const detailsWrapper = document.getElementById('detailedItemsWrapper');
 
     if (type === 'Goods Purchased') {
-      purBtn.className = 'btn btn-red btn-sm'; payBtn.className = 'btn btn-outline-green btn-sm';
+      purBtn.className = 'btn btn-red btn-sm'; 
+      payBtn.className = 'btn btn-outline-green btn-sm';
       bfContainer.style.display = 'flex';
+      detailsWrapper.style.display = 'block'; // Show details for Purchase
     } else {
-      purBtn.className = 'btn btn-outline-red btn-sm'; payBtn.className = 'btn btn-green btn-sm';
+      purBtn.className = 'btn btn-outline-red btn-sm'; 
+      payBtn.className = 'btn btn-green btn-sm';
       bfContainer.style.display = 'none';
       document.getElementById('broughtForward').checked = false;
       toggleBF();
+      detailsWrapper.style.display = 'none'; // Hide details for Payment
+      clearDetailsContainer(); // Wipe any entered items so they don't submit accidentally
     }
   }
 
@@ -1151,23 +1177,26 @@
       const rowDiv = document.createElement('div');
       rowDiv.className = 'compact-row detail-row';
 
-      // We use hidden inputs so calculateDetails() and submitEntry() can still read the raw values easily
       rowDiv.innerHTML = `
         <input type="hidden" class="detail-fruit" value="${fruit}">
         <input type="hidden" class="detail-qty" value="${qty}">
         <input type="hidden" class="detail-price" value="${price}">
         <input type="hidden" class="detail-date" value="${date}">
         
-        <div class="disp-fruit" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${fruit}</div>
-        <div class="disp-qty">${qty}</div>
-        <div class="disp-price">₹${price}</div>
-        <div class="disp-date">${dispDate}</div>
-        <div class="detail-total" style="font-weight: bold; color: #007bff; text-align: right;">₹${total.toLocaleString('en-IN')}</div>
+        <div class="compact-row-top">
+          <div class="disp-fruit" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${fruit}</div>
+          <div class="disp-qty">${qty}</div>
+          <div class="disp-price">₹${price}</div>
+          <div class="detail-total">₹${total.toLocaleString('en-IN')}</div>
+        </div>
         
-        <div style="display: flex; gap: 4px; justify-content: flex-end;">
-          <button type="button" class="item-action-btn btn-modify" onclick="openItemModal(this)" title="Modify">✎</button>
-          <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this)" title="Remove">✕</button>
-          <button type="button" class="item-action-btn btn-add-row" onclick="openItemModal()" title="Add Row">＋</button>
+        <div class="compact-row-bottom">
+          <div class="disp-date-pill">📅 Date: <span class="disp-date">${dispDate}</span></div>
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button type="button" class="item-action-btn btn-modify" onclick="openItemModal(this)" title="Modify">✎</button>
+            <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this)" title="Remove">✕</button>
+            <button type="button" class="item-action-btn btn-add-row" onclick="openItemModal()" title="Add Row">＋</button>
+          </div>
         </div>
       `;
       container.appendChild(rowDiv);
