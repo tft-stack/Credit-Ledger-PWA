@@ -567,6 +567,23 @@
       
       <label>Amount</label>
       <input type="number" id="editAmount" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
+
+      <!-- NEW: Expandable Detailed Items Section for Edit Mode -->
+      <div id="editDetailedItemsWrapper" style="margin-top: 16px; margin-bottom: 16px; display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <span style="font-size: 13px; font-weight: bold; color: var(--text-muted);">Edit Item Details</span>
+          <button type="button" id="editInitialAddBtn" onclick="openItemModal(null, 'edit')" style="background: #007bff; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Add Items">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+        <div id="editDetailsHeader" class="compact-header">
+          <div>Fruit</div><div>Qty</div><div>Price</div><div>Total</div>
+        </div>
+        <div id="editDetailsContainer"></div>
+      </div>
       
       <div id="editBFContainer" style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px; display: none;">
         <input type="checkbox" id="editBroughtForward" onchange="toggleEditBF()" style="width:18px; height: 18px; margin:0;">
@@ -1191,32 +1208,31 @@
   // ITEM DETAIL MODAL LOGIC
   // ==========================================
   let editingRow = null; 
+  let currentActiveContainer = 'detailsContainer'; // Tracks if we are in Add or Edit mode
 
-  function openItemModal(btn = null) {
+  function openItemModal(btn = null, context = 'add') {
     const modal = document.getElementById('itemModalOverlay');
+    currentActiveContainer = context === 'edit' ? 'editDetailsContainer' : 'detailsContainer';
     
-    // Determine default date (Today, or the date from row 1)
     let defaultDate = new Date().toISOString().split('T')[0];
-    const rows = document.querySelectorAll('.detail-row');
+    const rows = document.getElementById(currentActiveContainer).querySelectorAll('.detail-row');
     if (rows.length > 0) {
       const firstDateInput = rows[0].querySelector('.detail-date').value;
       if (firstDateInput) defaultDate = firstDateInput;
     }
 
     if (btn) {
-      // EDIT MODE: Populate modal with existing row data
       editingRow = btn.closest('.detail-row');
       document.getElementById('modalFruit').value = editingRow.querySelector('.detail-fruit').value;
       document.getElementById('modalQty').value = editingRow.querySelector('.detail-qty').value;
       document.getElementById('modalPrice').value = editingRow.querySelector('.detail-price').value;
-      modalDatePicker.setDate(editingRow.querySelector('.detail-date').value); // UPDATED
+      modalDatePicker.setDate(editingRow.querySelector('.detail-date').value); 
     } else {
-      // ADD MODE: Clear modal for new entry
       editingRow = null;
       document.getElementById('modalFruit').value = '';
       document.getElementById('modalQty').value = '';
       document.getElementById('modalPrice').value = '';
-      modalDatePicker.setDate(defaultDate); // UPDATED
+      modalDatePicker.setDate(defaultDate); 
     }
     
     modal.style.display = 'flex';
@@ -1233,14 +1249,9 @@
     const price = parseFloat(document.getElementById('modalPrice').value) || 0;
     const date = document.getElementById('modalDate').value;
     
-    if (!fruit) {
-      alert("Please enter a Fruit name.");
-      return;
-    }
-
+    if (!fruit) { alert("Please enter a Fruit name."); return; }
     const total = qty * price;
     
-    // Format date beautifully for display (DD/MM)
     let dispDate = date;
     if(date) {
       let d = new Date(date);
@@ -1248,7 +1259,6 @@
     }
 
     if (editingRow) {
-      // UPDATE EXISTING ROW
       editingRow.querySelector('.detail-fruit').value = fruit;
       editingRow.querySelector('.detail-qty').value = qty;
       editingRow.querySelector('.detail-price').value = price;
@@ -1260,8 +1270,7 @@
       editingRow.querySelector('.disp-date').innerText = dispDate;
       editingRow.querySelector('.detail-total').innerText = '₹' + total.toLocaleString('en-IN');
     } else {
-      // CREATE NEW ROW
-      const container = document.getElementById('detailsContainer');
+      const container = document.getElementById(currentActiveContainer);
       const rowDiv = document.createElement('div');
       rowDiv.className = 'compact-row detail-row';
 
@@ -1272,7 +1281,6 @@
         <input type="hidden" class="detail-date" value="${date}">
         
         <div class="compact-row-top">
-          <!-- Text wrapping enabled for long fruit names -->
           <div class="disp-fruit">${fruit}</div>
           <div class="disp-qty">${qty}</div>
           <div class="disp-price">₹${price}</div>
@@ -1282,10 +1290,10 @@
         <div class="compact-row-bottom">
           <div class="disp-date-pill">📅 Date: <span class="disp-date">${dispDate}</span></div>
           <div style="display: flex; gap: 8px; justify-content: flex-end;">
-            <!-- Buttons strictly reordered: Delete, Modify, Add -->
-            <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this)" title="Remove">✕</button>
-            <button type="button" class="item-action-btn btn-modify" onclick="openItemModal(this)" title="Modify">✎</button>
-            <button type="button" class="item-action-btn btn-add-row" onclick="openItemModal()" title="Add Row">＋</button>
+            <!-- Note the context passed to openItemModal -->
+            <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this, '${currentActiveContainer === 'editDetailsContainer' ? 'edit' : 'add'}')" title="Remove">✕</button>
+            <button type="button" class="item-action-btn btn-modify" onclick="openItemModal(this, '${currentActiveContainer === 'editDetailsContainer' ? 'edit' : 'add'}')" title="Modify">✎</button>
+            <button type="button" class="item-action-btn btn-add-row" onclick="openItemModal(null, '${currentActiveContainer === 'editDetailsContainer' ? 'edit' : 'add'}')" title="Add Row">＋</button>
           </div>
         </div>
       `;
@@ -1293,37 +1301,44 @@
     }
 
     closeItemModal();
-    updateRowButtons();
-    calculateDetails();
-    syncMainDate(); 
+    updateRowButtons(currentActiveContainer);
+    calculateDetails(currentActiveContainer);
+    syncMainDate(currentActiveContainer); 
   }
 
-  function syncMainDate() {
-    const rows = document.querySelectorAll('.detail-row');
+  function syncMainDate(containerId = 'detailsContainer') {
+    const container = document.getElementById(containerId);
+    const rows = container.querySelectorAll('.detail-row');
+    const dateInputId = containerId === 'editDetailsContainer' ? 'editDate' : 'entryDate';
+    
     if (rows.length > 0) {
       const firstDate = rows[0].querySelector('.detail-date').value;
       if (firstDate) {
-        document.getElementById('entryDate').value = firstDate;
+        document.getElementById(dateInputId).value = firstDate;
       }
     }
   }
-
-  function removeDetailRow(btn) {
+  
+  function removeDetailRow(btn, context = 'add') {
     const row = btn.closest('.detail-row');
     row.remove();
-    updateRowButtons(); 
-    calculateDetails();
+    const containerId = context === 'edit' ? 'editDetailsContainer' : 'detailsContainer';
+    updateRowButtons(containerId); 
+    calculateDetails(containerId);
   }
 
-  function updateRowButtons() {
-    const rows = document.querySelectorAll('.detail-row');
-    const header = document.getElementById('detailsHeader');
-    const initialAddBtn = document.getElementById('initialAddBtn');
+  function updateRowButtons(containerId = 'detailsContainer') {
+    const container = document.getElementById(containerId);
+    const rows = container.querySelectorAll('.detail-row');
+    const headerId = containerId === 'editDetailsContainer' ? 'editDetailsHeader' : 'detailsHeader';
+    const btnId = containerId === 'editDetailsContainer' ? 'editInitialAddBtn' : 'initialAddBtn';
+    
+    const header = document.getElementById(headerId);
+    const initialAddBtn = document.getElementById(btnId);
 
     if (rows.length === 0) {
       header.style.display = 'none';
       initialAddBtn.style.display = 'flex'; 
-      return;
     } else {
       header.style.display = 'grid';
       initialAddBtn.style.display = 'none'; 
@@ -1331,17 +1346,15 @@
 
     rows.forEach((row, index) => {
       const addBtn = row.querySelector('.btn-add-row');
-      if (index === rows.length - 1) {
-        addBtn.style.display = 'inline-flex';
-      } else {
-        addBtn.style.display = 'none';
-      }
+      addBtn.style.display = index === rows.length - 1 ? 'inline-flex' : 'none';
     });
   }
   
-  function calculateDetails() {
-    const rows = document.querySelectorAll('.detail-row');
-    const broadAmountInput = document.getElementById('entryAmount');
+  function calculateDetails(containerId = 'detailsContainer') {
+    const container = document.getElementById(containerId);
+    const rows = container.querySelectorAll('.detail-row');
+    const amountInputId = containerId === 'editDetailsContainer' ? 'editAmount' : 'entryAmount';
+    const broadAmountInput = document.getElementById(amountInputId);
     
     if (rows.length === 0) {
       broadAmountInput.readOnly = false;
@@ -1350,13 +1363,10 @@
     }
 
     let grandTotal = 0;
-    
     rows.forEach(row => {
       const qty = parseFloat(row.querySelector('.detail-qty').value) || 0;
       const price = parseFloat(row.querySelector('.detail-price').value) || 0;
-      const total = qty * price;
-      
-      grandTotal += total;
+      grandTotal += (qty * price);
     });
 
     broadAmountInput.value = grandTotal;
@@ -1921,8 +1931,7 @@
 
   function openModal(id) {
     const row = currentLedgerHistory.find(r => r.id === id);
-    const modalTitle = document.getElementById('editModalTitle');
-    modalTitle.innerText = row.type === 'Goods Purchased' ? 'Edit Purchase Transaction' : 'Edit Payment';
+    document.getElementById('editModalTitle').innerText = row.type === 'Goods Purchased' ? 'Edit Purchase Transaction' : 'Edit Payment';
     
     document.getElementById('editId').value = id;
     document.getElementById('editOldAmount').value = row.amount;
@@ -1935,16 +1944,43 @@
       isBF = true;
       notes = notes.replace("(Brought Forward) ", ""); 
     }
-
     document.getElementById('editNotes').value = notes;
 
     const bfCheckboxContainer = document.getElementById('editBFContainer');
     const bfCheckbox = document.getElementById('editBroughtForward');
+    const wrapper = document.getElementById('editDetailedItemsWrapper');
+    const container = document.getElementById('editDetailsContainer');
+    
+    container.innerHTML = ''; // Clear old data
 
     if (row.type === 'Goods Purchased') {
-      bfCheckboxContainer.style.display = 'flex'; bfCheckbox.checked = isBF;
+      bfCheckboxContainer.style.display = 'flex'; 
+      bfCheckbox.checked = isBF;
+      wrapper.style.display = 'block'; // Show details UI for purchases
+      
+      // Inject existing details into the edit modal
+      if (row.details && row.details.length > 0) {
+        row.details.forEach(d => {
+          document.getElementById('modalFruit').value = d.fruit;
+          document.getElementById('modalQty').value = d.qty;
+          document.getElementById('modalPrice').value = d.price;
+          // Format date for the row
+          let rowDate = new Date(row.rawDate).toISOString().split('T')[0];
+          document.getElementById('modalDate').value = rowDate;
+          
+          currentActiveContainer = 'editDetailsContainer';
+          editingRow = null; 
+          saveItemModal(); // Reusing our save function to silently build the HTML rows
+        });
+      } else {
+        updateRowButtons('editDetailsContainer');
+        calculateDetails('editDetailsContainer');
+      }
+
     } else {
-      bfCheckboxContainer.style.display = 'none'; bfCheckbox.checked = false;
+      bfCheckboxContainer.style.display = 'none'; 
+      bfCheckbox.checked = false;
+      wrapper.style.display = 'none'; // Hide details UI for payments
     }
 
     if (row.rawDate && !isBF) {
@@ -1973,12 +2009,29 @@
     if (!isBF && !date) { alert("Date is mandatory unless Brought Forward is checked."); return; }
     if (isBF && type === 'Goods Purchased') { notes = "(Brought Forward) " + notes; }
 
+    // Scrape modified details
+    let updatedDetails = [];
+    const detailRows = document.getElementById('editDetailsContainer').querySelectorAll('.detail-row');
+    if (detailRows.length > 0) {
+      detailRows.forEach(row => {
+        const fruit = row.querySelector('.detail-fruit').value.trim();
+        const qty = parseFloat(row.querySelector('.detail-qty').value) || 0;
+        const price = parseFloat(row.querySelector('.detail-price').value) || 0;
+        const itemDate = row.querySelector('.detail-date').value;
+        const total = qty * price;
+        if (fruit || total > 0) {
+          updatedDetails.push({ fruit: fruit, qty: qty, price: price, date: itemDate, total: total });
+        }
+      });
+    }
+
     document.getElementById('editModal').style.display = 'none';
     showLoading();
     try {
       const res = await apiPost('updateEntry', {
         id: id, customerName: custName, type: type, 
-        oldAmount: oldAmount, amount: amount, date: date, notes: notes 
+        oldAmount: oldAmount, amount: amount, date: date, notes: notes,
+        details: updatedDetails // Send the Upsert payload
       });
       if (res.status === 'success' || !res.error) {
         showToast("Changes Saved Successfully!", "success");
