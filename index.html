@@ -212,6 +212,24 @@
     .btn-modify { background: #f39c12; } /* Orange for Edit */
     .btn-remove { background: #d32f2f; } /* Red for Delete */
     .btn-add-row { background: #28a745; } /* Green for Add */
+
+    /* Detailed Items Dropdown UI */
+    .details-toggle-btn {
+      background: none; border: none; padding: 2px 4px; cursor: pointer; color: #007bff; font-size: 10px; font-weight: bold; margin-left: 4px;
+    }
+    .details-dropdown {
+      display: none; background: var(--bg-color); border: 1px solid var(--border-light); border-radius: 6px; padding: 8px; margin-top: 6px; margin-bottom: 6px;
+    }
+    .details-dropdown-row {
+      display: flex; justify-content: space-between; font-size: 10px; color: var(--text-main); margin-bottom: 4px; border-bottom: 1px dashed var(--border-color); padding-bottom: 2px;
+    }
+    .details-dropdown-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    
+    @media print {
+      /* Force dropdowns open during PDF generation */
+      .details-dropdown { display: block !important; border: 1px solid #ccc !important; background: #fafafa !important; }
+      .details-toggle-btn { display: none !important; }
+    }
     
   </style>
 
@@ -1612,20 +1630,49 @@
         if (isExactMatch) {
             siblingAttr = `data-sibling-id="${isLeft ? rightId : leftId}"`;
         }
+
+        // ==========================================
+        // NEW: BUILD ACCORDION HTML
+        // ==========================================
+        let detailsHtml = '';
+        let toggleBtn = '';
         
+        if (item.details && item.details.length > 0) {
+          toggleBtn = `<button class="details-toggle-btn no-print" onclick="toggleDetails('desc_${item.id}')">▼ Items</button>`;
+          
+          let rowsHtml = item.details.map(d => `
+            <div class="details-dropdown-row">
+              <div style="flex: 2; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${d.fruit}</div>
+              <div style="flex: 1; text-align: center;">${d.qty}</div>
+              <div style="flex: 1; text-align: right; color: #007bff; font-weight: bold;">₹${d.total.toLocaleString('en-IN')}</div>
+            </div>
+          `).join('');
+          
+          detailsHtml = `
+            <div id="desc_${item.id}" class="details-dropdown">
+              <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; border-bottom: 1px solid var(--border-light); padding-bottom: 2px;">
+                <div style="flex: 2;">Item</div><div style="flex: 1; text-align: center;">Qty</div><div style="flex: 1; text-align: right;">Total</div>
+              </div>
+              ${rowsHtml}
+            </div>
+          `;
+        }
+        // ==========================================
+
         return `
           <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
               <div>
-                <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px;">${shortDate}</div>
+                <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px;">${shortDate} ${toggleBtn}</div>
                 <div style="font-weight: bold; font-size: 14px; color: var(--text-main);">₹${item.amount.toLocaleString('en-IN')}</div>
               </div>
               <div class="action-icons no-print" style="display: flex; align-items: center; gap: 4px;">
                 <button class="icon-btn" onclick="openModal(${item.id})" style="background: none; border: none; padding: 2px; cursor: pointer; color: #007bff; font-size: 14px;">✏️</button>
                 <button class="icon-btn" onclick="promptDelete(${item.id})" style="background: none; border: none; padding: 2px; cursor: pointer; color: #d32f2f; font-size: 14px;">🗑️</button>
-               <input type="checkbox" id="check_${item.id}" class="settle-checkbox" value="${item.id}" data-type="${item.type}" data-amount="${item.amount}" ${siblingAttr} onchange="handleSettleCheck(this)" style="width:18px; height:18px; margin-left: 8px; cursor: pointer; accent-color: #2e7d32;">
+                <input type="checkbox" id="check_${item.id}" class="settle-checkbox" value="${item.id}" data-type="${item.type}" data-amount="${item.amount}" ${siblingAttr} onchange="handleSettleCheck(this)" style="width:18px; height:18px; margin-left: 8px; cursor: pointer; accent-color: #2e7d32;">
               </div>
             </div>
+            ${detailsHtml}
             ${noteHtml}
           </div>
         `;
@@ -1716,6 +1763,12 @@
 
     const element = document.getElementById('ledgerCard').cloneNode(true);
     element.querySelectorAll('.no-print, .action-icons').forEach(el => el.remove());
+
+    // NEW: Force all detailed item dropdowns open for the PDF receipt
+    element.querySelectorAll('.details-dropdown').forEach(el => {
+      el.style.display = 'block';
+      el.style.border = 'none'; // Clean up borders for print
+    });
 
     element.style.display = 'block';
     element.style.width = '280px'; 
@@ -1913,6 +1966,16 @@
       hideLoading();
     }
   }
+
+  function toggleDetails(elementId) {
+    const el = document.getElementById(elementId);
+    if (el.style.display === 'block') {
+      el.style.display = 'none';
+    } else {
+      el.style.display = 'block';
+    }
+  }
+  
 </script>
 </body>
 </html>
