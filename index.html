@@ -1870,23 +1870,26 @@
   function closeDeleteModal() { document.getElementById('deleteModal').style.display = 'none'; }
 
   async function confirmDelete() {
-    const id = parseInt(document.getElementById('deleteId').value);
+    // Keep the ID exactly as it is (avoids type-mismatch crashes)
+    const id = document.getElementById('deleteId').value;
     closeDeleteModal();
-    const row = currentLedgerHistory.find(r => r.id === id);
-    const custName = document.getElementById('searchCustomerInput').value;
     
     showLoading();
     try {
-      const res = await apiPost('deleteEntry', { id: id, customerName: custName, amount: row.amount, type: row.type });
+      // The new backend only needs the ID!
+      const res = await apiPost('deleteEntry', { id: id });
+      
       if(res.status === 'success' || !res.error) {
         showToast("Transaction Deleted", "success");
         isDashboardStale = true;
         await loadLedger();
       } else {
-         showToast("Failed to delete.", "error");
+         // Show the real backend error if one occurs
+         alert("BACKEND ERROR: " + res.error); 
       }
     } catch (e) {
-      showToast("Network Error: Could not delete.", "error");
+      // Show the real frontend error if the browser crashes
+      alert("FRONTEND ERROR: " + e.message); 
     } finally {
       hideLoading();
     }
