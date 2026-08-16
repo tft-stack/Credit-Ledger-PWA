@@ -488,47 +488,58 @@
         </div>
         <input type="hidden" id="entryTypeSelected" value="Goods Purchased">
         
-      <!-- Broad Amount Field -->
-      <label>Amount (₹)</label>
-      <input type="number" id="entryAmount" placeholder="Enter broad amount..." required style="transition: background 0.3s;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
-
-      <!-- Expandable Detailed Items Section -->
-      <div id="detailedItemsWrapper" style="margin-top: 16px; margin-bottom: 16px;">
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <span style="font-size: 13px; font-weight: bold; color: var(--text-muted);">Enter Item Details</span>
-          
-          <!-- Icon-Only Add Button targeting the Modal -->
-          <button type="button" id="initialAddBtn" onclick="openItemModal()" style="background: #007bff; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Add Items">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </button>
+        <!-- Amount and Date in a single compact row -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <div>
+            <label>Amount (₹)</label>
+            <input type="number" id="entryAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
+          </div>
+          <div>
+            <label>Date</label>
+            <div style="position: relative; margin-bottom: 0;">
+              <input type="text" id="entryDate" required style="margin-bottom: 0; padding-right: 34px; background: var(--input-bg);" placeholder="Select Date" readonly>
+              <div onclick="openDatePicker('entryDate')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px;">📅</div>
+            </div>
+          </div>
         </div>
 
-        <!-- Dynamic Header (4 Columns only) -->
-        <div id="detailsHeader" class="compact-header">
-          <div>Fruit</div>
-          <div>Qty</div>
-          <div>Price</div>
-          <div>Total</div>
-        </div>
-
-        <!-- The container where dynamic rows will appear -->
-        <div id="detailsContainer"></div>
-      </div>
-        
-        <div id="addBFContainer" style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
+        <!-- Brought Forward Checkbox moved right under Amount/Date block -->
+        <div id="addBFContainer" style="display: flex; align-items: center; gap: 6px; margin-bottom: 16px;">
           <input type="checkbox" id="broughtForward" onchange="toggleBF()" style="width:18px; height:18px; margin:0;">
           <label for="broughtForward" style="margin:0; text-transform:none; font-size:14px; color: var(--text-main);">Brought forward</label>
         </div>
-        <div style="position: relative; margin-bottom: 12px;">
-          <input type="text" id="entryDate" required style="margin-bottom: 0; padding-right: 40px; background: var(--input-bg);" placeholder="Select Date" readonly>
-          <div onclick="openDatePicker('entryDate')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px;">📅</div>
+
+        <!-- Expandable Detailed Items Section -->
+        <div id="detailedItemsWrapper" style="margin-top: 16px; margin-bottom: 16px;">
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 13px; font-weight: bold; color: var(--text-muted);">Enter Item Details</span>
+            
+            <button type="button" id="initialAddBtn" onclick="openItemModal()" style="background: #007bff; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Add Items">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+
+          <div id="detailsHeader" class="compact-header">
+            <div>Fruit</div>
+            <div>Qty</div>
+            <div>Price</div>
+            <div>Total</div>
+          </div>
+
+          <div id="detailsContainer"></div>
         </div>
-        <input type="text" id="entryNotes" placeholder="Notes (Optional)">
-        <button class="btn btn-blue" style="width: 100%; margin-top: 10px;" onclick="submitEntry()">Save Entry</button>
+        
+        <input type="text" id="entryNotes" placeholder="Notes (Optional)" style="margin-bottom: 16px;">
+        
+        <!-- Action Buttons: Cancel + Save in the same row -->
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-outline" style="flex: 1;" onclick="cancelAddEntry()">Cancel</button>
+          <button class="btn btn-blue" style="flex: 1;" onclick="submitEntry()">Save</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2106,6 +2117,16 @@
     } else {
       el.style.display = 'block';
     }
+  }
+
+  function cancelAddEntry() {
+    const custName = document.getElementById('entryCustomerInput').value.trim();
+    if (custName) {
+      document.getElementById('searchCustomerInput').value = custName;
+      toggleClearSearch('searchCustomerInput', 'clearSearchBtn');
+      loadLedger();
+    }
+    switchScreen('view');
   }
   
 </script>
