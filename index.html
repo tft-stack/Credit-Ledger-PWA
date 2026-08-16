@@ -559,7 +559,7 @@
 
   <!-- ==================== EDIT TRANSACTION MODAL ==================== -->
   <div id="editModal" class="modal-overlay">
-    <div class="card" style="width: 100%; max-width: 350px;">
+    <div class="card" style="width: 100%; max-width: 350px; max-height: 85vh; overflow-y: auto;">
       <h3 id="editModalTitle">Edit Transaction</h3>
       <input type="hidden" id="editId">
       <input type="hidden" id="editOldAmount">
@@ -569,18 +569,13 @@
       <input type="number" id="editAmount" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
 
       <!-- NEW: Expandable Detailed Items Section for Edit Mode -->
+      <!-- NEW: Inline Edit Details Section -->
       <div id="editDetailedItemsWrapper" style="margin-top: 16px; margin-bottom: 16px; display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <span style="font-size: 13px; font-weight: bold; color: var(--text-muted);">Edit Item Details</span>
-          <button type="button" id="editInitialAddBtn" onclick="openItemModal(null, 'edit')" style="background: #007bff; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Add Items">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
+          <span style="font-size: 13px; font-weight: bold; color: var(--text-muted);">Edit Items Inline</span>
+          <button type="button" onclick="addInlineEditRow()" style="background: #28a745; color: white; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+            ＋ Add Item
           </button>
-        </div>
-        <div id="editDetailsHeader" class="compact-header">
-          <div>Fruit</div><div>Qty</div><div>Price</div><div>Total</div>
         </div>
         <div id="editDetailsContainer"></div>
       </div>
@@ -1931,14 +1926,9 @@
 
   function openModal(id) {
     try {
-      // 1. Force string comparison to prevent type-mismatch crashes
       const searchId = id.toString().trim();
       const row = currentLedgerHistory.find(r => r.id.toString().trim() === searchId);
-      
-      if (!row) {
-        alert("Could not find this transaction in memory. Try refreshing the page.");
-        return;
-      }
+      if (!row) return;
 
       document.getElementById('editModalTitle').innerText = row.type === 'Goods Purchased' ? 'Edit Purchase Transaction' : 'Edit Payment';
       
@@ -1962,44 +1952,30 @@
       
       container.innerHTML = ''; // Clear old data
 
-      if (row.type === 'Goods Purchased') {
-        bfCheckboxContainer.style.display = 'flex'; 
-        bfCheckbox.checked = isBF;
-        wrapper.style.display = 'block'; // Show details UI for purchases
-        
-        // Inject existing details into the edit modal
-        if (row.details && row.details.length > 0) {
-          row.details.forEach(d => {
-            document.getElementById('modalFruit').value = d.fruit;
-            document.getElementById('modalQty').value = d.qty;
-            document.getElementById('modalPrice').value = d.price;
-            
-            // Failsafe date parsing
-            let rowDate = '';
-            if (row.rawDate) {
-              rowDate = new Date(row.rawDate).toISOString().split('T')[0];
-            }
-            document.getElementById('modalDate').value = rowDate;
-            
-            currentActiveContainer = 'editDetailsContainer';
-            editingRow = null; 
-            saveItemModal(); // Silently builds the HTML rows inside the modal
-          });
-        } else {
-          updateRowButtons('editDetailsContainer');
-          calculateDetails('editDetailsContainer');
-        }
-
-      } else {
-        bfCheckboxContainer.style.display = 'none'; 
-        bfCheckbox.checked = false;
-        wrapper.style.display = 'none'; // Hide details UI for payments
-      }
-
+      // Set the main date early so blank item rows can inherit it
       if (row.rawDate && !isBF) {
         editDatePicker.setDate(new Date(row.rawDate));
       } else {
         editDatePicker.clear();
+      }
+
+      if (row.type === 'Goods Purchased') {
+        bfCheckboxContainer.style.display = 'flex'; 
+        bfCheckbox.checked = isBF;
+        wrapper.style.display = 'block'; 
+        
+        // Inject existing details directly as input rows
+        if (row.details && row.details.length > 0) {
+          row.details.forEach(d => {
+            let rowDate = '';
+            if (row.rawDate) rowDate = new Date(row.rawDate).toISOString().split('T')[0];
+            addInlineEditRow(d.fruit, d.qty, d.price, rowDate);
+          });
+        }
+      } else {
+        bfCheckboxContainer.style.display = 'none'; 
+        bfCheckbox.checked = false;
+        wrapper.style.display = 'none'; 
       }
 
       toggleEditBF(); 
@@ -2012,6 +1988,67 @@
 
   function closeModal() { document.getElementById('editModal').style.display = 'none'; }
 
+  function addInlineEditRow(fruit = '', qty = '', price = '', date = '') {
+    const container = document.getElementById('editDetailsContainer');
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'detail-row';
+    rowDiv.style.cssText = 'background: var(--pill-bg); padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border-light);';
+
+    // Fallback to the main entry date if no date is provided
+    if (!date) {
+      const mainDate = document.getElementById('editDate').value;
+      date = mainDate || new Date().toISOString().split('T')[0];
+    }
+
+    const total = (parseFloat(qty) || 0) * (parseFloat(price) || 0);
+
+    rowDiv.innerHTML = `
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1.2fr; gap: 8px; margin-bottom: 8px;">
+        <input type="text" class="inline-fruit" placeholder="Fruit Name" value="${fruit}" style="margin:0; padding:8px; font-size:13px; border-radius:4px; border:1px solid var(--border-color);">
+        <input type="number" class="inline-qty" placeholder="Qty" value="${qty}" style="margin:0; padding:8px; font-size:13px; border-radius:4px; border:1px solid var(--border-color);" oninput="updateInlineTotal(this)">
+        <input type="number" class="inline-price" placeholder="Price" value="${price}" style="margin:0; padding:8px; font-size:13px; border-radius:4px; border:1px solid var(--border-color);" oninput="updateInlineTotal(this)">
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+         <input type="date" class="inline-date" value="${date}" style="margin:0; padding:4px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); width: 130px; background: var(--input-bg);">
+         <div style="font-weight: bold; font-size: 14px; color: #007bff;" class="inline-total">₹${total.toLocaleString('en-IN')}</div>
+         <button type="button" onclick="this.closest('.detail-row').remove(); calculateInlineGrandTotal();" style="border:none; background:#d32f2f; color:white; border-radius:4px; padding:6px 12px; font-weight:bold; cursor:pointer;">✕ Remove</button>
+      </div>
+    `;
+    container.appendChild(rowDiv);
+    calculateInlineGrandTotal();
+  }
+
+  function updateInlineTotal(inputElem) {
+    const row = inputElem.closest('.detail-row');
+    const qty = parseFloat(row.querySelector('.inline-qty').value) || 0;
+    const price = parseFloat(row.querySelector('.inline-price').value) || 0;
+    const total = qty * price;
+    row.querySelector('.inline-total').innerText = '₹' + total.toLocaleString('en-IN');
+    calculateInlineGrandTotal();
+  }
+
+  function calculateInlineGrandTotal() {
+    const rows = document.getElementById('editDetailsContainer').querySelectorAll('.detail-row');
+    const broadAmountInput = document.getElementById('editAmount');
+    
+    if (rows.length === 0) {
+      broadAmountInput.readOnly = false;
+      broadAmountInput.style.backgroundColor = ""; 
+      return;
+    }
+
+    let grandTotal = 0;
+    rows.forEach(row => {
+      const qty = parseFloat(row.querySelector('.inline-qty').value) || 0;
+      const price = parseFloat(row.querySelector('.inline-price').value) || 0;
+      grandTotal += (qty * price);
+    });
+
+    broadAmountInput.value = grandTotal;
+    broadAmountInput.readOnly = true;
+    broadAmountInput.style.backgroundColor = "var(--bg-color)"; 
+  }
+  
   async function saveEdit() {
     const id = document.getElementById('editId').value;
     const oldAmount = document.getElementById('editOldAmount').value;
@@ -2026,16 +2063,17 @@
     if (!isBF && !date) { alert("Date is mandatory unless Brought Forward is checked."); return; }
     if (isBF && type === 'Goods Purchased') { notes = "(Brought Forward) " + notes; }
 
-    // Scrape modified details
+    // Scrape modified details from the inline inputs
     let updatedDetails = [];
     const detailRows = document.getElementById('editDetailsContainer').querySelectorAll('.detail-row');
     if (detailRows.length > 0) {
       detailRows.forEach(row => {
-        const fruit = row.querySelector('.detail-fruit').value.trim();
-        const qty = parseFloat(row.querySelector('.detail-qty').value) || 0;
-        const price = parseFloat(row.querySelector('.detail-price').value) || 0;
-        const itemDate = row.querySelector('.detail-date').value;
+        const fruit = row.querySelector('.inline-fruit').value.trim();
+        const qty = parseFloat(row.querySelector('.inline-qty').value) || 0;
+        const price = parseFloat(row.querySelector('.inline-price').value) || 0;
+        const itemDate = row.querySelector('.inline-date').value;
         const total = qty * price;
+        
         if (fruit || total > 0) {
           updatedDetails.push({ fruit: fruit, qty: qty, price: price, date: itemDate, total: total });
         }
