@@ -1930,67 +1930,84 @@
   }
 
   function openModal(id) {
-    const row = currentLedgerHistory.find(r => r.id === id);
-    document.getElementById('editModalTitle').innerText = row.type === 'Goods Purchased' ? 'Edit Purchase Transaction' : 'Edit Payment';
-    
-    document.getElementById('editId').value = id;
-    document.getElementById('editOldAmount').value = row.amount;
-    document.getElementById('editType').value = row.type;
-    document.getElementById('editAmount').value = row.amount;
-
-    let notes = row.notes || '';
-    let isBF = false;
-    if (notes.startsWith("(Brought Forward) ")) {
-      isBF = true;
-      notes = notes.replace("(Brought Forward) ", ""); 
-    }
-    document.getElementById('editNotes').value = notes;
-
-    const bfCheckboxContainer = document.getElementById('editBFContainer');
-    const bfCheckbox = document.getElementById('editBroughtForward');
-    const wrapper = document.getElementById('editDetailedItemsWrapper');
-    const container = document.getElementById('editDetailsContainer');
-    
-    container.innerHTML = ''; // Clear old data
-
-    if (row.type === 'Goods Purchased') {
-      bfCheckboxContainer.style.display = 'flex'; 
-      bfCheckbox.checked = isBF;
-      wrapper.style.display = 'block'; // Show details UI for purchases
+    try {
+      // 1. Force string comparison to prevent type-mismatch crashes
+      const searchId = id.toString().trim();
+      const row = currentLedgerHistory.find(r => r.id.toString().trim() === searchId);
       
-      // Inject existing details into the edit modal
-      if (row.details && row.details.length > 0) {
-        row.details.forEach(d => {
-          document.getElementById('modalFruit').value = d.fruit;
-          document.getElementById('modalQty').value = d.qty;
-          document.getElementById('modalPrice').value = d.price;
-          // Format date for the row
-          let rowDate = new Date(row.rawDate).toISOString().split('T')[0];
-          document.getElementById('modalDate').value = rowDate;
-          
-          currentActiveContainer = 'editDetailsContainer';
-          editingRow = null; 
-          saveItemModal(); // Reusing our save function to silently build the HTML rows
-        });
-      } else {
-        updateRowButtons('editDetailsContainer');
-        calculateDetails('editDetailsContainer');
+      if (!row) {
+        alert("Could not find this transaction in memory. Try refreshing the page.");
+        return;
       }
 
-    } else {
-      bfCheckboxContainer.style.display = 'none'; 
-      bfCheckbox.checked = false;
-      wrapper.style.display = 'none'; // Hide details UI for payments
-    }
+      document.getElementById('editModalTitle').innerText = row.type === 'Goods Purchased' ? 'Edit Purchase Transaction' : 'Edit Payment';
+      
+      document.getElementById('editId').value = searchId;
+      document.getElementById('editOldAmount').value = row.amount;
+      document.getElementById('editType').value = row.type;
+      document.getElementById('editAmount').value = row.amount;
 
-    if (row.rawDate && !isBF) {
-      editDatePicker.setDate(new Date(row.rawDate));
-    } else {
-      editDatePicker.clear();
-    }
+      let notes = row.notes || '';
+      let isBF = false;
+      if (notes.startsWith("(Brought Forward) ")) {
+        isBF = true;
+        notes = notes.replace("(Brought Forward) ", ""); 
+      }
+      document.getElementById('editNotes').value = notes;
 
-    toggleEditBF(); 
-    document.getElementById('editModal').style.display = 'flex';
+      const bfCheckboxContainer = document.getElementById('editBFContainer');
+      const bfCheckbox = document.getElementById('editBroughtForward');
+      const wrapper = document.getElementById('editDetailedItemsWrapper');
+      const container = document.getElementById('editDetailsContainer');
+      
+      container.innerHTML = ''; // Clear old data
+
+      if (row.type === 'Goods Purchased') {
+        bfCheckboxContainer.style.display = 'flex'; 
+        bfCheckbox.checked = isBF;
+        wrapper.style.display = 'block'; // Show details UI for purchases
+        
+        // Inject existing details into the edit modal
+        if (row.details && row.details.length > 0) {
+          row.details.forEach(d => {
+            document.getElementById('modalFruit').value = d.fruit;
+            document.getElementById('modalQty').value = d.qty;
+            document.getElementById('modalPrice').value = d.price;
+            
+            // Failsafe date parsing
+            let rowDate = '';
+            if (row.rawDate) {
+              rowDate = new Date(row.rawDate).toISOString().split('T')[0];
+            }
+            document.getElementById('modalDate').value = rowDate;
+            
+            currentActiveContainer = 'editDetailsContainer';
+            editingRow = null; 
+            saveItemModal(); // Silently builds the HTML rows inside the modal
+          });
+        } else {
+          updateRowButtons('editDetailsContainer');
+          calculateDetails('editDetailsContainer');
+        }
+
+      } else {
+        bfCheckboxContainer.style.display = 'none'; 
+        bfCheckbox.checked = false;
+        wrapper.style.display = 'none'; // Hide details UI for payments
+      }
+
+      if (row.rawDate && !isBF) {
+        editDatePicker.setDate(new Date(row.rawDate));
+      } else {
+        editDatePicker.clear();
+      }
+
+      toggleEditBF(); 
+      document.getElementById('editModal').style.display = 'flex';
+      
+    } catch (err) {
+      alert("UI Error: " + err.message);
+    }
   }
 
   function closeModal() { document.getElementById('editModal').style.display = 'none'; }
