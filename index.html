@@ -428,6 +428,13 @@
         <div style="flex: 1; text-align: center; font-size: 11px; font-weight: bold; color: var(--text-muted);">PAYMENT</div>
       </div>
 
+      <!-- Last Paid Info Pill (Positioned below Purchase/Payment buttons) -->
+      <div id="viewEntryLastPaid" style="display: none; text-align: center; margin-top: 12px; margin-bottom: 16px;">
+        <div style="display: inline-block; background: var(--pill-bg, #f8f9fa); padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 500; color: var(--text-muted); border: 1px solid var(--border-light);">
+            Last Paid: <strong id="viewLastPaidAmount" style="color: var(--text-main); font-size: 12px;">₹0</strong> on <strong id="viewLastPaidDate" style="color: var(--text-main);">--/--/----</strong>
+        </div>
+      </div>
+
       <div id="ledgerRowsContainer"></div>
 
       <!-- Sticky Footer with Contextual "Save Paid" Button -->
@@ -1798,29 +1805,34 @@
 
   function renderLedger(data) {
 
-    // --- NEW: Calculate and Display Last Paid from Dashboard Data ---
-    const lastPaidContainer = document.getElementById('viewEntryLastPaid');
-    const lastPaidAmountEl = document.getElementById('viewLastPaidAmount');
-    const lastPaidDateEl = document.getElementById('viewLastPaidDate');
-    
-    // 1. Get the exact name of the customer currently being viewed
-    const currentCustName = document.getElementById('searchCustomerInput').value.trim().toLowerCase();
+    // --- NEW: Calculate and Display Last Paid from Dashboard Data (SAFE VERSION) ---
+    try {
+      const lastPaidContainer = document.getElementById('viewEntryLastPaid');
+      const lastPaidAmountEl = document.getElementById('viewLastPaidAmount');
+      const lastPaidDateEl = document.getElementById('viewLastPaidDate');
+      
+      // Only proceed if the HTML elements actually exist on the page
+      if (lastPaidContainer && lastPaidAmountEl && lastPaidDateEl) {
+        const searchInput = document.getElementById('searchCustomerInput');
+        const currentCustName = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
-    // 2. Look up this customer in your existing dashboard global variable
-    let dashboardInfo = null;
-    if (typeof currentDashboardData !== 'undefined' && currentDashboardData && currentDashboardData.length > 0) {
-      dashboardInfo = currentDashboardData.find(c => 
-        (c.name || "").toLowerCase() === currentCustName
-      );
-    }
+        let dashboardInfo = null;
+        if (typeof currentDashboardData !== 'undefined' && currentDashboardData && currentDashboardData.length > 0) {
+          dashboardInfo = currentDashboardData.find(c => 
+            (c.name || "").toLowerCase() === currentCustName
+          );
+        }
 
-    // 3. Display the data if a valid payment exists
-    if (dashboardInfo && dashboardInfo.lastPaymentAmount > 0) {
-      lastPaidAmountEl.innerText = '₹' + dashboardInfo.lastPaymentAmount.toLocaleString('en-IN');
-      lastPaidDateEl.innerText = dashboardInfo.lastPaymentDate;
-      lastPaidContainer.style.display = 'block'; 
-    } else {
-      lastPaidContainer.style.display = 'none'; 
+        if (dashboardInfo && dashboardInfo.lastPaymentAmount > 0) {
+          lastPaidAmountEl.innerText = '₹' + dashboardInfo.lastPaymentAmount.toLocaleString('en-IN');
+          lastPaidDateEl.innerText = dashboardInfo.lastPaymentDate || '--/--/----';
+          lastPaidContainer.style.display = 'block'; 
+        } else {
+          lastPaidContainer.style.display = 'none'; 
+        }
+      }
+    } catch (e) {
+      console.error("Last Paid Pill skipped due to error:", e);
     }
     // ------------------------------------------
     
