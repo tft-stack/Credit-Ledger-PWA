@@ -1797,6 +1797,33 @@
   }
 
   function renderLedger(data) {
+
+    // --- NEW: Calculate and Display Last Paid from Dashboard Data ---
+    const lastPaidContainer = document.getElementById('viewEntryLastPaid');
+    const lastPaidAmountEl = document.getElementById('viewLastPaidAmount');
+    const lastPaidDateEl = document.getElementById('viewLastPaidDate');
+    
+    // 1. Get the exact name of the customer currently being viewed
+    const currentCustName = document.getElementById('searchCustomerInput').value.trim().toLowerCase();
+
+    // 2. Look up this customer in your existing dashboard global variable
+    let dashboardInfo = null;
+    if (typeof currentDashboardData !== 'undefined' && currentDashboardData && currentDashboardData.length > 0) {
+      dashboardInfo = currentDashboardData.find(c => 
+        (c.name || "").toLowerCase() === currentCustName
+      );
+    }
+
+    // 3. Display the data if a valid payment exists
+    if (dashboardInfo && dashboardInfo.lastPaymentAmount > 0) {
+      lastPaidAmountEl.innerText = '₹' + dashboardInfo.lastPaymentAmount.toLocaleString('en-IN');
+      lastPaidDateEl.innerText = dashboardInfo.lastPaymentDate;
+      lastPaidContainer.style.display = 'block'; 
+    } else {
+      lastPaidContainer.style.display = 'none'; 
+    }
+    // ------------------------------------------
+    
     currentLedgerHistory = data.history; 
     document.getElementById('ledgerCard').style.display = 'block';
     document.getElementById('emptyState').style.display = 'none';
