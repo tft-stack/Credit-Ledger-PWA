@@ -546,6 +546,35 @@
 
   <datalist id="customerList"></datalist>
 
+  <!-- ==================== SCREEN 3: SMART SETTLE ==================== -->
+  <div id="screen-settle" class="screen">
+    <div class="sticky-header" style="margin-bottom: 0; padding: 16px 0 12px 0; border-bottom: none; top: 0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px;">
+        <h2 style="margin:0;">Smart Settle</h2>
+      </div>
+      <p style="color: var(--text-muted); font-size: 13px; margin: 4px 16px 0 16px; text-align: left;">
+        Auto-detected matching purchases and payments. Select items to clear them from your ledger.
+      </p>
+    </div>
+
+    <div id="smartSettleEmptyState" style="display: none; text-align: center; padding: 40px 16px;">
+      <div style="font-size: 40px; margin-bottom: 12px;">🎉</div>
+      <h3 style="color: var(--text-main); margin-bottom: 8px;">All Caught Up!</h3>
+      <p style="color: var(--text-muted); font-size: 14px;">No perfectly matching purchases and payments were found across your active customers.</p>
+    </div>
+
+    <div id="smartSettleContainer" style="padding: 0 12px; padding-bottom: 80px;">
+      <!-- Dynamic Customer Cards will be injected here -->
+    </div>
+
+    <!-- Sticky Action Button (Hidden by default, appears when boxes are checked) -->
+    <div id="smartSettleBtnContainer" class="no-print" style="display: none; position: fixed; bottom: 80px; left: 0; right: 0; max-width: 650px; margin: 0 auto; padding: 12px 16px; background: var(--card-bg); border-top: 1px solid var(--border-light); box-shadow: 0 -4px 12px rgba(0,0,0,0.05); z-index: 40;">
+      <button class="btn btn-blue" style="width: 100%; border-radius: 8px; font-size: 15px; padding: 14px;" onclick="submitSmartSettled()">
+        ✔️ Mark Selected as Paid (<span id="smartSettleTotalCount">0</span>)
+      </button>
+    </div>
+  </div>
+  
   <!-- ==================== EDIT CUSTOMER NAME MODAL ==================== -->
   <div id="editCustomerModal" class="modal-overlay">
     <div class="card" style="width: 100%; max-width: 350px;">
@@ -671,6 +700,7 @@
   <div id="nav-dashboard" class="nav-item" onclick="navToDashboard()">Dashboard</div>
   <div id="nav-view" class="nav-item active" onclick="switchScreen('view')">View Entry</div>
   <div id="nav-enter" class="nav-item" onclick="navToAddEntry()">Add Entry</div>
+  <div id="nav-settle" class="nav-item" onclick="navToSmartSettle()">Smart Settle</div>
 </div>
 
 <script>
