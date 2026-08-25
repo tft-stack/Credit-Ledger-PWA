@@ -567,12 +567,6 @@
       <!-- Dynamic Customer Cards will be injected here -->
     </div>
 
-    <!-- Sticky Action Button (Hidden by default, appears when boxes are checked) -->
-    <div id="smartSettleBtnContainer" class="no-print" style="display: none; position: fixed; bottom: 80px; left: 0; right: 0; max-width: 650px; margin: 0 auto; padding: 12px 16px; background: var(--card-bg); border-top: 1px solid var(--border-light); box-shadow: 0 -4px 12px rgba(0,0,0,0.05); z-index: 40;">
-      <button class="btn btn-blue" style="width: 100%; border-radius: 8px; font-size: 15px; padding: 14px;" onclick="submitSmartSettled()">
-        ✔️ Mark Selected as Paid (<span id="smartSettleTotalCount">0</span>)
-      </button>
-    </div>
   </div>
   
   <!-- ==================== EDIT CUSTOMER NAME MODAL ==================== -->
@@ -967,10 +961,8 @@
   function renderSmartSettle(data) {
     const container = document.getElementById('smartSettleContainer');
     const emptyState = document.getElementById('smartSettleEmptyState');
-    const btnContainer = document.getElementById('smartSettleBtnContainer');
 
     container.innerHTML = '';
-    btnContainer.style.display = 'none';
 
     if (!data || data.length === 0) {
       emptyState.style.display = 'block';
@@ -980,8 +972,11 @@
     emptyState.style.display = 'none';
 
     data.forEach((custMatch) => {
+      // Create a safe ID string for the customer to use in HTML elements
+      let safeCustName = custMatch.customerName.replace(/[^a-zA-Z0-9]/g, '');
+
       let html = `
-        <div class="card" style="margin-bottom: 16px; padding: 0; overflow: hidden; border: 1px solid var(--border-light);">
+        <div class="card smart-settle-card" id="card_${safeCustName}" data-customer="${custMatch.customerName}" style="margin-bottom: 16px; padding: 0; overflow: hidden; border: 1px solid var(--border-light);">
           <div style="background: var(--pill-bg); padding: 12px 16px; border-bottom: 1px solid var(--border-light);">
             <div style="font-weight: bold; font-size: 16px; color: var(--text-main); margin-bottom: 4px;">📦 ${custMatch.customerName}</div>
             <div style="font-size: 11px; font-weight: bold; color: #007bff; text-transform: uppercase;">✨ ${custMatch.matchRule}</div>
@@ -993,7 +988,6 @@
             </div>
       `;
 
-      // Separate purchases and payments to render side-by-side
       let purchases = custMatch.items.filter(i => i.type === 'Goods Purchased');
       let payments = custMatch.items.filter(i => i.type === 'Amount Received');
       let maxLen = Math.max(purchases.length, payments.length);
@@ -1005,7 +999,6 @@
         const buildCell = (item, isLeft) => {
           if (!item) return `<div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''}"></div>`;
           
-          // For exact matches, tie them together so checking one checks both
           let siblingAttr = '';
           if (custMatch.matchRule.includes("Rule 1") && pur && pay) {
              siblingAttr = `data-sibling-id="${isLeft ? pay.id : pur.id}"`;
@@ -1033,13 +1026,20 @@
           </div>
         `;
       }
-      html += `</div></div>`;
+      
+      // Add the specific "Mark Settled" button inside the card, hidden by default
+      html += `
+          <div id="btnContainer_${safeCustName}" style="display: none; border-top: 1px dashed var(--border-color); margin-top: 12px; padding-top: 12px;">
+            <button class="btn btn-blue btn-sm" style="width: 100%; padding: 10px; border-radius: 8px; font-size: 14px;" onclick="submitSmartSettled('${safeCustName}')">✔️ Mark Paid (<span id="count_${safeCustName}">0</span>)</button>
+          </div>
+        </div>
+      </div>`;
+      
       container.innerHTML += html;
     });
   }
 
   function handleSmartSettleCheck(element) {
-    // If Rule 1 (1:1 match), automatically check the identical sibling item
     if (element && element.hasAttribute('data-sibling-id')) {
       const siblingId = element.getAttribute('data-sibling-id');
       const checkboxes = document.querySelectorAll('.smart-settle-checkbox');
@@ -1050,27 +1050,34 @@
       });
     }
 
-    const checkedBoxes = document.querySelectorAll('.smart-settle-checkbox:checked');
-    const saveBtnContainer = document.getElementById('smartSettleBtnContainer');
-    const countSpan = document.getElementById('smartSettleTotalCount');
+    // Find which customer card this checkbox belongs to
+    const card = element.closest('.smart-settle-card');
+    if (!card) return;
 
-    if (checkedBoxes.length > 0) {
-      saveBtnContainer.style.display = 'block';
-      countSpan.innerText = checkedBoxes.length;
+    const safeCustName = card.id.replace('card_', '');
+    const cardCheckboxes = card.querySelectorAll('.smart-settle-checkbox:checked');
+    const btnContainer = document.getElementById('btnContainer_' + safeCustName);
+    const countSpan = document.getElementById('count_' + safeCustName);
+
+    // Show/Hide the button ONLY for this specific customer
+    if (cardCheckboxes.length > 0) {
+      btnContainer.style.display = 'block';
+      countSpan.innerText = cardCheckboxes.length;
     } else {
-      saveBtnContainer.style.display = 'none';
+      btnContainer.style.display = 'none';
     }
   }
 
-  async function submitSmartSettled() {
-    const checkedBoxes = document.querySelectorAll('.smart-settle-checkbox:checked');
+  async function submitSmartSettled(safeCustName) {
+    // Only target the checkboxes inside this specific customer's card
+    const card = document.getElementById('card_' + safeCustName);
+    const checkedBoxes = card.querySelectorAll('.smart-settle-checkbox:checked');
     let idsToUpdate = [];
     
     let totalPurchaseSelected = 0;
     let totalPaymentSelected = 0;
 
     checkedBoxes.forEach(box => {
-      // Backend expects string IDs now
       idsToUpdate.push(box.value.toString()); 
       
       let type = box.getAttribute('data-type');
@@ -1085,7 +1092,6 @@
 
     if (idsToUpdate.length === 0) return;
 
-    // Strict Validation: Total Purchases must perfectly equal Total Payments
     if (Math.abs(totalPurchaseSelected - totalPaymentSelected) > 0.01) {
       showToast(`Mismatch! Purchases: ₹${totalPurchaseSelected} | Payments: ₹${totalPaymentSelected}`, "error");
       return; 
@@ -1097,7 +1103,6 @@
       if (res.status === 'success' || !res.error) {
         showToast(`${idsToUpdate.length} Items Marked as Paid!`, "success");
         isDashboardStale = true;
-        // Refresh the screen to remove the cleared items
         await navToSmartSettle(); 
       } else {
         showToast("Failed to update status.", "error");
