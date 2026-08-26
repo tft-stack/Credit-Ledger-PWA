@@ -1195,10 +1195,10 @@
     handleSearchChange(); 
   }
 
-  async function navToDashboard() {
+async function navToDashboard() {
     switchScreen('dashboard');
 
-    if (currentDashboardData && currentDashboardData.length > 0) {
+    if (typeof currentDashboardData !== 'undefined' && currentDashboardData && currentDashboardData.length > 0) {
       applyDashboardFilters();
     }
 
@@ -1210,7 +1210,9 @@
       try {
         const data = await apiGet('getDashboardData');
         if (data) {
-          // Check if data is the new object format
+          // --- NEW: Save the FULL payload globally so the new cards can read the sales numbers ---
+          window.currentDashboardDataPayload = data; 
+          
           if (data.customers) {
             currentDashboardData = data.customers;
             currentTodaysCollection = data.todaysCollection;
@@ -1222,6 +1224,7 @@
           applyDashboardFilters(); 
         }
       } catch(e) {
+        console.error("Dashboard Sync Error: ", e); // This will log the exact issue if it ever fails again
         showToast("Failed to sync latest dashboard.", "error");
       } finally {
         hideLoading();
@@ -1237,10 +1240,11 @@
     const todaySaleElem = document.getElementById('dashboardTodaySale'); 
     const yesterdaySaleElem = document.getElementById('dashboardYesterdaySale'); 
 
-    // Retrieve the new sales data from the backend payload (default to 0 if undefined)
-    let todayColl = currentDashboardDataPayload ? currentDashboardDataPayload.todaysCollection : currentTodaysCollection;
-    let todaySale = currentDashboardDataPayload ? currentDashboardDataPayload.todaysSale : 0;
-    let yestSale = currentDashboardDataPayload ? currentDashboardDataPayload.yesterdaysSale : 0;
+    // --- SAFELY Extract the new sales data ---
+    let payload = window.currentDashboardDataPayload || {};
+    let todayColl = payload.todaysCollection || (typeof currentTodaysCollection !== 'undefined' ? currentTodaysCollection : 0);
+    let todaySale = payload.todaysSale || 0;
+    let yestSale = payload.yesterdaysSale || 0;
 
     // Inject the amounts wrapped in the privacy span
     let blurClass = isPrivacyEnabled ? 'privacy-blur' : 'privacy-blur revealed';
@@ -1249,6 +1253,8 @@
     if (todaySaleElem) todaySaleElem.innerHTML = `<span class="${blurClass}">₹${(todaySale || 0).toLocaleString('en-IN')}</span>`;
     if (yesterdaySaleElem) yesterdaySaleElem.innerHTML = `<span class="${blurClass}">₹${(yestSale || 0).toLocaleString('en-IN')}</span>`;
 
+    // ... (Keep the rest of your applyDashboardFilters function exactly the same from here down)
+    
     let filtered = currentDashboardData.filter(cust => {
       if (cust.balance === 0) return false; 
       if (dashboardActiveAlphabet !== 'ALL' && !cust.name.toUpperCase().startsWith(dashboardActiveAlphabet)) return false;
