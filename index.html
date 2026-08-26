@@ -369,6 +369,11 @@
     
     <div class="card" style="padding: 0; overflow: hidden; border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -1px;" id="dashboardContainer"></div>
 
+    <!-- NEW: Privacy Toggle Button (Positioned left of the FAB) -->
+    <button id="privacyToggleBtn" class="no-print" onclick="togglePrivacy()" style="position: fixed; bottom: 85px; right: 85px; width: 50px; height: 50px; border-radius: 50%; background-color: #1976d2; color: white; border: none; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.4); font-size: 24px; z-index: 1000; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s, background 0.3s;">
+      <span id="privacyIcon" style="filter: grayscale(100%) brightness(200%); font-size: 20px;">👁️</span>
+    </button>
+
     <!-- Floating Action Button (Bottom Right) -->
     <div class="fab-container no-print">
       <!-- Forward/Next Button to View Entry -->
@@ -1031,7 +1036,7 @@
           
           <div style="padding: 12px 16px;">
             <div style="display: flex; border-bottom: 2px dashed var(--border-color); margin-bottom: 12px; padding-bottom: 4px;">
-              <div style="flex: 1; text-align: center; font-size: 11px; font-weight: bold; color: var(--text-muted); border-right: 1px dashed var(--border-color);">PURCHASE</div>
+              <div style="flex: 1; text-align: center; font-size: 11px; font-weight: bold; color: var(--text-muted); border-: 1px dashed var(--border-color);">PURCHASE</div>
               <div style="flex: 1; text-align: center; font-size: 11px; font-weight: bold; color: var(--text-muted);">PAYMENT</div>
             </div>
       `;
@@ -1045,7 +1050,7 @@
         let pay = payments[i];
 
         const buildCell = (item, isLeft) => {
-          if (!item) return `<div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''}"></div>`;
+          if (!item) return `<div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-: 1px dashed var(--border-color);' : ''}"></div>`;
           
           let siblingAttr = '';
           if (custMatch.matchRule.includes("Rule 1") && pur && pay) {
@@ -1053,7 +1058,7 @@
           }
 
           return `
-            <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
+            <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
                 <div>
                   <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px;">${item.date.substring(0, 5)}</div>
@@ -1254,8 +1259,6 @@ async function navToDashboard() {
     if (todaySaleElem) todaySaleElem.innerHTML = `<span class="${blurClass}">₹${(todaySale || 0).toLocaleString('en-IN')}</span>`;
     if (yesterdaySaleElem) yesterdaySaleElem.innerHTML = `<span class="${blurClass}">₹${(yestSale || 0).toLocaleString('en-IN')}</span>`;
 
-    // ... (Keep the rest of your applyDashboardFilters function exactly the same from here down)
-    
     let filtered = currentDashboardData.filter(cust => {
       if (cust.balance === 0) return false; 
       if (dashboardActiveAlphabet !== 'ALL' && !cust.name.toUpperCase().startsWith(dashboardActiveAlphabet)) return false;
@@ -2430,35 +2433,15 @@ async function navToDashboard() {
     switchScreen('view');
   }
 
-    // --- UPDATED: PRIVACY DOUBLE TAP LOGIC ---
-    let isPrivacyEnabled = true; 
-    let lastTapTime = 0;
-
-    // Mobile Double Tap (Bulletproof version)
-    document.addEventListener('touchend', function(e) {
-      // Don't trigger if the user is double-tapping an input field or an actual button
-      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
-      
-      const currentTime = new Date().getTime();
-      const tapLength = currentTime - lastTapTime;
-      
-      // Increased to 500ms for a more comfortable double-tap window
-      if (tapLength < 500 && tapLength > 0) {
-        togglePrivacy();
-      }
-      lastTapTime = currentTime;
-    });
-
-    // Desktop Double Click
-    document.addEventListener('dblclick', function(e) {
-      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
-      togglePrivacy();
-    });
+    // --- UPDATED: PRIVACY BUTTON LOGIC ---
+    let isPrivacyEnabled = true; // Defaults to blurred on load
 
     function togglePrivacy() {
       isPrivacyEnabled = !isPrivacyEnabled;
       const amounts = document.querySelectorAll('.privacy-blur');
+      const privacyIcon = document.getElementById('privacyIcon');
       
+      // Toggle the blur effect on the numbers
       amounts.forEach(el => {
         if (isPrivacyEnabled) {
           el.classList.remove('revealed');
@@ -2466,6 +2449,15 @@ async function navToDashboard() {
           el.classList.add('revealed');
         }
       });
+
+      // Update the button icon to reflect the current state
+      if (privacyIcon) {
+        if (isPrivacyEnabled) {
+          privacyIcon.innerText = '👁️'; // Blurred state
+        } else {
+          privacyIcon.innerText = '🙈'; // Revealed state
+        }
+      }
     }
     // ------------------------------------------
   
