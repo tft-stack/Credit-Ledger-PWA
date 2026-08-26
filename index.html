@@ -14,16 +14,17 @@
 
   <style>
 
-    /* NEW: Privacy Blur Effects */
+    /* NEW: Privacy Blur Effects (Bulletproof) */
     .privacy-blur {
       filter: blur(6px);
       opacity: 0.7;
       transition: filter 0.2s ease, opacity 0.2s ease;
       user-select: none;
+      display: inline-block; /* Forces mobile browsers to respect the blur on text */
     }
     .privacy-blur.revealed {
-      filter: blur(0px);
-      opacity: 1;
+      filter: blur(0px) !important;
+      opacity: 1 !important;
     }
     
     :root {
