@@ -2430,38 +2430,44 @@ async function navToDashboard() {
     switchScreen('view');
   }
 
-  // --- NEW: PRIVACY DOUBLE TAP LOGIC ---
-    let isPrivacyEnabled = true; // Defaults to blurred on load
+    // --- UPDATED: PRIVACY DOUBLE TAP LOGIC ---
+    let isPrivacyEnabled = true; 
     let lastTapTime = 0;
 
-    // Mobile Double Tap
+    // Mobile Double Tap (Bulletproof version)
     document.addEventListener('touchend', function(e) {
-      if (document.getElementById('dashboardScreen').style.display !== 'none') {
-        const currentTime = new Date().getTime();
-        const tapLength = currentTime - lastTapTime;
-        if (tapLength < 400 && tapLength > 0) {
-          togglePrivacy();
-          e.preventDefault(); 
-        }
-        lastTapTime = currentTime;
+      // Don't trigger if the user is double-tapping an input field or an actual button
+      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+      
+      const currentTime = new Date().getTime();
+      const tapLength = currentTime - lastTapTime;
+      
+      // Increased to 500ms for a more comfortable double-tap window
+      if (tapLength < 500 && tapLength > 0) {
+        togglePrivacy();
       }
+      lastTapTime = currentTime;
     });
 
     // Desktop Double Click
     document.addEventListener('dblclick', function(e) {
-      if (document.getElementById('dashboardScreen').style.display !== 'none') {
-        togglePrivacy();
-      }
+      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+      togglePrivacy();
     });
 
     function togglePrivacy() {
       isPrivacyEnabled = !isPrivacyEnabled;
       const amounts = document.querySelectorAll('.privacy-blur');
+      
       amounts.forEach(el => {
-        if (isPrivacyEnabled) el.classList.remove('revealed');
-        else el.classList.add('revealed');
+        if (isPrivacyEnabled) {
+          el.classList.remove('revealed');
+        } else {
+          el.classList.add('revealed');
+        }
       });
     }
+    // ------------------------------------------
   
 </script>
 </body>
