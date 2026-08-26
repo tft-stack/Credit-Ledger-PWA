@@ -13,6 +13,19 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
+
+    /* NEW: Privacy Blur Effects */
+    .privacy-blur {
+      filter: blur(6px);
+      opacity: 0.7;
+      transition: filter 0.2s ease, opacity 0.2s ease;
+      user-select: none;
+    }
+    .privacy-blur.revealed {
+      filter: blur(0px);
+      opacity: 1;
+    }
+    
     :root {
       --bg-color: #f4f6f8; --card-bg: #fff; --text-main: #333; --text-muted: #666;
       --text-light: #888; --border-color: #ccc; --border-light: #eee; --input-bg: #fff;
@@ -304,21 +317,37 @@
         <h2 style="margin:0;">Dashboard</h2>
       </div>
       
-      <!-- NEW: Side-by-Side Summary Cards -->
+      <!-- Dashboard Summary Cards (2x2 Grid) -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; padding: 0 16px;">
+        
         <!-- Pending Balance Box -->
         <div style="background: var(--pill-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border-light); text-align: left;">
           <div style="color: var(--text-muted); font-size: 10px; font-weight: bold; text-transform: uppercase;">Total Pending</div>
-          <div id="dashboardTotalBalance" style="font-size: 18px; font-weight: bold; color: #d32f2f; margin-top: 4px;">₹0</div>
+          <div id="dashboardTotalBalance" style="font-size: 18px; font-weight: bold; color: #d32f2f; margin-top: 4px;"><span class="privacy-blur">₹0</span></div>
           <div id="dashboardCustomerCount" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">0 Customers</div>
         </div>
 
         <!-- Today's Collection Box -->
         <div style="background: #e8f5e9; padding: 12px; border-radius: 8px; border: 1px solid #c8e6c9; text-align: left;">
           <div style="color: #2e7d32; font-size: 10px; font-weight: bold; text-transform: uppercase;">Today's Received</div>
-          <div id="dashboardTodayCollection" style="font-size: 18px; font-weight: bold; color: #1b5e20; margin-top: 4px;">₹0</div>
+          <div id="dashboardTodayCollection" style="font-size: 18px; font-weight: bold; color: #1b5e20; margin-top: 4px;"><span class="privacy-blur">₹0</span></div>
           <div style="font-size: 11px; color: #2e7d32; margin-top: 2px;">Total payments today</div>
         </div>
+
+        <!-- Today's Sale Box (Light Wine) -->
+        <div style="background: #fcf1f1; padding: 12px; border-radius: 8px; border: 1px solid #f2d7d7; text-align: left;">
+          <div style="color: #721c24; font-size: 10px; font-weight: bold; text-transform: uppercase;">Today's Sale</div>
+          <div id="dashboardTodaySale" style="font-size: 18px; font-weight: bold; color: #721c24; margin-top: 4px;"><span class="privacy-blur">₹0</span></div>
+          <div style="font-size: 11px; color: #721c24; margin-top: 2px;">Total purchases today</div>
+        </div>
+
+        <!-- Yesterday's Sale Box (Light Wine) -->
+        <div style="background: #fcf1f1; padding: 12px; border-radius: 8px; border: 1px solid #f2d7d7; text-align: left;">
+          <div style="color: #721c24; font-size: 10px; font-weight: bold; text-transform: uppercase;">Yest. Sale</div>
+          <div id="dashboardYesterdaySale" style="font-size: 18px; font-weight: bold; color: #721c24; margin-top: 4px;"><span class="privacy-blur">₹0</span></div>
+          <div style="font-size: 11px; color: #721c24; margin-top: 2px;">Purchases yesterday</div>
+        </div>
+
       </div>
 
       <div class="alphabet-filter" id="alphabetFilter" style="margin-top: 16px; border-bottom: none;"></div>
@@ -1204,12 +1233,21 @@
     const container = document.getElementById('dashboardContainer');
     const totalElem = document.getElementById('dashboardTotalBalance');
     const countElem = document.getElementById('dashboardCustomerCount');
-    const todayElem = document.getElementById('dashboardTodayCollection'); // NEW
+    const todayElem = document.getElementById('dashboardTodayCollection'); 
+    const todaySaleElem = document.getElementById('dashboardTodaySale'); 
+    const yesterdaySaleElem = document.getElementById('dashboardYesterdaySale'); 
 
-    // Render Today's Total dynamically
-    if (todayElem) {
-      todayElem.innerText = `₹${(currentTodaysCollection || 0).toLocaleString('en-IN')}`;
-    }
+    // Retrieve the new sales data from the backend payload (default to 0 if undefined)
+    let todayColl = currentDashboardDataPayload ? currentDashboardDataPayload.todaysCollection : currentTodaysCollection;
+    let todaySale = currentDashboardDataPayload ? currentDashboardDataPayload.todaysSale : 0;
+    let yestSale = currentDashboardDataPayload ? currentDashboardDataPayload.yesterdaysSale : 0;
+
+    // Inject the amounts wrapped in the privacy span
+    let blurClass = isPrivacyEnabled ? 'privacy-blur' : 'privacy-blur revealed';
+    
+    if (todayElem) todayElem.innerHTML = `<span class="${blurClass}">₹${(todayColl || 0).toLocaleString('en-IN')}</span>`;
+    if (todaySaleElem) todaySaleElem.innerHTML = `<span class="${blurClass}">₹${(todaySale || 0).toLocaleString('en-IN')}</span>`;
+    if (yesterdaySaleElem) yesterdaySaleElem.innerHTML = `<span class="${blurClass}">₹${(yestSale || 0).toLocaleString('en-IN')}</span>`;
 
     let filtered = currentDashboardData.filter(cust => {
       if (cust.balance === 0) return false; 
@@ -1231,7 +1269,8 @@
     let totalOutstanding = 0;
     filtered.forEach(c => totalOutstanding += c.balance);
 
-    totalElem.innerText = `₹${totalOutstanding.toLocaleString('en-IN')}`;
+    // Apply privacy blur to the giant Total Outstanding number
+    totalElem.innerHTML = `<span class="${blurClass}">₹${totalOutstanding.toLocaleString('en-IN')}</span>`;
     countElem.innerText = `${filtered.length} Unique Customers`;
 
     container.innerHTML = '';
@@ -1242,8 +1281,9 @@
     }
 
     filtered.forEach((cust, index) => {
+      // Apply privacy blur to the specific customer's amounts
       let lastPayText = cust.lastPaymentAmount 
-          ? `Last Pay: ₹${cust.lastPaymentAmount.toLocaleString('en-IN')} on ${cust.lastPaymentDate}` 
+          ? `Last Pay: <span class="${blurClass}">₹${cust.lastPaymentAmount.toLocaleString('en-IN')}</span> on ${cust.lastPaymentDate}` 
           : `<span style="color: #d32f2f;">No payments recorded</span>`;
           
       let html = `
@@ -1256,7 +1296,7 @@
             </div>
           </div>
           <div style="text-align: right;">
-            <div style="font-weight: bold; font-size: 16px; color: #d32f2f;">₹${cust.balance.toLocaleString('en-IN')}</div>
+            <div style="font-weight: bold; font-size: 16px; color: #d32f2f;"><span class="${blurClass}">₹${cust.balance.toLocaleString('en-IN')}</span></div>
           </div>
         </div>
       `;
@@ -2382,6 +2422,39 @@
     }
     switchScreen('view');
   }
+
+  // --- NEW: PRIVACY DOUBLE TAP LOGIC ---
+    let isPrivacyEnabled = true; // Defaults to blurred on load
+    let lastTapTime = 0;
+
+    // Mobile Double Tap
+    document.addEventListener('touchend', function(e) {
+      if (document.getElementById('dashboardScreen').style.display !== 'none') {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTapTime;
+        if (tapLength < 400 && tapLength > 0) {
+          togglePrivacy();
+          e.preventDefault(); 
+        }
+        lastTapTime = currentTime;
+      }
+    });
+
+    // Desktop Double Click
+    document.addEventListener('dblclick', function(e) {
+      if (document.getElementById('dashboardScreen').style.display !== 'none') {
+        togglePrivacy();
+      }
+    });
+
+    function togglePrivacy() {
+      isPrivacyEnabled = !isPrivacyEnabled;
+      const amounts = document.querySelectorAll('.privacy-blur');
+      amounts.forEach(el => {
+        if (isPrivacyEnabled) el.classList.remove('revealed');
+        else el.classList.add('revealed');
+      });
+    }
   
 </script>
 </body>
