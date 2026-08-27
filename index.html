@@ -2081,85 +2081,139 @@ async function navToDashboard() {
     const custName = document.getElementById('dispCustomerName').innerText;
     if (!custName) return;
 
-    const element = document.getElementById('ledgerCard').cloneNode(true);
-    element.querySelectorAll('.no-print, .action-icons').forEach(el => el.remove());
-
-    // NEW: Force all detailed item dropdowns open for the PDF receipt
-    element.querySelectorAll('.details-dropdown').forEach(el => {
-      el.style.display = 'block';
-      el.style.border = 'none'; // Clean up borders for print
-    });
-
-    element.style.display = 'block';
-    element.style.width = '280px'; 
-    element.style.maxWidth = '280px';
-    element.style.padding = '10px';
-    element.style.margin = '0'; 
-    element.style.boxSizing = 'border-box';
-    element.style.boxShadow = 'none';
-    element.style.background = '#fff'; 
-    element.style.color = '#000';
-    element.style.transform = 'none'; 
-
-    const headerDiv = document.createElement('div');
-    headerDiv.style.textAlign = 'center';
-    headerDiv.style.marginBottom = '16px';
-    headerDiv.style.borderBottom = '2px solid #000';
-    headerDiv.style.paddingBottom = '10px';
-    headerDiv.innerHTML = `
-      <h1 style="margin:0; font-size: 22px; color: #000;">Statement</h1>
-      <p style="margin: 4px 0 0 0; font-size: 12px; color: #333;">Generated on: ${new Date().toLocaleDateString('en-IN')}</p>
-    `;
-    element.insertBefore(headerDiv, element.firstChild);
+    // 1. Sort history chronologically (oldest to newest)
+    let history = [...currentLedgerHistory];
+    history.sort((a, b) => (a.rawDate || 0) - (b.rawDate || 0));
 
     let totalPurchase = 0;
     let totalPayment = 0;
-    currentLedgerHistory.forEach(r => {
-      if (r.type === 'Goods Purchased') totalPurchase += parseFloat(r.amount) || 0;
-      if (r.type === 'Amount Received') totalPayment += parseFloat(r.amount) || 0;
+    let runningBalance = 0;
+
+    // 2. Generate Table Rows and Calculate Totals
+    let tableRowsHtml = '';
+
+    history.forEach(item => {
+      let isPurchase = item.type === 'Goods Purchased';
+      let isPayment = item.type === 'Amount Received';
+      
+      let purAmt = isPurchase ? (parseFloat(item.amount) || 0) : 0;
+      let payAmt = isPayment ? (parseFloat(item.amount) || 0) : 0;
+      
+      totalPurchase += purAmt;
+      totalPayment += payAmt;
+      
+      runningBalance += purAmt;
+      runningBalance -= payAmt;
+
+      // Formatting Date safely
+      let dateStr = item.date;
+      if (item.rawDate && item.date !== 'B/F') {
+        let d = new Date(item.rawDate);
+        dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
+      } else if (item.date === 'B/F' || (item.notes && item.notes.includes('Brought Forward'))) {
+        dateStr = 'B/F';
+      }
+
+      // Formatting Particulars (Includes notes and itemized fruits)
+      let particulars = isPurchase ? 'Goods Purchased' : 'Amount Received';
+      if (item.notes) {
+         particulars += `<br><span style="font-size: 10px; color: #555;">${item.notes}</span>`;
+      }
+      if (item.details && item.details.length > 0) {
+         item.details.forEach(d => {
+           particulars += `<br><span style="font-size: 10px; color: #555;">• ${d.fruit} (${d.qty} x ₹${d.price})</span>`;
+         });
+      }
+
+      tableRowsHtml += `
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 10px 6px; font-size: 11px;">${dateStr}</td>
+          <td style="padding: 10px 6px; font-size: 11px;">${particulars}</td>
+          <td style="padding: 10px 6px; font-size: 11px; text-align: right;">${purAmt > 0 ? purAmt.toLocaleString('en-IN') : ''}</td>
+          <td style="padding: 10px 6px; font-size: 11px; text-align: right;">${payAmt > 0 ? payAmt.toLocaleString('en-IN') : ''}</td>
+          <td style="padding: 10px 6px; font-size: 11px; text-align: right; font-weight: bold;">${runningBalance.toLocaleString('en-IN')}</td>
+        </tr>
+      `;
     });
 
-    const totalsDiv = document.createElement('div');
-    totalsDiv.style.display = 'flex';
-    totalsDiv.style.borderTop = '2px dashed #000';
-    totalsDiv.style.marginTop = '12px';
-    totalsDiv.style.paddingTop = '10px';
-    totalsDiv.style.fontWeight = 'bold';
-    totalsDiv.style.color = '#000';
-    totalsDiv.innerHTML = `
-      <div style="flex: 1; text-align: left; padding-left: 6px; border-right: 1px dashed #ccc; font-size: 13px;">Total: ₹${totalPurchase.toLocaleString('en-IN')}</div>
-      <div style="flex: 1; text-align: left; padding-left: 6px; font-size: 13px;">Total: ₹${totalPayment.toLocaleString('en-IN')}</div>
+    // 3. Construct the full HTML for the PDF
+    const todayDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
+    
+    let balanceLabel = runningBalance >= 0 ? "Closing Balance (Pending):" : "Closing Balance (Advance):";
+    let displayBalance = Math.abs(runningBalance).toLocaleString('en-IN');
+
+    const printContainer = document.createElement('div');
+    // Using a standard width container ensures html2pdf renders text sharply on A4
+    printContainer.style.width = '800px'; 
+    printContainer.style.padding = '30px';
+    printContainer.style.background = '#fff';
+    printContainer.style.color = '#000';
+    printContainer.style.fontFamily = 'Helvetica, Arial, sans-serif';
+    
+    printContainer.innerHTML = `
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px;">STATEMENT</h1>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: #555;">Generated on: ${todayDate}</p>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <p style="margin: 0; font-size: 14px;"><strong>Name:</strong> ${custName}</p>
+      </div>
+
+      <div style="margin-bottom: 24px; border: 1px solid #ccc; padding: 16px; border-radius: 8px; width: 350px;">
+        <h3 style="margin: 0 0 10px 0; font-size: 14px; border-bottom: 1px solid #eee; padding-bottom: 6px;">Summary</h3>
+        <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 4px 0;"><strong>Total Purchases:</strong></td>
+            <td style="padding: 4px 0; text-align: right;">₹ ${totalPurchase.toLocaleString('en-IN')}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0;"><strong>Total Payments:</strong></td>
+            <td style="padding: 4px 0; text-align: right;">₹ ${totalPayment.toLocaleString('en-IN')}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0 4px 0; border-top: 1px solid #ccc;"><strong>${balanceLabel}</strong></td>
+            <td style="padding: 8px 0 4px 0; border-top: 1px solid #ccc; text-align: right;"><strong>₹ ${displayBalance}</strong></td>
+          </tr>
+        </table>
+      </div>
+
+      <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #333;">TRANSACTION HISTORY</h3>
+      <table style="width: 100%; border-collapse: collapse; text-align: left; border: 1px solid #ccc;">
+        <thead>
+          <tr style="background: #f8f9fa; border-bottom: 2px solid #ccc;">
+            <th style="padding: 12px 6px; font-size: 12px; font-weight: bold;">Date</th>
+            <th style="padding: 12px 6px; font-size: 12px; font-weight: bold;">Particulars</th>
+            <th style="padding: 12px 6px; font-size: 12px; font-weight: bold; text-align: right;">Purchase (₹)</th>
+            <th style="padding: 12px 6px; font-size: 12px; font-weight: bold; text-align: right;">Payment (₹)</th>
+            <th style="padding: 12px 6px; font-size: 12px; font-weight: bold; text-align: right;">Balance (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRowsHtml}
+        </tbody>
+      </table>
     `;
-    element.appendChild(totalsDiv);
 
-    element.style.position = 'absolute';
-    element.style.top = '0';
-    element.style.left = '0';
-    element.style.zIndex = '-1000';
-    document.body.appendChild(element);
-    
-    const pxHeight = element.offsetHeight;
-    
-    document.body.removeChild(element);
-    
-    element.style.position = 'relative';
-    element.style.zIndex = 'auto';
-
-    const mmHeight = (pxHeight * 0.264583) + 12; 
+    // 4. Generate the PDF
+    // Append temporarily to body so html2pdf can measure and process it accurately
+    printContainer.style.position = 'absolute';
+    printContainer.style.top = '-9999px';
+    document.body.appendChild(printContainer);
 
     const filename = `${custName.replace(/\s+/g, '_')}_Statement.pdf`;
 
     const opt = {
-      margin:       [4, 2, 4, 2], 
+      margin:       15, 
       filename:     filename,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, backgroundColor: "#ffffff", scrollX: 0, scrollY: 0 }, 
-      jsPDF:        { unit: 'mm', format: [80, mmHeight], orientation: 'portrait' }
+      html2canvas:  { scale: 2, useCORS: true, windowWidth: 860 }, 
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' } // Switched to A4
     };
 
     showLoading();
     try {
-      const worker = html2pdf().set(opt).from(element);
+      const worker = html2pdf().set(opt).from(printContainer);
       const pdfBlob = await worker.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
 
@@ -2179,6 +2233,11 @@ async function navToDashboard() {
       hideLoading();
       showToast("Failed to generate PDF", "error");
       console.error(err);
+    } finally {
+      // Clean up the invisible container
+      if (document.body.contains(printContainer)) {
+        document.body.removeChild(printContainer);
+      }
     }
   }
 
