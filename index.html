@@ -2105,33 +2105,33 @@ async function navToDashboard() {
       runningBalance += purAmt;
       runningBalance -= payAmt;
 
-      // Formatting Date safely
+      // Formatting Date safely (Ultra short for receipt: e.g., 23/08)
       let dateStr = item.date;
       if (item.rawDate && item.date !== 'B/F') {
         let d = new Date(item.rawDate);
-        dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
+        dateStr = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth()+1)).slice(-2);
       } else if (item.date === 'B/F' || (item.notes && item.notes.includes('Brought Forward'))) {
         dateStr = 'B/F';
       }
 
       // Formatting Particulars (Includes notes and itemized fruits)
-      let particulars = isPurchase ? 'Goods Purchased' : 'Amount Received';
+      let particulars = isPurchase ? 'Purchase' : 'Payment';
       if (item.notes) {
-         particulars += `<br><span style="font-size: 10px; color: #555;">${item.notes}</span>`;
+         particulars += `<br><span style="font-size: 8px; color: #555;">${item.notes}</span>`;
       }
       if (item.details && item.details.length > 0) {
          item.details.forEach(d => {
-           particulars += `<br><span style="font-size: 10px; color: #555;">• ${d.fruit} (${d.qty} x ₹${d.price})</span>`;
+           particulars += `<br><span style="font-size: 8px; color: #555;">• ${d.fruit} (${d.qty})</span>`; 
          });
       }
 
       tableRowsHtml += `
-        <tr style="border-bottom: 1px solid #eee;">
-          <td style="padding: 10px 6px; font-size: 11px;">${dateStr}</td>
-          <td style="padding: 10px 6px; font-size: 11px;">${particulars}</td>
-          <td style="padding: 10px 6px; font-size: 11px; text-align: right;">${purAmt > 0 ? purAmt.toLocaleString('en-IN') : ''}</td>
-          <td style="padding: 10px 6px; font-size: 11px; text-align: right;">${payAmt > 0 ? payAmt.toLocaleString('en-IN') : ''}</td>
-          <td style="padding: 10px 6px; font-size: 11px; text-align: right; font-weight: bold;">${runningBalance.toLocaleString('en-IN')}</td>
+        <tr style="border-bottom: 1px dashed #ccc;">
+          <td style="padding: 6px 2px; font-size: 9px; vertical-align: top;">${dateStr}</td>
+          <td style="padding: 6px 2px; font-size: 9px; vertical-align: top; word-break: break-word;">${particulars}</td>
+          <td style="padding: 6px 2px; font-size: 9px; text-align: right; vertical-align: top;">${purAmt > 0 ? purAmt.toLocaleString('en-IN') : ''}</td>
+          <td style="padding: 6px 2px; font-size: 9px; text-align: right; vertical-align: top;">${payAmt > 0 ? payAmt.toLocaleString('en-IN') : ''}</td>
+          <td style="padding: 6px 2px; font-size: 9px; text-align: right; font-weight: bold; vertical-align: top;">${runningBalance.toLocaleString('en-IN')}</td>
         </tr>
       `;
     });
@@ -2139,69 +2139,73 @@ async function navToDashboard() {
     // 3. Construct the full HTML for the PDF
     const todayDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
     
-    let balanceLabel = runningBalance >= 0 ? "Closing Balance (Pending):" : "Closing Balance (Advance):";
+    let balanceLabel = runningBalance >= 0 ? "Pending:" : "Advance:";
     let displayBalance = Math.abs(runningBalance).toLocaleString('en-IN');
 
     const printContainer = document.createElement('div');
-    // Using a standard width container ensures html2pdf renders text sharply on A4
-    printContainer.style.width = '800px'; 
-    printContainer.style.padding = '30px';
+    // Lock width to 300px (approx 80mm)
+    printContainer.style.width = '300px'; 
+    printContainer.style.padding = '10px';
     printContainer.style.background = '#fff';
     printContainer.style.color = '#000';
     printContainer.style.fontFamily = 'Helvetica, Arial, sans-serif';
+    printContainer.style.boxSizing = 'border-box';
     
     printContainer.innerHTML = `
-      <div style="text-align: center; margin-bottom: 24px;">
-        <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px;">STATEMENT</h1>
-        <p style="margin: 4px 0 0 0; font-size: 12px; color: #555;">Generated on: ${todayDate}</p>
+      <div style="text-align: center; margin-bottom: 12px; border-bottom: 1px solid #000; padding-bottom: 8px;">
+        <h1 style="margin: 0; font-size: 16px; letter-spacing: 1px;">STATEMENT</h1>
+        <p style="margin: 4px 0 0 0; font-size: 10px; color: #333;">${todayDate}</p>
       </div>
 
-      <div style="margin-bottom: 24px;">
-        <p style="margin: 0; font-size: 14px;"><strong>Name:</strong> ${custName}</p>
+      <div style="margin-bottom: 12px; text-align: center;">
+        <p style="margin: 0; font-size: 14px; font-weight: bold;">${custName}</p>
       </div>
 
-      <div style="margin-bottom: 24px; border: 1px solid #ccc; padding: 16px; border-radius: 8px; width: 350px;">
-        <h3 style="margin: 0 0 10px 0; font-size: 14px; border-bottom: 1px solid #eee; padding-bottom: 6px;">Summary</h3>
-        <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+      <div style="margin-bottom: 12px; border: 1px solid #000; padding: 8px; border-radius: 4px;">
+        <div style="font-size: 10px; font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 4px; padding-bottom: 2px;">Summary</div>
+        <table style="width: 100%; font-size: 10px; border-collapse: collapse;">
           <tr>
-            <td style="padding: 4px 0;"><strong>Total Purchases:</strong></td>
-            <td style="padding: 4px 0; text-align: right;">₹ ${totalPurchase.toLocaleString('en-IN')}</td>
+            <td style="padding: 2px 0;">Purchases:</td>
+            <td style="padding: 2px 0; text-align: right;">₹ ${totalPurchase.toLocaleString('en-IN')}</td>
           </tr>
           <tr>
-            <td style="padding: 4px 0;"><strong>Total Payments:</strong></td>
-            <td style="padding: 4px 0; text-align: right;">₹ ${totalPayment.toLocaleString('en-IN')}</td>
+            <td style="padding: 2px 0;">Payments:</td>
+            <td style="padding: 2px 0; text-align: right;">₹ ${totalPayment.toLocaleString('en-IN')}</td>
           </tr>
           <tr>
-            <td style="padding: 8px 0 4px 0; border-top: 1px solid #ccc;"><strong>${balanceLabel}</strong></td>
-            <td style="padding: 8px 0 4px 0; border-top: 1px solid #ccc; text-align: right;"><strong>₹ ${displayBalance}</strong></td>
+            <td style="padding: 4px 0 0 0; border-top: 1px solid #ccc; font-weight: bold;">${balanceLabel}</td>
+            <td style="padding: 4px 0 0 0; border-top: 1px solid #ccc; text-align: right; font-weight: bold;">₹ ${displayBalance}</td>
           </tr>
         </table>
       </div>
 
-      <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #333;">TRANSACTION HISTORY</h3>
-      <table style="width: 100%; border-collapse: collapse; text-align: left; border: 1px solid #ccc;">
+      <div style="font-size: 10px; font-weight: bold; margin-bottom: 4px; text-align: center; border-bottom: 1px solid #000; padding-bottom: 4px;">TRANSACTION HISTORY</div>
+      <table style="width: 100%; border-collapse: collapse; text-align: left;">
         <thead>
-          <tr style="background: #f8f9fa; border-bottom: 2px solid #ccc;">
-            <th style="padding: 12px 6px; font-size: 12px; font-weight: bold;">Date</th>
-            <th style="padding: 12px 6px; font-size: 12px; font-weight: bold;">Particulars</th>
-            <th style="padding: 12px 6px; font-size: 12px; font-weight: bold; text-align: right;">Purchase (₹)</th>
-            <th style="padding: 12px 6px; font-size: 12px; font-weight: bold; text-align: right;">Payment (₹)</th>
-            <th style="padding: 12px 6px; font-size: 12px; font-weight: bold; text-align: right;">Balance (₹)</th>
+          <tr style="border-bottom: 1px solid #000;">
+            <th style="padding: 6px 2px; font-size: 9px; font-weight: bold;">Date</th>
+            <th style="padding: 6px 2px; font-size: 9px; font-weight: bold;">Details</th>
+            <th style="padding: 6px 2px; font-size: 9px; font-weight: bold; text-align: right;">Pur</th>
+            <th style="padding: 6px 2px; font-size: 9px; font-weight: bold; text-align: right;">Pay</th>
+            <th style="padding: 6px 2px; font-size: 9px; font-weight: bold; text-align: right;">Bal</th>
           </tr>
         </thead>
         <tbody>
           ${tableRowsHtml}
         </tbody>
       </table>
+      <div style="text-align: center; font-size: 9px; margin-top: 12px; color: #555;">End of Statement</div>
     `;
 
-    // 4. Temporarily append to body to measure height AND let html2pdf read it
+    // 4. Temporarily append to body to measure exact pixel height
     printContainer.style.position = 'absolute';
-    printContainer.style.top = '-9999px';
-    printContainer.style.left = '-9999px';
-    document.body.appendChild(printContainer); // KEEP IT IN THE DOM
+    printContainer.style.top = '0';
+    printContainer.style.left = '0';
+    printContainer.style.zIndex = '-1000'; // Hidden beneath the app UI
+    document.body.appendChild(printContainer);
     
     const pxHeight = printContainer.offsetHeight;
+
     // Convert pixel height to millimeters for the roll printer (plus a tiny margin)
     const mmHeight = (pxHeight * 0.264583) + 10; 
 
@@ -2238,7 +2242,7 @@ async function navToDashboard() {
       showToast("Failed to generate PDF", "error");
       console.error(err);
     } finally {
-      // Clean up the invisible container ONLY AFTER the PDF is completely generated
+      // Safely remove the hidden container after generation
       if (document.body.contains(printContainer)) {
         document.body.removeChild(printContainer);
       }
