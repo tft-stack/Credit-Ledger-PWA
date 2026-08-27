@@ -2136,26 +2136,15 @@ async function navToDashboard() {
       `;
     });
 
-    // 3. Construct the full HTML for the PDF
+    // 3. Construct the full HTML for the PDF as a pure String
     const todayDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
     
     let balanceLabel = runningBalance >= 0 ? "Pending:" : "Advance:";
     let displayBalance = Math.abs(runningBalance).toLocaleString('en-IN');
 
-    // THE FIX: Use position absolute (no blank pdf) and heavy inner padding (no cropping)
-    const printContainer = document.createElement('div');
-    printContainer.style.position = 'absolute';
-    printContainer.style.top = '0';
-    printContainer.style.left = '0';
-    printContainer.style.width = '280px'; 
-    printContainer.style.margin = '0';
-    printContainer.style.background = '#fff';
-    printContainer.style.color = '#000';
-    printContainer.style.fontFamily = 'Helvetica, Arial, sans-serif';
-    printContainer.style.zIndex = '-9999'; // Hide it safely behind the UI
-    
-    printContainer.innerHTML = `
-      <div style="padding: 15px; box-sizing: border-box; width: 100%;">
+    // ALL STYLES ARE INLINE SO THEY CARRY OVER TO THE ISOLATED VIRTUAL WINDOW
+    const receiptHTML = `
+      <div style="width: 280px; padding: 15px; background: #fff; color: #000; font-family: Helvetica, Arial, sans-serif; box-sizing: border-box;">
         <div style="text-align: center; margin-bottom: 12px; border-bottom: 1px solid #000; padding-bottom: 8px;">
           <h1 style="margin: 0; font-size: 16px; letter-spacing: 1px;">STATEMENT</h1>
           <p style="margin: 4px 0 0 0; font-size: 10px; color: #333;">${todayDate}</p>
@@ -2202,30 +2191,34 @@ async function navToDashboard() {
       </div>
     `;
 
-    // MUST append to document before generating PDF so height can be calculated
-    document.body.appendChild(printContainer);
+    // 4. Safe Measurement Trick (Visually Hidden, Not Physically Removed)
+    const measureDiv = document.createElement('div');
+    measureDiv.style.position = 'absolute';
+    measureDiv.style.visibility = 'hidden';
+    measureDiv.style.zIndex = '-9999';
+    measureDiv.innerHTML = receiptHTML;
+    document.body.appendChild(measureDiv);
+    
+    // Grab the exact pixel height it needs, then immediately destroy it
+    const pxHeight = measureDiv.offsetHeight; 
+    document.body.removeChild(measureDiv);
 
-    const pxHeight = printContainer.offsetHeight; 
     const mmHeight = (pxHeight * 0.264583) + 10; 
-
     const filename = `${custName.replace(/\s+/g, '_')}_Statement.pdf`;
 
     const opt = {
-      margin:       2, 
+      margin:       0, 
       filename:     filename,
       image:        { type: 'jpeg', quality: 1 },
-      html2canvas:  { 
-        scale: 2, 
-        useCORS: true, 
-        scrollX: 0, // Forces the camera to ignore mobile scroll offsets
-        scrollY: 0
-      }, 
+      html2canvas:  { scale: 2, useCORS: true }, 
       jsPDF:        { unit: 'mm', format: [80, mmHeight], orientation: 'portrait' } 
     };
 
     showLoading();
     try {
-      const worker = html2pdf().set(opt).from(printContainer);
+      // THE MAGIC: Feed the raw HTML String to the engine! 
+      // It will build its own perfect virtual layout to take the picture.
+      const worker = html2pdf().set(opt).from(receiptHTML);
       const pdfBlob = await worker.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
 
@@ -2245,11 +2238,6 @@ async function navToDashboard() {
       hideLoading();
       showToast("Failed to generate PDF", "error");
       console.error(err);
-    } finally {
-      // Safely remove the element from the DOM once finished
-      if (document.body.contains(printContainer)) {
-        document.body.removeChild(printContainer);
-      }
     }
   }
 
