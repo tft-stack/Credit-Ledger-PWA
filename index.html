@@ -2143,14 +2143,19 @@ async function navToDashboard() {
     let displayBalance = Math.abs(runningBalance).toLocaleString('en-IN');
 
     const printContainer = document.createElement('div');
-    // Lock width slightly narrower to guarantee 80mm margin safety
+    
+    // THE FIX: Use position fixed to bypass body margins, and pad the left side heavily
+    printContainer.style.position = 'fixed';
+    printContainer.style.top = '0';
+    printContainer.style.left = '0';
     printContainer.style.width = '280px'; 
-    printContainer.style.padding = '10px';
+    printContainer.style.padding = '10px 15px 10px 15px'; // 15px physical buffer on Left and Right
     printContainer.style.margin = '0';
     printContainer.style.background = '#fff';
     printContainer.style.color = '#000';
     printContainer.style.fontFamily = 'Helvetica, Arial, sans-serif';
     printContainer.style.boxSizing = 'border-box';
+    printContainer.style.zIndex = '-9999'; // Hidden behind the UI
     
     printContainer.innerHTML = `
       <div style="text-align: center; margin-bottom: 12px; border-bottom: 1px solid #000; padding-bottom: 8px;">
@@ -2198,19 +2203,7 @@ async function navToDashboard() {
       <div style="text-align: center; font-size: 9px; margin-top: 12px; color: #555;">End of Statement</div>
     `;
 
-    // 4. Safe Hidden Measurement Wrapper
-    // This allows the element to exist perfectly at 0,0 for the camera, while remaining completely invisible to the user
-    const hiddenWrapper = document.createElement('div');
-    hiddenWrapper.style.position = 'absolute';
-    hiddenWrapper.style.top = '0';
-    hiddenWrapper.style.left = '0';
-    hiddenWrapper.style.width = '280px';
-    hiddenWrapper.style.height = '0'; 
-    hiddenWrapper.style.overflow = 'hidden';
-    hiddenWrapper.style.zIndex = '-9999';
-    
-    hiddenWrapper.appendChild(printContainer);
-    document.body.appendChild(hiddenWrapper);
+    document.body.appendChild(printContainer);
 
     const pxHeight = printContainer.offsetHeight; 
     const mmHeight = (pxHeight * 0.264583) + 10; 
@@ -2218,15 +2211,14 @@ async function navToDashboard() {
     const filename = `${custName.replace(/\s+/g, '_')}_Statement.pdf`;
 
     const opt = {
-      margin:       0, // Removed PDF margins to prevent pushing content off the page
+      margin:       0, 
       filename:     filename,
       image:        { type: 'jpeg', quality: 1 },
       html2canvas:  { 
         scale: 2, 
         useCORS: true, 
-        windowWidth: 280,
-        scrollX: 0, // FORCES THE CAMERA TO THE EXACT LEFT EDGE
-        scrollY: 0  // FORCES THE CAMERA TO THE EXACT TOP EDGE
+        x: 0, // Forces camera exactly to left edge
+        y: 0  // Forces camera exactly to top edge
       }, 
       jsPDF:        { unit: 'mm', format: [80, mmHeight], orientation: 'portrait' } 
     };
@@ -2254,8 +2246,8 @@ async function navToDashboard() {
       showToast("Failed to generate PDF", "error");
       console.error(err);
     } finally {
-      if (document.body.contains(hiddenWrapper)) {
-        document.body.removeChild(hiddenWrapper);
+      if (document.body.contains(printContainer)) {
+        document.body.removeChild(printContainer);
       }
     }
   }
