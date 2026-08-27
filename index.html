@@ -2195,20 +2195,24 @@ async function navToDashboard() {
       </table>
     `;
 
-    // 4. Generate the PDF
-    // Append temporarily to body so html2pdf can measure and process it accurately
+    // 4. Temporarily append to body to measure height AND let html2pdf read it
     printContainer.style.position = 'absolute';
     printContainer.style.top = '-9999px';
-    document.body.appendChild(printContainer);
+    printContainer.style.left = '-9999px';
+    document.body.appendChild(printContainer); // KEEP IT IN THE DOM
+    
+    const pxHeight = printContainer.offsetHeight;
+    // Convert pixel height to millimeters for the roll printer (plus a tiny margin)
+    const mmHeight = (pxHeight * 0.264583) + 10; 
 
     const filename = `${custName.replace(/\s+/g, '_')}_Statement.pdf`;
 
     const opt = {
-      margin:       15, 
+      margin:       [2, 2, 2, 2], 
       filename:     filename,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, windowWidth: 860 }, 
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' } // Switched to A4
+      image:        { type: 'jpeg', quality: 1 },
+      html2canvas:  { scale: 3, useCORS: true, windowWidth: 300 }, 
+      jsPDF:        { unit: 'mm', format: [80, mmHeight], orientation: 'portrait' } 
     };
 
     showLoading();
@@ -2227,14 +2231,14 @@ async function navToDashboard() {
       link.click();
       document.body.removeChild(link);
       
-      showToast("PDF Downloaded. Please open to view and share.", "success");
+      showToast("PDF Downloaded. Ready for thermal print.", "success");
 
     } catch (err) {
       hideLoading();
       showToast("Failed to generate PDF", "error");
       console.error(err);
     } finally {
-      // Clean up the invisible container
+      // Clean up the invisible container ONLY AFTER the PDF is completely generated
       if (document.body.contains(printContainer)) {
         document.body.removeChild(printContainer);
       }
