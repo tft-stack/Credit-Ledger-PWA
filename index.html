@@ -2143,7 +2143,7 @@ async function navToDashboard() {
     let displayBalance = Math.abs(runningBalance).toLocaleString('en-IN');
 
     const printContainer = document.createElement('div');
-    // Lock width to 300px (approx 80mm)
+    // Set explicit styles (NO absolute positioning or negative z-index here)
     printContainer.style.width = '300px'; 
     printContainer.style.padding = '10px';
     printContainer.style.background = '#fff';
@@ -2197,14 +2197,11 @@ async function navToDashboard() {
       <div style="text-align: center; font-size: 9px; margin-top: 12px; color: #555;">End of Statement</div>
     `;
 
-    // 4. Temporarily append to body to measure exact pixel height
-    printContainer.style.position = 'absolute';
-    printContainer.style.top = '0';
-    printContainer.style.left = '0';
-    printContainer.style.zIndex = '-1000'; // Hidden beneath the app UI
+    // 4. Synchronous Measurement Trick
+    // We append it to the page to read the height, and instantly remove it before the screen can even update.
     document.body.appendChild(printContainer);
-    
-    const pxHeight = printContainer.offsetHeight;
+    const pxHeight = printContainer.offsetHeight; // The browser calculates the height here
+    document.body.removeChild(printContainer);    // We immediately delete it so it never flashes on screen
 
     // Convert pixel height to millimeters for the roll printer (plus a tiny margin)
     const mmHeight = (pxHeight * 0.264583) + 10; 
@@ -2221,6 +2218,7 @@ async function navToDashboard() {
 
     showLoading();
     try {
+      // Pass the fully clean, detached printContainer object directly to the PDF generator
       const worker = html2pdf().set(opt).from(printContainer);
       const pdfBlob = await worker.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
@@ -2241,11 +2239,6 @@ async function navToDashboard() {
       hideLoading();
       showToast("Failed to generate PDF", "error");
       console.error(err);
-    } finally {
-      // Safely remove the hidden container after generation
-      if (document.body.contains(printContainer)) {
-        document.body.removeChild(printContainer);
-      }
     }
   }
 
