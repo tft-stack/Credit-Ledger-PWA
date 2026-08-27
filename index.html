@@ -2143,9 +2143,10 @@ async function navToDashboard() {
     let displayBalance = Math.abs(runningBalance).toLocaleString('en-IN');
 
     const printContainer = document.createElement('div');
-    // Set explicit styles (NO absolute positioning or negative z-index here)
-    printContainer.style.width = '300px'; 
+    // Lock width slightly narrower to guarantee 80mm margin safety
+    printContainer.style.width = '280px'; 
     printContainer.style.padding = '10px';
+    printContainer.style.margin = '0';
     printContainer.style.background = '#fff';
     printContainer.style.color = '#000';
     printContainer.style.fontFamily = 'Helvetica, Arial, sans-serif';
@@ -2197,28 +2198,41 @@ async function navToDashboard() {
       <div style="text-align: center; font-size: 9px; margin-top: 12px; color: #555;">End of Statement</div>
     `;
 
-    // 4. Synchronous Measurement Trick
-    // We append it to the page to read the height, and instantly remove it before the screen can even update.
-    document.body.appendChild(printContainer);
-    const pxHeight = printContainer.offsetHeight; // The browser calculates the height here
-    document.body.removeChild(printContainer);    // We immediately delete it so it never flashes on screen
+    // 4. Safe Hidden Measurement Wrapper
+    // This allows the element to exist perfectly at 0,0 for the camera, while remaining completely invisible to the user
+    const hiddenWrapper = document.createElement('div');
+    hiddenWrapper.style.position = 'absolute';
+    hiddenWrapper.style.top = '0';
+    hiddenWrapper.style.left = '0';
+    hiddenWrapper.style.width = '280px';
+    hiddenWrapper.style.height = '0'; 
+    hiddenWrapper.style.overflow = 'hidden';
+    hiddenWrapper.style.zIndex = '-9999';
+    
+    hiddenWrapper.appendChild(printContainer);
+    document.body.appendChild(hiddenWrapper);
 
-    // Convert pixel height to millimeters for the roll printer (plus a tiny margin)
+    const pxHeight = printContainer.offsetHeight; 
     const mmHeight = (pxHeight * 0.264583) + 10; 
 
     const filename = `${custName.replace(/\s+/g, '_')}_Statement.pdf`;
 
     const opt = {
-      margin:       [2, 2, 2, 2], 
+      margin:       0, // Removed PDF margins to prevent pushing content off the page
       filename:     filename,
       image:        { type: 'jpeg', quality: 1 },
-      html2canvas:  { scale: 3, useCORS: true, windowWidth: 300 }, 
+      html2canvas:  { 
+        scale: 2, 
+        useCORS: true, 
+        windowWidth: 280,
+        scrollX: 0, // FORCES THE CAMERA TO THE EXACT LEFT EDGE
+        scrollY: 0  // FORCES THE CAMERA TO THE EXACT TOP EDGE
+      }, 
       jsPDF:        { unit: 'mm', format: [80, mmHeight], orientation: 'portrait' } 
     };
 
     showLoading();
     try {
-      // Pass the fully clean, detached printContainer object directly to the PDF generator
       const worker = html2pdf().set(opt).from(printContainer);
       const pdfBlob = await worker.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
@@ -2239,6 +2253,10 @@ async function navToDashboard() {
       hideLoading();
       showToast("Failed to generate PDF", "error");
       console.error(err);
+    } finally {
+      if (document.body.contains(hiddenWrapper)) {
+        document.body.removeChild(hiddenWrapper);
+      }
     }
   }
 
