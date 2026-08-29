@@ -641,7 +641,7 @@
       <input type="hidden" id="editOldAmount">
       <input type="hidden" id="editType">
       
-      <!-- MOVED DATE TO THE TOP -->
+      <!-- Date first, as requested -->
       <label>Date</label>
       <div style="position: relative; margin-bottom: 12px;">
         <input type="text" id="editDate" required style="margin-bottom: 0; padding-right: 40px; background: var(--input-bg);" placeholder="Select Date" readonly>
@@ -651,15 +651,27 @@
       <label>Amount</label>
       <input type="number" id="editAmount" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
 
-      <!-- COMPACT INLINE EDIT DETAILS SECTION -->
-      <div id="editDetailedItemsWrapper" style="margin-top: 12px; margin-bottom: 16px; display: none; background: var(--bg-color); padding: 10px; border-radius: 8px; border: 1px solid var(--border-light);">
+      <!-- UNIFIED: Expandable Detailed Items Section -->
+      <div id="editDetailedItemsWrapper" style="margin-top: 16px; margin-bottom: 16px; display: none;">
+        
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <span style="font-size: 12px; font-weight: bold; color: var(--text-muted); text-transform: uppercase;">Edit Items</span>
-          <!-- CHANGED TO COMPACT ICON BUTTON -->
-          <button type="button" onclick="addInlineEditRow()" style="background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; border-radius: 50%; width: 28px; height: 28px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" title="Add Item">
-            ＋
+          <span style="font-size: 13px; font-weight: bold; color: var(--text-muted);">Enter Item Details</span>
+          
+          <button type="button" id="editInitialAddBtn" onclick="openItemModal(null, 'edit')" style="background: #007bff; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Add Items">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
           </button>
         </div>
+
+        <div id="editDetailsHeader" class="compact-header">
+          <div>Fruit</div>
+          <div>Qty</div>
+          <div>Price</div>
+          <div>Total</div>
+        </div>
+
         <div id="editDetailsContainer"></div>
       </div>
       
@@ -667,7 +679,7 @@
         <input type="checkbox" id="editBroughtForward" onchange="toggleEditBF()" style="width:18px; height: 18px; margin:0;">
         <label for="editBroughtForward" style="margin:0; text-transform:none; font-size:14px; color: var(--text-main);">Brought forward</label>
       </div>
-      
+
       <label>Notes</label>
       <input type="text" id="editNotes">
       
@@ -1538,6 +1550,7 @@ async function navToDashboard() {
     }
 
     if (editingRow) {
+      // Modify Existing
       editingRow.querySelector('.detail-fruit').value = fruit;
       editingRow.querySelector('.detail-qty').value = qty;
       editingRow.querySelector('.detail-price').value = price;
@@ -1548,40 +1561,15 @@ async function navToDashboard() {
       editingRow.querySelector('.disp-price').innerText = '₹' + price;
       editingRow.querySelector('.disp-date').innerText = dispDate;
       editingRow.querySelector('.detail-total').innerText = '₹' + total.toLocaleString('en-IN');
+      
+      updateRowButtons(currentActiveContainer);
+      calculateDetails(currentActiveContainer);
     } else {
-      const container = document.getElementById(currentActiveContainer);
-      const rowDiv = document.createElement('div');
-      rowDiv.className = 'compact-row detail-row';
-
-      rowDiv.innerHTML = `
-        <input type="hidden" class="detail-fruit" value="${fruit}">
-        <input type="hidden" class="detail-qty" value="${qty}">
-        <input type="hidden" class="detail-price" value="${price}">
-        <input type="hidden" class="detail-date" value="${date}">
-        
-        <div class="compact-row-top">
-          <div class="disp-fruit">${fruit}</div>
-          <div class="disp-qty">${qty}</div>
-          <div class="disp-price">₹${price}</div>
-          <div class="detail-total">₹${total.toLocaleString('en-IN')}</div>
-        </div>
-        
-        <div class="compact-row-bottom">
-          <div class="disp-date-pill">📅 Date: <span class="disp-date">${dispDate}</span></div>
-          <div style="display: flex; gap: 8px; justify-content: flex-end;">
-            <!-- Note the context passed to openItemModal -->
-            <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this, '${currentActiveContainer === 'editDetailsContainer' ? 'edit' : 'add'}')" title="Remove">✕</button>
-            <button type="button" class="item-action-btn btn-modify" onclick="openItemModal(this, '${currentActiveContainer === 'editDetailsContainer' ? 'edit' : 'add'}')" title="Modify">✎</button>
-            <button type="button" class="item-action-btn btn-add-row" onclick="openItemModal(null, '${currentActiveContainer === 'editDetailsContainer' ? 'edit' : 'add'}')" title="Add Row">＋</button>
-          </div>
-        </div>
-      `;
-      container.appendChild(rowDiv);
+      // Add New using Unified Builder
+      addDisplayRow(currentActiveContainer, fruit, qty, price, date);
     }
 
     closeItemModal();
-    updateRowButtons(currentActiveContainer);
-    calculateDetails(currentActiveContainer);
     syncMainDate(currentActiveContainer); 
   }
 
@@ -2304,6 +2292,47 @@ async function navToDashboard() {
     }
   }
 
+  // --- UNIFIED ROW BUILDER ---
+  function addDisplayRow(containerId, fruit, qty, price, date) {
+    const container = document.getElementById(containerId);
+    const total = (parseFloat(qty) || 0) * (parseFloat(price) || 0);
+    const context = containerId === 'editDetailsContainer' ? 'edit' : 'add';
+
+    let dispDate = date;
+    if(date && date !== 'B/F') {
+      let d = new Date(date);
+      dispDate = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth()+1)).slice(-2);
+    }
+
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'compact-row detail-row';
+    rowDiv.innerHTML = `
+      <input type="hidden" class="detail-fruit" value="${fruit}">
+      <input type="hidden" class="detail-qty" value="${qty}">
+      <input type="hidden" class="detail-price" value="${price}">
+      <input type="hidden" class="detail-date" value="${date}">
+      
+      <div class="compact-row-top">
+        <div class="disp-fruit">${fruit}</div>
+        <div class="disp-qty">${qty}</div>
+        <div class="disp-price">₹${price}</div>
+        <div class="detail-total">₹${total.toLocaleString('en-IN')}</div>
+      </div>
+      
+      <div class="compact-row-bottom">
+        <div class="disp-date-pill">📅 Date: <span class="disp-date">${dispDate}</span></div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this, '${context}')" title="Remove">✕</button>
+          <button type="button" class="item-action-btn btn-modify" onclick="openItemModal(this, '${context}')" title="Modify">✎</button>
+          <button type="button" class="item-action-btn btn-add-row" onclick="openItemModal(null, '${context}')" title="Add Row">＋</button>
+        </div>
+      </div>
+    `;
+    container.appendChild(rowDiv);
+    updateRowButtons(containerId);
+    calculateDetails(containerId);
+  }
+
   function openModal(id) {
     try {
       const searchId = id.toString().trim();
@@ -2367,70 +2396,6 @@ async function navToDashboard() {
   }
 
   function closeModal() { document.getElementById('editModal').style.display = 'none'; }
-
-  function addInlineEditRow(fruit = '', qty = '', price = '', date = '') {
-    const container = document.getElementById('editDetailsContainer');
-    const rowDiv = document.createElement('div');
-    rowDiv.className = 'detail-row';
-    rowDiv.style.cssText = 'background: var(--card-bg); padding: 8px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border-light);';
-
-    if (!date) {
-      const mainDate = document.getElementById('editDate').value;
-      date = mainDate || new Date().toISOString().split('T')[0];
-    }
-
-    const total = (parseFloat(qty) || 0) * (parseFloat(price) || 0);
-
-    // CHANGED: Trash icon instead of massive red button, and streamlined grid
-    rowDiv.innerHTML = `
-      <div style="display: flex; gap: 6px; margin-bottom: 6px;">
-        <input type="text" class="inline-fruit" placeholder="Fruit Name" value="${fruit}" style="flex: 2; margin:0; padding:6px 8px; font-size:13px; border-radius:4px; border:1px solid var(--border-color);">
-        <!-- Sleek Trash Icon -->
-        <button type="button" onclick="this.closest('.detail-row').remove(); calculateInlineGrandTotal();" style="border:none; background:transparent; color:#d32f2f; font-size: 16px; cursor:pointer; padding: 4px; display:flex; align-items:center; justify-content:center;" title="Remove Item">🗑️</button>
-      </div>
-      <div style="display: flex; gap: 6px; margin-bottom: 6px;">
-        <input type="number" class="inline-qty" placeholder="Qty" value="${qty}" style="flex: 1; margin:0; padding:6px 8px; font-size:13px; border-radius:4px; border:1px solid var(--border-color);" oninput="updateInlineTotal(this)">
-        <input type="number" class="inline-price" placeholder="Price" value="${price}" style="flex: 1; margin:0; padding:6px 8px; font-size:13px; border-radius:4px; border:1px solid var(--border-color);" oninput="updateInlineTotal(this)">
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #eee; padding-top: 6px;">
-         <input type="date" class="inline-date" value="${date}" style="margin:0; padding:4px; font-size:11px; border-radius:4px; border:none; width: auto; color: var(--text-muted); background: transparent;">
-         <div style="font-weight: bold; font-size: 14px; color: #007bff;" class="inline-total">₹${total.toLocaleString('en-IN')}</div>
-      </div>
-    `;
-    container.appendChild(rowDiv);
-    calculateInlineGrandTotal();
-  }
-
-  function updateInlineTotal(inputElem) {
-    const row = inputElem.closest('.detail-row');
-    const qty = parseFloat(row.querySelector('.inline-qty').value) || 0;
-    const price = parseFloat(row.querySelector('.inline-price').value) || 0;
-    const total = qty * price;
-    row.querySelector('.inline-total').innerText = '₹' + total.toLocaleString('en-IN');
-    calculateInlineGrandTotal();
-  }
-
-  function calculateInlineGrandTotal() {
-    const rows = document.getElementById('editDetailsContainer').querySelectorAll('.detail-row');
-    const broadAmountInput = document.getElementById('editAmount');
-    
-    if (rows.length === 0) {
-      broadAmountInput.readOnly = false;
-      broadAmountInput.style.backgroundColor = ""; 
-      return;
-    }
-
-    let grandTotal = 0;
-    rows.forEach(row => {
-      const qty = parseFloat(row.querySelector('.inline-qty').value) || 0;
-      const price = parseFloat(row.querySelector('.inline-price').value) || 0;
-      grandTotal += (qty * price);
-    });
-
-    broadAmountInput.value = grandTotal;
-    broadAmountInput.readOnly = true;
-    broadAmountInput.style.backgroundColor = "var(--bg-color)"; 
-  }
   
   async function saveEdit() {
     const id = document.getElementById('editId').value;
@@ -2446,15 +2411,15 @@ async function navToDashboard() {
     if (!isBF && !date) { alert("Date is mandatory unless Brought Forward is checked."); return; }
     if (isBF && type === 'Goods Purchased') { notes = "(Brought Forward) " + notes; }
 
-    // Scrape modified details from the inline inputs
+    // Scrape modified details from the UNIFIED display rows
     let updatedDetails = [];
     const detailRows = document.getElementById('editDetailsContainer').querySelectorAll('.detail-row');
     if (detailRows.length > 0) {
       detailRows.forEach(row => {
-        const fruit = row.querySelector('.inline-fruit').value.trim();
-        const qty = parseFloat(row.querySelector('.inline-qty').value) || 0;
-        const price = parseFloat(row.querySelector('.inline-price').value) || 0;
-        const itemDate = row.querySelector('.inline-date').value;
+        const fruit = row.querySelector('.detail-fruit').value.trim();
+        const qty = parseFloat(row.querySelector('.detail-qty').value) || 0;
+        const price = parseFloat(row.querySelector('.detail-price').value) || 0;
+        const itemDate = row.querySelector('.detail-date').value;
         const total = qty * price;
         
         if (fruit || total > 0) {
