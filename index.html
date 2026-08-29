@@ -2373,12 +2373,14 @@ async function navToDashboard() {
         bfCheckbox.checked = isBF;
         wrapper.style.display = 'block'; 
         
-        // Inject existing details directly as input rows
+        // Inject existing details directly as unified display rows
         if (row.details && row.details.length > 0) {
           row.details.forEach(d => {
             let rowDate = '';
             if (row.rawDate) rowDate = new Date(row.rawDate).toISOString().split('T')[0];
-            addInlineEditRow(d.fruit, d.qty, d.price, rowDate);
+            
+            // UPDATED: Use the new unified row builder
+            addDisplayRow('editDetailsContainer', d.fruit, d.qty, d.price, rowDate);
           });
         }
       } else {
