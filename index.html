@@ -2337,9 +2337,11 @@ async function navToDashboard() {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
            <input type="date" class="inline-edit-date" value="${date}" style="margin:0; padding:6px; font-size:12px; border-radius: 4px; border: 1px solid var(--border-color); width: 130px; background: var(--input-bg);">
            <div class="inline-edit-total" style="font-weight: bold; font-size: 14px; color: #007bff;">₹${total.toLocaleString('en-IN')}</div>
+           
+           <!-- UPDATED: Explicit text buttons for zero ambiguity -->
            <div style="display: flex; gap: 8px;">
-             <button type="button" class="item-action-btn btn-green" style="background: #28a745; width: 36px; height: 36px;" onclick="saveInlineEdit(this)" title="Save">💾</button>
-             <button type="button" class="item-action-btn btn-remove" style="background: #6c757d; width: 36px; height: 36px;" onclick="cancelInlineEdit(this)" title="Cancel">↩️</button>
+             <button type="button" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: bold; cursor: pointer;" onclick="cancelInlineEdit(this)">Cancel</button>
+             <button type="button" style="background: #28a745; color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="saveInlineEdit(this)">Save</button>
            </div>
         </div>
       </div>
