@@ -1941,7 +1941,7 @@ async function navToDashboard() {
       const leftId = row.left ? row.left.id : null;
       const rightId = row.right ? row.right.id : null;
 
-      const buildCell = (item, isLeft) => {
+    const buildCell = (item, isLeft) => {
         if (!item) return `<div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''}"></div>`;
         
         const shortDate = item.date === 'B/F' ? 'B/F' : item.date.substring(0, 5); 
@@ -1953,14 +1953,14 @@ async function navToDashboard() {
         }
 
         // ==========================================
-        // NEW: BUILD ACCORDION HTML (Upgraded UI)
+        // DYNAMIC AMOUNT DISPLAY & ACCORDION
         // ==========================================
         let detailsHtml = '';
-        let toggleBtn = '';
+        
+        // Default amount style (No details)
+        let amountDisplayHtml = `<div style="font-weight: bold; font-size: 14px; color: var(--text-main);">₹${item.amount.toLocaleString('en-IN')}</div>`;
         
         if (item.details && item.details.length > 0) {
-          // Changed to a sleek pill-shaped toggle button
-          toggleBtn = `<button class="details-toggle-btn no-print" onclick="toggleDetails('desc_${item.id}')" style="background: #e3f2fd; border-radius: 12px; padding: 2px 8px; margin-left: 6px; border: 1px solid #bbdefb; transition: 0.2s;">▼ Items</button>`;
           
           let rowsHtml = item.details.map(d => `
             <div class="details-dropdown-row" style="align-items: center; font-size: 11px; padding: 4px 0;">
@@ -1969,12 +1969,14 @@ async function navToDashboard() {
             </div>
           `).join('');
           
-          // Softened the background and rounded the corners for better integration
           detailsHtml = `
             <div id="desc_${item.id}" class="details-dropdown" style="background: #f8f9fa; border: none; border-radius: 8px; padding: 8px 12px; margin-top: 8px;">
               ${rowsHtml}
             </div>
           `;
+          
+          // Upgraded Amount style (Clickable, Blue, with Arrow)
+          amountDisplayHtml = `<div onclick="toggleDetails('desc_${item.id}')" style="font-weight: bold; font-size: 14px; color: #007bff; cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 4px;" title="View Items">₹${item.amount.toLocaleString('en-IN')} <span style="font-size: 10px;">▼</span></div>`;
         }
         // ==========================================
 
@@ -1982,8 +1984,8 @@ async function navToDashboard() {
           <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
               <div>
-                <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px;">${shortDate} ${toggleBtn}</div>
-                <div style="font-weight: bold; font-size: 14px; color: var(--text-main);">₹${item.amount.toLocaleString('en-IN')}</div>
+                <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px;">${shortDate}</div>
+                ${amountDisplayHtml}
               </div>
               <div class="action-icons no-print" style="display: flex; align-items: center; gap: 4px;">
                 <button class="icon-btn" onclick="openModal(${item.id})" style="background: none; border: none; padding: 2px; cursor: pointer; color: #007bff; font-size: 14px;">✏️</button>
