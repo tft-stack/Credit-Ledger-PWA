@@ -2117,7 +2117,8 @@ async function navToDashboard() {
       if (item.rawDate && item.date !== 'B/F') {
         let d = new Date(item.rawDate);
         dateStr = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth()+1)).slice(-2);
-      } else if (item.date === 'B/F' || (item.notes && item.notes.includes('Brought Forward'))) {
+        // FIX: Check for the new 'B/F' string alongside the legacy string
+      } else if (item.date === 'B/F' || (item.notes && (item.notes.includes('Brought Forward') || item.notes.includes('B/F')))) {
         dateStr = 'B/F';
       }
 
