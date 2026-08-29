@@ -1417,28 +1417,48 @@ async function navToDashboard() {
   function toggleBF() {
     const isBF = document.getElementById('broughtForward').checked;
     const dateInput = document.getElementById('entryDate');
+    const notesInput = document.getElementById('entryNotes');
+    
     if (isBF) {
       entryDatePicker.clear();
       dateInput.disabled = true;
       dateInput.style.opacity = "0.5";
+      
+      // Auto-inject text if it isn't already there
+      if (!notesInput.value.toLowerCase().includes("brought forward")) {
+        notesInput.value = notesInput.value ? "Brought Forward - " + notesInput.value : "Brought Forward";
+      }
     } else {
       dateInput.disabled = false;
       dateInput.style.opacity = "1";
       entryDatePicker.setDate(new Date());
+      
+      // Clean up the text safely if unchecked
+      notesInput.value = notesInput.value.replace(/\(?Brought Forward\)?\s*-?\s*/ig, "").trim();
     }
   }
 
   function toggleEditBF() {
     const isBF = document.getElementById('editBroughtForward').checked;
     const dateInput = document.getElementById('editDate');
+    const notesInput = document.getElementById('editNotes');
+    
     if (isBF) {
       editDatePicker.clear();
       dateInput.disabled = true;
       dateInput.style.opacity = "0.5";
+      
+      // Auto-inject text if it isn't already there
+      if (!notesInput.value.toLowerCase().includes("brought forward")) {
+        notesInput.value = notesInput.value ? "Brought Forward - " + notesInput.value : "Brought Forward";
+      }
     } else {
       dateInput.disabled = false;
       dateInput.style.opacity = "1";
-      if(!dateInput.value) editDatePicker.setDate(new Date());
+      if (!dateInput.value) editDatePicker.setDate(new Date());
+      
+      // Clean up the text safely if unchecked
+      notesInput.value = notesInput.value.replace(/\(?Brought Forward\)?\s*-?\s*/ig, "").trim();
     }
   }
 
@@ -1653,7 +1673,9 @@ async function navToDashboard() {
     if (!name || !amount) { alert('Please enter both Customer Name and Amount'); return; }
     if (!isBF && !date) { alert('Date is mandatory unless Brought Forward is checked.'); return; }
 
-    if (isBF && type === 'Goods Purchased') { notes = "(Brought Forward) " + notes; }
+    if (isBF && type === 'Goods Purchased' && !notes.toLowerCase().includes("brought forward")) { 
+      notes = "Brought Forward - " + notes; 
+    }
 
     // ==========================================
     // NEW: STRICT DUPLICATE & SIMILARITY ENFORCEMENT
@@ -2361,10 +2383,13 @@ async function navToDashboard() {
 
       let notes = row.notes || '';
       let isBF = false;
-      if (notes.startsWith("(Brought Forward) ")) {
+      
+      // Determine if this was a Brought Forward entry based on the note or date
+      if (notes.toLowerCase().includes("brought forward") || row.date === 'B/F') {
         isBF = true;
-        notes = notes.replace("(Brought Forward) ", ""); 
       }
+      
+      // Pass the raw note directly to the UI box
       document.getElementById('editNotes').value = notes;
 
       const bfCheckboxContainer = document.getElementById('editBFContainer');
@@ -2386,13 +2411,11 @@ async function navToDashboard() {
         bfCheckbox.checked = isBF;
         wrapper.style.display = 'block'; 
         
-        // Inject existing details directly as unified display rows
+        // Inject existing details directly as display rows
         if (row.details && row.details.length > 0) {
           row.details.forEach(d => {
             let rowDate = '';
             if (row.rawDate) rowDate = new Date(row.rawDate).toISOString().split('T')[0];
-            
-            // UPDATED: Use the new unified row builder
             addDisplayRow('editDetailsContainer', d.fruit, d.qty, d.price, rowDate);
           });
         }
@@ -2402,6 +2425,7 @@ async function navToDashboard() {
         wrapper.style.display = 'none'; 
       }
 
+      // Enforce the visual state based on the checkbox
       toggleEditBF(); 
       document.getElementById('editModal').style.display = 'flex';
       
@@ -2424,7 +2448,9 @@ async function navToDashboard() {
 
     if (!amount) { alert("Amount is mandatory."); return; }
     if (!isBF && !date) { alert("Date is mandatory unless Brought Forward is checked."); return; }
-    if (isBF && type === 'Goods Purchased') { notes = "(Brought Forward) " + notes; }
+    if (isBF && type === 'Goods Purchased' && !notes.toLowerCase().includes("brought forward")) { 
+      notes = "Brought Forward - " + notes; 
+    }
 
     // Scrape modified details from the UNIFIED display rows
     let updatedDetails = [];
