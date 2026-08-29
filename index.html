@@ -2384,7 +2384,12 @@ async function navToDashboard() {
       document.getElementById('editId').value = searchId;
       document.getElementById('editOldAmount').value = row.amount;
       document.getElementById('editType').value = row.type;
-      document.getElementById('editAmount').value = row.amount;
+      
+      // FIX: Explicitly unlock the amount field and reset its background every time the modal opens
+      const editAmountField = document.getElementById('editAmount');
+      editAmountField.value = row.amount;
+      editAmountField.readOnly = false;
+      editAmountField.style.backgroundColor = "";
 
       let notes = row.notes || '';
       let isBF = false;
