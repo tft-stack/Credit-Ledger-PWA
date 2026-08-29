@@ -1821,7 +1821,7 @@ async function navToDashboard() {
     let totalPaymentSelected = 0;
 
     checkedBoxes.forEach(box => {
-      idsToUpdate.push(parseInt(box.value));
+      idsToUpdate.push(box.value.toString());
       
       // Tally up the selected amounts based on type
       let type = box.getAttribute('data-type');
@@ -1965,7 +1965,8 @@ async function navToDashboard() {
         // Default amount style (No details)
         let amountDisplayHtml = `<div style="font-weight: bold; font-size: 14px; color: var(--text-main);">₹${item.amount.toLocaleString('en-IN')}</div>`;
         
-        if (item.details && item.details.length > 0) {
+        // FIX: Enforce that only Purchase rows can render the accordion
+        if ((item.type === 'Purchase' || item.type === 'Goods Purchased') && item.details && item.details.length > 0) {
           
           let rowsHtml = item.details.map(d => `
             <div class="details-dropdown-row" style="align-items: center; font-size: 11px; padding: 4px 0;">
@@ -2127,7 +2128,9 @@ async function navToDashboard() {
       if (item.notes) {
          particulars += `<br><span style="font-size: 8px; opacity: 0.8;">${item.notes}</span>`;
       }
-      if (item.details && item.details.length > 0) {
+      
+      // FIX: Ensure PDFs don't accidentally print details for Payments
+      if (isPurchase && item.details && item.details.length > 0) {
          item.details.forEach(d => {
            particulars += `<br><span style="font-size: 8px; opacity: 0.8;">• ${d.fruit} (${d.qty})</span>`; 
          });
