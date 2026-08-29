@@ -1424,17 +1424,17 @@ async function navToDashboard() {
       dateInput.disabled = true;
       dateInput.style.opacity = "0.5";
       
-      // Auto-inject text if it isn't already there
-      if (!notesInput.value.toLowerCase().includes("brought forward")) {
-        notesInput.value = notesInput.value ? "Brought Forward - " + notesInput.value : "Brought Forward";
+      // Inject B/F if not present
+      if (!notesInput.value.toLowerCase().includes("b/f") && !notesInput.value.toLowerCase().includes("brought forward")) {
+        notesInput.value = notesInput.value ? "B/F - " + notesInput.value : "B/F";
       }
     } else {
       dateInput.disabled = false;
       dateInput.style.opacity = "1";
       entryDatePicker.setDate(new Date());
       
-      // Clean up the text safely if unchecked
-      notesInput.value = notesInput.value.replace(/\(?Brought Forward\)?\s*-?\s*/ig, "").trim();
+      // Clean up B/F or legacy text safely if unchecked
+      notesInput.value = notesInput.value.replace(/\(?B\/F\)?\s*-?\s*/ig, "").replace(/\(?Brought Forward\)?\s*-?\s*/ig, "").trim();
     }
   }
 
@@ -1448,20 +1448,19 @@ async function navToDashboard() {
       dateInput.disabled = true;
       dateInput.style.opacity = "0.5";
       
-      // Auto-inject text if it isn't already there
-      if (!notesInput.value.toLowerCase().includes("brought forward")) {
-        notesInput.value = notesInput.value ? "Brought Forward - " + notesInput.value : "Brought Forward";
+      // Inject B/F if not present
+      if (!notesInput.value.toLowerCase().includes("b/f") && !notesInput.value.toLowerCase().includes("brought forward")) {
+        notesInput.value = notesInput.value ? "B/F - " + notesInput.value : "B/F";
       }
     } else {
       dateInput.disabled = false;
       dateInput.style.opacity = "1";
       if (!dateInput.value) editDatePicker.setDate(new Date());
       
-      // Clean up the text safely if unchecked
-      notesInput.value = notesInput.value.replace(/\(?Brought Forward\)?\s*-?\s*/ig, "").trim();
+      // Clean up B/F or legacy text safely if unchecked
+      notesInput.value = notesInput.value.replace(/\(?B\/F\)?\s*-?\s*/ig, "").replace(/\(?Brought Forward\)?\s*-?\s*/ig, "").trim();
     }
   }
-
   function checkSimilarity(inputStr) {
     const warningBox = document.getElementById('similarityWarning');
     const chipContainer = document.getElementById('similarityChips');
@@ -1673,8 +1672,8 @@ async function navToDashboard() {
     if (!name || !amount) { alert('Please enter both Customer Name and Amount'); return; }
     if (!isBF && !date) { alert('Date is mandatory unless Brought Forward is checked.'); return; }
 
-    if (isBF && type === 'Goods Purchased' && !notes.toLowerCase().includes("brought forward")) { 
-      notes = "Brought Forward - " + notes; 
+    if (isBF && type === 'Goods Purchased' && !notes.toLowerCase().includes("b/f") && !notes.toLowerCase().includes("brought forward")) { 
+      notes = notes ? "B/F - " + notes : "B/F"; 
     }
 
     // ==========================================
@@ -2385,7 +2384,7 @@ async function navToDashboard() {
       let isBF = false;
       
       // Determine if this was a Brought Forward entry based on the note or date
-      if (notes.toLowerCase().includes("brought forward") || row.date === 'B/F') {
+      if (notes.toLowerCase().includes("b/f") || notes.toLowerCase().includes("brought forward") || row.date === 'B/F') {
         isBF = true;
       }
       
@@ -2448,8 +2447,8 @@ async function navToDashboard() {
 
     if (!amount) { alert("Amount is mandatory."); return; }
     if (!isBF && !date) { alert("Date is mandatory unless Brought Forward is checked."); return; }
-    if (isBF && type === 'Goods Purchased' && !notes.toLowerCase().includes("brought forward")) { 
-      notes = "Brought Forward - " + notes; 
+    if (isBF && type === 'Goods Purchased' && !notes.toLowerCase().includes("b/f") && !notes.toLowerCase().includes("brought forward")) { 
+      notes = notes ? "B/F - " + notes : "B/F"; 
     }
 
     // Scrape modified details from the UNIFIED display rows
