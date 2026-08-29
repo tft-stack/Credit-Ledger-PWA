@@ -1054,8 +1054,8 @@
             </div>
       `;
 
-      let purchases = custMatch.items.filter(i => i.type === 'Goods Purchased');
-      let payments = custMatch.items.filter(i => i.type === 'Amount Received');
+      let purchases = custMatch.items.filter(i => i.type === 'Purchase' || i.type === 'Goods Purchased');
+      let payments = custMatch.items.filter(i => i.type === 'Payment' || i.type === 'Amount Received');
       let maxLen = Math.max(purchases.length, payments.length);
 
       for(let i=0; i<maxLen; i++) {
@@ -1149,9 +1149,9 @@
       let type = box.getAttribute('data-type');
       let amt = parseFloat(box.getAttribute('data-amount')) || 0;
       
-      if (type === 'Goods Purchased') {
+      if (type === 'Purchase' || type === 'Goods Purchased') {
         totalPurchaseSelected += amt;
-      } else if (type === 'Amount Received') {
+      } else if (type === 'Payment' || type === 'Amount Received') {
         totalPaymentSelected += amt;
       }
     });
@@ -1827,9 +1827,9 @@ async function navToDashboard() {
       let type = box.getAttribute('data-type');
       let amt = parseFloat(box.getAttribute('data-amount')) || 0;
       
-      if (type === 'Goods Purchased') {
+      if (type === 'Purchase' || type === 'Goods Purchased') {
         totalPurchaseSelected += amt;
-      } else if (type === 'Amount Received') {
+      } else if (type === 'Payment' || type === 'Amount Received') {
         totalPaymentSelected += amt;
       }
     });
@@ -1915,8 +1915,8 @@ async function navToDashboard() {
       return;
     }
 
-    let purchases = data.history.filter(r => r.type === 'Goods Purchased');
-    let payments = data.history.filter(r => r.type === 'Amount Received');
+    let purchases = data.history.filter(r => r.type === 'Purchase' || r.type === 'Goods Purchased');
+    let payments = data.history.filter(r => r.type === 'Payment' || r.type === 'Amount Received');
 
     purchases.sort((a, b) => (a.rawDate || 0) - (b.rawDate || 0));
     payments.sort((a, b) => (a.rawDate || 0) - (b.rawDate || 0));
