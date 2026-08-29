@@ -2293,12 +2293,6 @@ async function navToDashboard() {
     const total = (parseFloat(qty) || 0) * (parseFloat(price) || 0);
     const context = containerId === 'editDetailsContainer' ? 'edit' : 'add';
 
-    let dispDate = date;
-    if(date && date !== 'B/F') {
-      let d = new Date(date);
-      dispDate = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth()+1)).slice(-2);
-    }
-
     const rowDiv = document.createElement('div');
     rowDiv.className = 'compact-row detail-row';
     rowDiv.innerHTML = `
@@ -2310,16 +2304,15 @@ async function navToDashboard() {
       
       <!-- VIEW MODE -->
       <div class="view-mode" style="${startInEditMode ? 'display: none;' : 'display: block;'}">
-        <div class="compact-row-top">
+        <div class="compact-row-top" style="margin-bottom: 8px;">
           <div class="disp-fruit">${fruit}</div>
           <div class="disp-qty">${qty}</div>
           <div class="disp-price">₹${price}</div>
           <div class="detail-total">₹${total.toLocaleString('en-IN')}</div>
         </div>
         
-        <div class="compact-row-bottom">
-          <div class="disp-date-pill">📅 Date: <span class="disp-date">${dispDate}</span></div>
-          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+        <div class="compact-row-bottom" style="display: flex; justify-content: flex-end; padding-top: 4px; border-top: 1px dashed var(--border-light);">
+          <div style="display: flex; gap: 8px;">
             <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this, '${context}')" title="Remove">✕</button>
             <button type="button" class="item-action-btn btn-modify" onclick="toggleInlineEdit(this, true)" title="Modify">✎</button>
             <button type="button" class="item-action-btn btn-add-row" onclick="openItemModal(null, '${context}')" title="Add Row">＋</button>
@@ -2337,16 +2330,14 @@ async function navToDashboard() {
           <input type="number" class="inline-edit-price" value="${price}" placeholder="Price" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="updateInlinePreview(this)">
         </div>
         
-        <!-- Row 2: Date & Amount -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-           <input type="date" class="inline-edit-date" value="${date}" style="margin:0; padding:6px; font-size:12px; border-radius: 4px; border: 1px solid var(--border-color); width: 130px; background: var(--input-bg);">
+        <!-- Row 2: Amount & Action Buttons -->
+        <div style="display: flex; justify-content: space-between; align-items: center;">
            <div class="inline-edit-total" style="font-weight: bold; font-size: 16px; color: #007bff;">₹${total.toLocaleString('en-IN')}</div>
-        </div>
-        
-        <!-- Row 3: Action Buttons -->
-        <div style="display: flex; justify-content: flex-end; gap: 8px;">
-           <button type="button" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 16px; font-size: 12px; font-weight: bold; cursor: pointer;" onclick="cancelInlineEdit(this)">Cancel</button>
-           <button type="button" style="background: #28a745; color: white; border: none; border-radius: 6px; padding: 6px 16px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="saveInlineEdit(this)">Save</button>
+           
+           <div style="display: flex; justify-content: flex-end; gap: 8px;">
+             <button type="button" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 16px; font-size: 12px; font-weight: bold; cursor: pointer;" onclick="cancelInlineEdit(this)">Cancel</button>
+             <button type="button" style="background: #28a745; color: white; border: none; border-radius: 6px; padding: 6px 16px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="saveInlineEdit(this)">Save</button>
+           </div>
         </div>
       </div>
     `;
@@ -2540,35 +2531,29 @@ async function navToDashboard() {
     const fruit = row.querySelector('.inline-edit-fruit').value.trim();
     const qty = parseFloat(row.querySelector('.inline-edit-qty').value) || 0;
     const price = parseFloat(row.querySelector('.inline-edit-price').value) || 0;
-    const date = row.querySelector('.inline-edit-date').value;
     const total = qty * price;
 
     if (!fruit) { alert("Please enter an Item name."); return; }
 
-    let dispDate = date;
-    if(date && date !== 'B/F') {
-      let d = new Date(date);
-      dispDate = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth()+1)).slice(-2);
-    }
+    // Grab the date safely from the overall transaction
+    const containerId = row.closest('div[id$="DetailsContainer"]').id;
+    const dateInputId = containerId === 'editDetailsContainer' ? 'editDate' : 'entryDate';
+    const mainDate = document.getElementById(dateInputId).value;
 
     // Update hidden fields
     row.querySelector('.detail-fruit').value = fruit;
     row.querySelector('.detail-qty').value = qty;
     row.querySelector('.detail-price').value = price;
-    row.querySelector('.detail-date').value = date;
+    row.querySelector('.detail-date').value = mainDate; // Force sync to parent date
 
     // Update view mode display
     row.querySelector('.disp-fruit').innerText = fruit;
     row.querySelector('.disp-qty').innerText = qty;
     row.querySelector('.disp-price').innerText = '₹' + price;
-    row.querySelector('.disp-date').innerText = dispDate;
     row.querySelector('.detail-total').innerText = '₹' + total.toLocaleString('en-IN');
 
     toggleInlineEdit(btn, false);
-    
-    const containerId = row.closest('div[id$="DetailsContainer"]').id;
     calculateDetails(containerId);
-    syncMainDate(containerId);
   }
 
   function cancelInlineEdit(btn) {
