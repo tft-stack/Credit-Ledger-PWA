@@ -2147,7 +2147,8 @@ async function navToDashboard() {
       // FIX: Ensure PDFs don't accidentally print details for Payments
       if (isPurchase && item.details && item.details.length > 0) {
          item.details.forEach(d => {
-           particulars += `<br><span style="font-size: 8px; opacity: 0.8;">• ${d.fruit} (${d.qty})</span>`; 
+           // UPDATED: Added " x ₹Price" to match the UI display
+           particulars += `<br><span style="font-size: 8px; opacity: 0.8;">• ${d.fruit} (${d.qty} x ₹${d.price})</span>`; 
          });
       }
 
