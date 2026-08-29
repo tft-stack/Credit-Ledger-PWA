@@ -2571,7 +2571,8 @@ async function navToDashboard() {
 
   function toggleInlineEdit(btn, showEdit) {
     const row = btn.closest('.detail-row');
-    row.querySelector('.view-mode').style.display = showEdit ? 'none' : 'block';
+    // FIX: Restore to 'flex' instead of 'block' so the responsive layout doesn't break
+    row.querySelector('.view-mode').style.display = showEdit ? 'none' : 'flex';
     row.querySelector('.edit-mode').style.display = showEdit ? 'block' : 'none';
   }
 
