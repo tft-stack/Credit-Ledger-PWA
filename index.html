@@ -565,12 +565,16 @@
             </button>
           </div>
 
-          <div id="detailsHeader" style="display: none; align-items: center; gap: 4px; font-size: 10px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border-light); padding-bottom: 4px;">
-            <div style="flex: 1; text-align: left;">Fruit</div>
-            <div style="width: 22px; text-align: center;">Qty</div>
-            <div style="width: 36px; text-align: right;">Price</div>
-            <div style="width: 46px; text-align: right;">Total</div>
-            <div style="width: 80px;"></div> <!-- Empty space above buttons -->
+          <div id="detailsHeader" style="display: none; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 10px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border-light); padding-bottom: 4px; width: 100%;">
+            <!-- Left Data Group (Ensures headers align with numbers) -->
+            <div style="display: flex; flex-direction: row; align-items: center; gap: 6px; flex: 1 1 200px; min-width: 200px;">
+              <div style="flex: 1 1 auto; text-align: left;">Fruit</div>
+              <div style="width: 24px; text-align: center; flex-shrink: 0;">Qty</div>
+              <div style="width: 38px; text-align: right; flex-shrink: 0;">Price</div>
+              <div style="width: 48px; text-align: right; flex-shrink: 0;">Total</div>
+            </div>
+            <!-- Right Button Spacer -->
+            <div style="width: 80px; flex: 0 0 80px; margin-left: auto;"></div>
           </div>
 
           <div id="detailsContainer"></div>
@@ -671,12 +675,16 @@
           </button>
         </div>
 
-        <div id="editDetailsHeader" style="display: none; align-items: center; gap: 4px; font-size: 10px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border-light); padding-bottom: 4px;">
-          <div style="flex: 1; text-align: left;">Fruit</div>
-          <div style="width: 22px; text-align: center;">Qty</div>
-          <div style="width: 36px; text-align: right;">Price</div>
-          <div style="width: 46px; text-align: right;">Total</div>
-          <div style="width: 80px;"></div> <!-- Empty space above buttons -->
+        <div id="editDetailsHeader" style="display: none; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 10px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border-light); padding-bottom: 4px; width: 100%;">
+          <!-- Left Data Group -->
+          <div style="display: flex; flex-direction: row; align-items: center; gap: 6px; flex: 1 1 200px; min-width: 200px;">
+            <div style="flex: 1 1 auto; text-align: left;">Fruit</div>
+            <div style="width: 24px; text-align: center; flex-shrink: 0;">Qty</div>
+            <div style="width: 38px; text-align: right; flex-shrink: 0;">Price</div>
+            <div style="width: 48px; text-align: right; flex-shrink: 0;">Total</div>
+          </div>
+          <!-- Right Button Spacer -->
+          <div style="width: 80px; flex: 0 0 80px; margin-left: auto;"></div>
         </div>
 
         <div id="editDetailsContainer"></div>
@@ -2321,7 +2329,7 @@ async function navToDashboard() {
     }
   }
 
-  // --- UNIFIED ROW BUILDER (Ultra-Compact Single Line Layout) ---
+  // --- UNIFIED ROW BUILDER (Responsive Single Line / Wrap) ---
   function addDisplayRow(containerId, fruit = '', qty = '', price = '', date = '', startInEditMode = false) {
     const container = document.getElementById(containerId);
     const total = (parseFloat(qty) || 0) * (parseFloat(price) || 0);
@@ -2340,31 +2348,19 @@ async function navToDashboard() {
       <input type="hidden" class="detail-price" value="${price}">
       <input type="hidden" class="detail-date" value="${date}">
       
-      <!-- VIEW MODE (Single Horizontal Line) -->
-      <div class="view-mode" style="${startInEditMode ? 'display: none;' : 'display: flex;'} align-items: center; gap: 4px; width: 100%;">
+      <!-- VIEW MODE (Responsive Flex Wrap) -->
+      <div class="view-mode" style="${startInEditMode ? 'display: none;' : 'display: flex;'} flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px; width: 100%;">
         
-        <!-- Fruit Name (Expands, truncates if too long) -->
-        <div class="disp-fruit" style="flex: 1; font-weight: bold; font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${fruit}">
-          ${fruit}
+        <!-- Data Group (Forces Fruit, Qty, Price, Total to stay in a horizontal line) -->
+        <div style="display: flex; flex-direction: row; align-items: center; gap: 6px; flex: 1 1 200px; min-width: 200px;">
+          <div class="disp-fruit" style="flex: 1 1 auto; font-weight: bold; font-size: 13px; color: var(--text-main); white-space: normal; word-break: break-word;">${fruit}</div>
+          <div class="disp-qty" style="width: 24px; font-size: 12px; text-align: center; color: var(--text-main); flex-shrink: 0;">${qty}</div>
+          <div class="disp-price" style="width: 38px; font-size: 12px; text-align: right; color: var(--text-main); flex-shrink: 0;">₹${price}</div>
+          <div class="detail-total" style="width: 48px; font-size: 12px; font-weight: bold; text-align: right; color: #007bff; flex-shrink: 0;">₹${total.toLocaleString('en-IN')}</div>
         </div>
         
-        <!-- Quantity -->
-        <div class="disp-qty" style="width: 22px; font-size: 12px; text-align: center; color: var(--text-main);">
-          ${qty}
-        </div>
-        
-        <!-- Price -->
-        <div class="disp-price" style="width: 36px; font-size: 12px; text-align: right; color: var(--text-main);">
-          ₹${price}
-        </div>
-        
-        <!-- Total -->
-        <div class="detail-total" style="width: 46px; font-size: 12px; font-weight: bold; text-align: right; color: #007bff;">
-          ₹${total.toLocaleString('en-IN')}
-        </div>
-        
-        <!-- 3 Action Buttons -->
-        <div style="display: flex; gap: 4px; width: 80px; justify-content: flex-end;">
+        <!-- Action Buttons (Wraps to the next line right-aligned if Fruit name is too long) -->
+        <div style="display: flex; flex-direction: row; gap: 4px; width: 80px; flex: 0 0 80px; justify-content: flex-end; margin-left: auto;">
           <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this, '${context}')" title="Remove" style="width: 24px; height: 24px; font-size: 12px; border-radius: 6px;">✕</button>
           <button type="button" class="item-action-btn btn-modify" onclick="toggleInlineEdit(this, true)" title="Modify" style="width: 24px; height: 24px; font-size: 12px; border-radius: 6px;">✎</button>
           <button type="button" class="item-action-btn btn-add-row" onclick="openItemModal(null, '${context}')" title="Add Row" style="width: 24px; height: 24px; font-size: 14px; border-radius: 6px;">＋</button>
