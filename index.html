@@ -565,13 +565,13 @@
             </button>
           </div>
 
-          <div id="detailsHeader" style="display: none; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 10px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border-light); padding-bottom: 4px; width: 100%;">
-            <!-- Left Data Group (Ensures headers align with numbers) -->
-            <div style="display: flex; flex-direction: row; align-items: center; gap: 6px; flex: 1 1 200px; min-width: 200px;">
+          <div id="detailsHeader" style="display: none; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 10px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border-light); padding-bottom: 4px; width: 100%;">
+            <!-- Left Data Group -->
+            <div style="display: flex; flex-direction: row; align-items: center; gap: 4px; flex: 1 1 0%; min-width: 170px;">
               <div style="flex: 1 1 auto; text-align: left;">Fruit</div>
-              <div style="width: 24px; text-align: center; flex-shrink: 0;">Qty</div>
-              <div style="width: 38px; text-align: right; flex-shrink: 0;">Price</div>
-              <div style="width: 48px; text-align: right; flex-shrink: 0;">Total</div>
+              <div style="width: 22px; text-align: center; flex-shrink: 0;">Qty</div>
+              <div style="width: 36px; text-align: right; flex-shrink: 0;">Price</div>
+              <div style="width: 46px; text-align: right; flex-shrink: 0;">Total</div>
             </div>
             <!-- Right Button Spacer -->
             <div style="width: 80px; flex: 0 0 80px; margin-left: auto;"></div>
@@ -675,13 +675,13 @@
           </button>
         </div>
 
-        <div id="editDetailsHeader" style="display: none; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 10px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border-light); padding-bottom: 4px; width: 100%;">
+        <div id="editDetailsHeader" style="display: none; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 10px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border-light); padding-bottom: 4px; width: 100%;">
           <!-- Left Data Group -->
-          <div style="display: flex; flex-direction: row; align-items: center; gap: 6px; flex: 1 1 200px; min-width: 200px;">
+          <div style="display: flex; flex-direction: row; align-items: center; gap: 4px; flex: 1 1 0%; min-width: 170px;">
             <div style="flex: 1 1 auto; text-align: left;">Fruit</div>
-            <div style="width: 24px; text-align: center; flex-shrink: 0;">Qty</div>
-            <div style="width: 38px; text-align: right; flex-shrink: 0;">Price</div>
-            <div style="width: 48px; text-align: right; flex-shrink: 0;">Total</div>
+            <div style="width: 22px; text-align: center; flex-shrink: 0;">Qty</div>
+            <div style="width: 36px; text-align: right; flex-shrink: 0;">Price</div>
+            <div style="width: 46px; text-align: right; flex-shrink: 0;">Total</div>
           </div>
           <!-- Right Button Spacer -->
           <div style="width: 80px; flex: 0 0 80px; margin-left: auto;"></div>
@@ -2350,14 +2350,14 @@ async function navToDashboard() {
       <input type="hidden" class="detail-date" value="${date}">
       
       <!-- VIEW MODE (Responsive Flex Wrap) -->
-      <div class="view-mode" style="${startInEditMode ? 'display: none;' : 'display: flex;'} flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px; width: 100%;">
+      <div class="view-mode" style="${startInEditMode ? 'display: none;' : 'display: flex;'} flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px; width: 100%;">
         
         <!-- Data Group (Forces Fruit, Qty, Price, Total to stay in a horizontal line) -->
-        <div style="display: flex; flex-direction: row; align-items: center; gap: 6px; flex: 1 1 200px; min-width: 200px;">
+        <div style="display: flex; flex-direction: row; align-items: center; gap: 4px; flex: 1 1 0%; min-width: 170px;">
           <div class="disp-fruit" style="flex: 1 1 auto; font-weight: bold; font-size: 13px; color: var(--text-main); white-space: normal; word-break: break-word;">${fruit}</div>
-          <div class="disp-qty" style="width: 24px; font-size: 12px; text-align: center; color: var(--text-main); flex-shrink: 0;">${qty}</div>
-          <div class="disp-price" style="width: 38px; font-size: 12px; text-align: right; color: var(--text-main); flex-shrink: 0;">₹${price}</div>
-          <div class="detail-total" style="width: 48px; font-size: 12px; font-weight: bold; text-align: right; color: #007bff; flex-shrink: 0;">₹${total.toLocaleString('en-IN')}</div>
+          <div class="disp-qty" style="width: 22px; font-size: 12px; text-align: center; color: var(--text-main); flex-shrink: 0;">${qty}</div>
+          <div class="disp-price" style="width: 36px; font-size: 12px; text-align: right; color: var(--text-main); flex-shrink: 0;">₹${price}</div>
+          <div class="detail-total" style="width: 46px; font-size: 12px; font-weight: bold; text-align: right; color: #007bff; flex-shrink: 0;">₹${total.toLocaleString('en-IN')}</div>
         </div>
         
         <!-- Action Buttons (Wraps to the next line right-aligned if Fruit name is too long) -->
