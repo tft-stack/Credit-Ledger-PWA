@@ -525,8 +525,8 @@
       <div style="background: var(--bg-color); padding: 12px; border-radius: 8px; border: 1px solid var(--border-light); margin-top: 12px; transition: background 0.3s, border-color 0.3s;">
         <label>New Entry</label>
         <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-            <button type="button" id="btnPurchase" class="btn-purchase active" onclick="setEntryType('Purchase')">Purchase</button>
-            <button type="button" id="btnPayment" class="btn-payment" onclick="setEntryType('Payment')">Payment</button>
+            <button type="button" id="btnPurchase" class="btn-purchase active" onclick="setAddType('Purchase')">Purchase</button>
+            <button type="button" id="btnPayment" class="btn-payment" onclick="setAddType('Payment')">Payment</button>
         </div>
         <input type="hidden" id="entryTypeSelected" value="Purchase">
         
@@ -944,24 +944,24 @@
 
   function setAddType(type) {
     document.getElementById('entryTypeSelected').value = type;
-    const purBtn = document.getElementById('typeTogglePurchase');
-    const payBtn = document.getElementById('typeTogglePayment');
+    const purBtn = document.getElementById('btnPurchase'); // Updated ID to match HTML
+    const payBtn = document.getElementById('btnPayment');  // Updated ID to match HTML
     const bfContainer = document.getElementById('addBFContainer');
     const detailsWrapper = document.getElementById('detailedItemsWrapper');
 
-    if (type === 'Goods Purchased') {
-      purBtn.className = 'btn btn-red btn-sm'; 
-      payBtn.className = 'btn btn-outline-green btn-sm';
+    if (type === 'Purchase' || type === 'Goods Purchased') {
+      purBtn.className = 'btn-purchase active'; 
+      payBtn.className = 'btn-payment';
       bfContainer.style.display = 'flex';
-      detailsWrapper.style.display = 'block'; // Show details for Purchase
+      detailsWrapper.style.display = 'block'; 
     } else {
-      purBtn.className = 'btn btn-outline-red btn-sm'; 
-      payBtn.className = 'btn btn-green btn-sm';
+      purBtn.className = 'btn-purchase'; 
+      payBtn.className = 'btn-payment active';
       bfContainer.style.display = 'none';
       document.getElementById('broughtForward').checked = false;
       toggleBF();
-      detailsWrapper.style.display = 'none'; // Hide details for Payment
-      clearDetailsContainer(); // Wipe any entered items so they don't submit accidentally
+      detailsWrapper.style.display = 'none'; 
+      clearDetailsContainer(); 
     }
   }
 
@@ -1367,8 +1367,9 @@ async function navToDashboard() {
       toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');
     }
 
-    if (targetType === 'purchase') setAddType('Goods Purchased');
-    else if (targetType === 'payment') setAddType('Amount Received');
+    // UPDATED: Pass the new shortened strings
+    if (targetType === 'purchase') setAddType('Purchase');
+    else if (targetType === 'payment') setAddType('Payment');
     switchScreen('enter');
   }
 
