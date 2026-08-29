@@ -1502,31 +1502,24 @@ async function navToDashboard() {
   let currentActiveContainer = 'detailsContainer'; // Tracks if we are in Add or Edit mode
 
   function openItemModal(btn = null, context = 'add') {
-    const modal = document.getElementById('itemModalOverlay');
-    currentActiveContainer = context === 'edit' ? 'editDetailsContainer' : 'detailsContainer';
+    const containerId = context === 'edit' ? 'editDetailsContainer' : 'detailsContainer';
     
+    // Find a default date to use
     let defaultDate = new Date().toISOString().split('T')[0];
-    const rows = document.getElementById(currentActiveContainer).querySelectorAll('.detail-row');
+    const container = document.getElementById(containerId);
+    const rows = container.querySelectorAll('.detail-row');
+    
     if (rows.length > 0) {
       const firstDateInput = rows[0].querySelector('.detail-date').value;
       if (firstDateInput) defaultDate = firstDateInput;
+    } else {
+      const dateInputId = context === 'edit' ? 'editDate' : 'entryDate';
+      const mainDate = document.getElementById(dateInputId).value;
+      if (mainDate) defaultDate = mainDate;
     }
 
-    if (btn) {
-      editingRow = btn.closest('.detail-row');
-      document.getElementById('modalFruit').value = editingRow.querySelector('.detail-fruit').value;
-      document.getElementById('modalQty').value = editingRow.querySelector('.detail-qty').value;
-      document.getElementById('modalPrice').value = editingRow.querySelector('.detail-price').value;
-      modalDatePicker.setDate(editingRow.querySelector('.detail-date').value); 
-    } else {
-      editingRow = null;
-      document.getElementById('modalFruit').value = '';
-      document.getElementById('modalQty').value = '';
-      document.getElementById('modalPrice').value = '';
-      modalDatePicker.setDate(defaultDate); 
-    }
-    
-    modal.style.display = 'flex';
+    // Bypass the modal completely and instantly add a new inline row!
+    addDisplayRow(containerId, '', '', '', defaultDate, true);
   }
 
   function closeItemModal() {
@@ -1623,7 +1616,9 @@ async function navToDashboard() {
     const amountInputId = containerId === 'editDetailsContainer' ? 'editAmount' : 'entryAmount';
     const broadAmountInput = document.getElementById(amountInputId);
     
+    // THE FIX: Explicitly clear the amount if no rows exist
     if (rows.length === 0) {
+      broadAmountInput.value = ''; 
       broadAmountInput.readOnly = false;
       broadAmountInput.style.backgroundColor = ""; 
       return;
@@ -2292,8 +2287,8 @@ async function navToDashboard() {
     }
   }
 
-  // --- UNIFIED ROW BUILDER ---
-  function addDisplayRow(containerId, fruit, qty, price, date) {
+  // --- UNIFIED ROW BUILDER (Now with Inline Edit capabilities) ---
+  function addDisplayRow(containerId, fruit = '', qty = '', price = '', date = '', startInEditMode = false) {
     const container = document.getElementById(containerId);
     const total = (parseFloat(qty) || 0) * (parseFloat(price) || 0);
     const context = containerId === 'editDetailsContainer' ? 'edit' : 'add';
@@ -2307,24 +2302,45 @@ async function navToDashboard() {
     const rowDiv = document.createElement('div');
     rowDiv.className = 'compact-row detail-row';
     rowDiv.innerHTML = `
+      <!-- Hidden Storage -->
       <input type="hidden" class="detail-fruit" value="${fruit}">
       <input type="hidden" class="detail-qty" value="${qty}">
       <input type="hidden" class="detail-price" value="${price}">
       <input type="hidden" class="detail-date" value="${date}">
       
-      <div class="compact-row-top">
-        <div class="disp-fruit">${fruit}</div>
-        <div class="disp-qty">${qty}</div>
-        <div class="disp-price">₹${price}</div>
-        <div class="detail-total">₹${total.toLocaleString('en-IN')}</div>
+      <!-- VIEW MODE -->
+      <div class="view-mode" style="${startInEditMode ? 'display: none;' : 'display: block;'}">
+        <div class="compact-row-top">
+          <div class="disp-fruit">${fruit}</div>
+          <div class="disp-qty">${qty}</div>
+          <div class="disp-price">₹${price}</div>
+          <div class="detail-total">₹${total.toLocaleString('en-IN')}</div>
+        </div>
+        
+        <div class="compact-row-bottom">
+          <div class="disp-date-pill">📅 Date: <span class="disp-date">${dispDate}</span></div>
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this, '${context}')" title="Remove">✕</button>
+            <button type="button" class="item-action-btn btn-modify" onclick="toggleInlineEdit(this, true)" title="Modify">✎</button>
+            <button type="button" class="item-action-btn btn-add-row" onclick="openItemModal(null, '${context}')" title="Add Row">＋</button>
+          </div>
+        </div>
       </div>
-      
-      <div class="compact-row-bottom">
-        <div class="disp-date-pill">📅 Date: <span class="disp-date">${dispDate}</span></div>
-        <div style="display: flex; gap: 8px; justify-content: flex-end;">
-          <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this, '${context}')" title="Remove">✕</button>
-          <button type="button" class="item-action-btn btn-modify" onclick="openItemModal(this, '${context}')" title="Modify">✎</button>
-          <button type="button" class="item-action-btn btn-add-row" onclick="openItemModal(null, '${context}')" title="Add Row">＋</button>
+
+      <!-- EDIT MODE -->
+      <div class="edit-mode" style="${startInEditMode ? 'display: block;' : 'display: none;'} background: var(--pill-bg); padding: 12px; border-radius: 8px; border: 1px dashed var(--border-color); margin-top: 4px;">
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1.2fr; gap: 6px; margin-bottom: 8px;">
+          <input type="text" class="inline-edit-fruit" value="${fruit}" placeholder="Fruit" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);">
+          <input type="number" class="inline-edit-qty" value="${qty}" placeholder="Qty" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="updateInlinePreview(this)">
+          <input type="number" class="inline-edit-price" value="${price}" placeholder="Price" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="updateInlinePreview(this)">
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+           <input type="date" class="inline-edit-date" value="${date}" style="margin:0; padding:6px; font-size:12px; border-radius: 4px; border: 1px solid var(--border-color); width: 130px; background: var(--input-bg);">
+           <div class="inline-edit-total" style="font-weight: bold; font-size: 14px; color: #007bff;">₹${total.toLocaleString('en-IN')}</div>
+           <div style="display: flex; gap: 8px;">
+             <button type="button" class="item-action-btn btn-green" style="background: #28a745; width: 36px; height: 36px;" onclick="saveInlineEdit(this)" title="Save">💾</button>
+             <button type="button" class="item-action-btn btn-remove" style="background: #6c757d; width: 36px; height: 36px;" onclick="cancelInlineEdit(this)" title="Cancel">↩️</button>
+           </div>
         </div>
       </div>
     `;
@@ -2498,7 +2514,73 @@ async function navToDashboard() {
       }
     }
     // ------------------------------------------
-  
+
+  function toggleInlineEdit(btn, showEdit) {
+    const row = btn.closest('.detail-row');
+    row.querySelector('.view-mode').style.display = showEdit ? 'none' : 'block';
+    row.querySelector('.edit-mode').style.display = showEdit ? 'block' : 'none';
+  }
+
+  function updateInlinePreview(input) {
+    const row = input.closest('.detail-row');
+    const qty = parseFloat(row.querySelector('.inline-edit-qty').value) || 0;
+    const price = parseFloat(row.querySelector('.inline-edit-price').value) || 0;
+    row.querySelector('.inline-edit-total').innerText = '₹' + (qty * price).toLocaleString('en-IN');
+  }
+
+  function saveInlineEdit(btn) {
+    const row = btn.closest('.detail-row');
+    
+    const fruit = row.querySelector('.inline-edit-fruit').value.trim();
+    const qty = parseFloat(row.querySelector('.inline-edit-qty').value) || 0;
+    const price = parseFloat(row.querySelector('.inline-edit-price').value) || 0;
+    const date = row.querySelector('.inline-edit-date').value;
+    const total = qty * price;
+
+    if (!fruit) { alert("Please enter an Item name."); return; }
+
+    let dispDate = date;
+    if(date && date !== 'B/F') {
+      let d = new Date(date);
+      dispDate = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth()+1)).slice(-2);
+    }
+
+    // Update hidden fields
+    row.querySelector('.detail-fruit').value = fruit;
+    row.querySelector('.detail-qty').value = qty;
+    row.querySelector('.detail-price').value = price;
+    row.querySelector('.detail-date').value = date;
+
+    // Update view mode display
+    row.querySelector('.disp-fruit').innerText = fruit;
+    row.querySelector('.disp-qty').innerText = qty;
+    row.querySelector('.disp-price').innerText = '₹' + price;
+    row.querySelector('.disp-date').innerText = dispDate;
+    row.querySelector('.detail-total').innerText = '₹' + total.toLocaleString('en-IN');
+
+    toggleInlineEdit(btn, false);
+    
+    const containerId = row.closest('div[id$="DetailsContainer"]').id;
+    calculateDetails(containerId);
+    syncMainDate(containerId);
+  }
+
+  function cancelInlineEdit(btn) {
+    const row = btn.closest('.detail-row');
+    const fruit = row.querySelector('.detail-fruit').value.trim();
+    
+    if (!fruit) {
+      // It was a brand new unsaved row, so delete it entirely
+      const containerId = row.closest('div[id$="DetailsContainer"]').id;
+      row.remove();
+      updateRowButtons(containerId);
+      calculateDetails(containerId);
+    } else {
+      // It was an existing row, just hide the edit mode
+      toggleInlineEdit(btn, false);
+    }
+  }
+ 
 </script>
 </body>
 </html>
