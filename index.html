@@ -2329,20 +2329,24 @@ async function navToDashboard() {
 
       <!-- EDIT MODE -->
       <div class="edit-mode" style="${startInEditMode ? 'display: block;' : 'display: none;'} background: var(--pill-bg); padding: 12px; border-radius: 8px; border: 1px dashed var(--border-color); margin-top: 4px;">
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1.2fr; gap: 6px; margin-bottom: 8px;">
+        
+        <!-- Row 1: Fruit, Qty, Price -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1.2fr; gap: 6px; margin-bottom: 12px;">
           <input type="text" class="inline-edit-fruit" value="${fruit}" placeholder="Fruit" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);">
           <input type="number" class="inline-edit-qty" value="${qty}" placeholder="Qty" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="updateInlinePreview(this)">
           <input type="number" class="inline-edit-price" value="${price}" placeholder="Price" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="updateInlinePreview(this)">
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+        
+        <!-- Row 2: Date & Amount -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
            <input type="date" class="inline-edit-date" value="${date}" style="margin:0; padding:6px; font-size:12px; border-radius: 4px; border: 1px solid var(--border-color); width: 130px; background: var(--input-bg);">
-           <div class="inline-edit-total" style="font-weight: bold; font-size: 14px; color: #007bff;">₹${total.toLocaleString('en-IN')}</div>
-           
-           <!-- UPDATED: Explicit text buttons for zero ambiguity -->
-           <div style="display: flex; gap: 8px;">
-             <button type="button" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: bold; cursor: pointer;" onclick="cancelInlineEdit(this)">Cancel</button>
-             <button type="button" style="background: #28a745; color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="saveInlineEdit(this)">Save</button>
-           </div>
+           <div class="inline-edit-total" style="font-weight: bold; font-size: 16px; color: #007bff;">₹${total.toLocaleString('en-IN')}</div>
+        </div>
+        
+        <!-- Row 3: Action Buttons -->
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+           <button type="button" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 16px; font-size: 12px; font-weight: bold; cursor: pointer;" onclick="cancelInlineEdit(this)">Cancel</button>
+           <button type="button" style="background: #28a745; color: white; border: none; border-radius: 6px; padding: 6px 16px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="saveInlineEdit(this)">Save</button>
         </div>
       </div>
     `;
