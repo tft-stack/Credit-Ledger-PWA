@@ -525,10 +525,10 @@
       <div style="background: var(--bg-color); padding: 12px; border-radius: 8px; border: 1px solid var(--border-light); margin-top: 12px; transition: background 0.3s, border-color 0.3s;">
         <label>New Entry</label>
         <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-          <button id="typeTogglePurchase" class="btn btn-red btn-sm" style="flex: 1;" onclick="setAddType('Goods Purchased')">Purchase</button>
-          <button id="typeTogglePayment" class="btn btn-outline-green btn-sm" style="flex: 1;" onclick="setAddType('Amount Received')">Payment</button>
+            <button type="button" id="btnPurchase" class="btn-purchase active" onclick="setEntryType('Purchase')">Purchase</button>
+            <button type="button" id="btnPayment" class="btn-payment" onclick="setEntryType('Payment')">Payment</button>
         </div>
-        <input type="hidden" id="entryTypeSelected" value="Goods Purchased">
+        <input type="hidden" id="entryTypeSelected" value="Purchase">
         
         <!-- Amount and Date in a single compact row -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
@@ -1672,7 +1672,7 @@ async function navToDashboard() {
     if (!name || !amount) { alert('Please enter both Customer Name and Amount'); return; }
     if (!isBF && !date) { alert('Date is mandatory unless Brought Forward is checked.'); return; }
 
-    if (isBF && type === 'Goods Purchased' && !notes.toLowerCase().includes("b/f") && !notes.toLowerCase().includes("brought forward")) { 
+    if (isBF && (type === 'Purchase' || type === 'Goods Purchased') && !notes.toLowerCase().includes("b/f") && !notes.toLowerCase().includes("brought forward")) { 
       notes = notes ? "B/F - " + notes : "B/F"; 
     }
 
@@ -2098,8 +2098,9 @@ async function navToDashboard() {
     let tableRowsHtml = '';
 
     history.forEach(item => {
-      let isPurchase = item.type === 'Goods Purchased';
-      let isPayment = item.type === 'Amount Received';
+      // Support both new and legacy string types
+      let isPurchase = (item.type === 'Purchase' || item.type === 'Goods Purchased');
+      let isPayment = (item.type === 'Payment' || item.type === 'Amount Received');
       
       let purAmt = isPurchase ? (parseFloat(item.amount) || 0) : 0;
       let payAmt = isPayment ? (parseFloat(item.amount) || 0) : 0;
@@ -2373,7 +2374,10 @@ async function navToDashboard() {
       const row = currentLedgerHistory.find(r => r.id.toString().trim() === searchId);
       if (!row) return;
 
-      document.getElementById('editModalTitle').innerText = row.type === 'Goods Purchased' ? 'Edit Purchase Transaction' : 'Edit Payment';
+      // Check for both new and legacy type names
+      const isPurchase = (row.type === 'Purchase' || row.type === 'Goods Purchased');
+
+      document.getElementById('editModalTitle').innerText = isPurchase ? 'Edit Purchase Transaction' : 'Edit Payment';
       
       document.getElementById('editId').value = searchId;
       document.getElementById('editOldAmount').value = row.amount;
@@ -2405,7 +2409,8 @@ async function navToDashboard() {
         editDatePicker.clear();
       }
 
-      if (row.type === 'Goods Purchased') {
+      // Use the boolean flag here instead of the hardcoded string
+      if (isPurchase) {
         bfCheckboxContainer.style.display = 'flex'; 
         bfCheckbox.checked = isBF;
         wrapper.style.display = 'block'; 
@@ -2447,7 +2452,7 @@ async function navToDashboard() {
 
     if (!amount) { alert("Amount is mandatory."); return; }
     if (!isBF && !date) { alert("Date is mandatory unless Brought Forward is checked."); return; }
-    if (isBF && type === 'Goods Purchased' && !notes.toLowerCase().includes("b/f") && !notes.toLowerCase().includes("brought forward")) { 
+    if (isBF && (type === 'Purchase' || type === 'Goods Purchased') && !notes.toLowerCase().includes("b/f") && !notes.toLowerCase().includes("brought forward")) { 
       notes = notes ? "B/F - " + notes : "B/F"; 
     }
 
