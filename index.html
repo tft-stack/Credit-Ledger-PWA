@@ -312,7 +312,7 @@
 
   <!-- ==================== SCREEN 0: DASHBOARD ==================== -->
   <div id="screen-dashboard" class="screen">
-  <div class="sticky-header" style="margin-bottom: 0; padding: 16px 0 0 0; border-bottom: none; top: 0;">
+    <div class="sticky-header" style="margin-bottom: 0; padding: 16px 0 0 0; border-bottom: none; top: 0;">
       
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px;">
         <h2 style="margin:0;">Dashboard</h2>
@@ -359,10 +359,30 @@
         </div>
 
       </div>
+    </div>
 
+    <!-- Privacy Toggle Button -->
+    <button class="no-print privacyToggleBtnClass" onclick="togglePrivacy()" style="position: fixed; bottom: 85px; right: 85px; width: 50px; height: 50px; border-radius: 50%; background-color: #1976d2; color: white; border: none; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.4); font-size: 24px; z-index: 1000; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s, background 0.3s;">
+      <span class="privacyIconClass" style="filter: grayscale(100%) brightness(200%); font-size: 20px;">👁️</span>
+    </button>
+
+    <!-- Floating Action Button -->
+    <div class="fab-container no-print">
+      <button class="fab-action" onclick="switchScreen('view')" title="Go to View Entry">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== NEW SCREEN: CREDIT CUSTOMERS ==================== -->
+  <div id="screen-customers" class="screen">
+    <div class="sticky-header" style="margin-bottom: 0; padding: 16px 0 0 0; border-bottom: none; top: 0;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px;">
+        <h2 style="margin:0;">Credit Customers</h2>
+      </div>
+      
       <div class="alphabet-filter" id="alphabetFilter" style="margin-top: 16px; border-bottom: none;"></div>
-
-      <div class="alphabet-filter" id="alphabetFilter" style="margin-top: 12px; border-bottom: none;"></div>
       
       <!-- Clickable Header Row for Sorting -->
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: var(--pill-bg); border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase;">
@@ -376,24 +396,20 @@
       </div>
     </div>
     
-    <div class="card" style="padding: 0; overflow: hidden; border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -1px;" id="dashboardContainer"></div>
+    <!-- Changed ID to customersContainer -->
+    <div class="card" style="padding: 0; overflow: hidden; border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -1px;" id="customersContainer"></div>
 
-    <!-- NEW: Privacy Toggle Button (Positioned left of the FAB) -->
-    <button id="privacyToggleBtn" class="no-print" onclick="togglePrivacy()" style="position: fixed; bottom: 85px; right: 85px; width: 50px; height: 50px; border-radius: 50%; background-color: #1976d2; color: white; border: none; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.4); font-size: 24px; z-index: 1000; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s, background 0.3s;">
-      <span id="privacyIcon" style="filter: grayscale(100%) brightness(200%); font-size: 20px;">👁️</span>
+    <!-- Privacy Toggle Button -->
+    <button class="no-print privacyToggleBtnClass" onclick="togglePrivacy()" style="position: fixed; bottom: 85px; right: 85px; width: 50px; height: 50px; border-radius: 50%; background-color: #1976d2; color: white; border: none; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.4); font-size: 24px; z-index: 1000; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s, background 0.3s;">
+      <span class="privacyIconClass" style="filter: grayscale(100%) brightness(200%); font-size: 20px;">👁️</span>
     </button>
 
-    <!-- Floating Action Button (Bottom Right) -->
+    <!-- Floating Action Button -->
     <div class="fab-container no-print">
-      <!-- Forward/Next Button to View Entry -->
       <button class="fab-action" onclick="switchScreen('view')" title="Go to View Entry">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-          <polyline points="12 5 19 12 12 19"></polyline>
-        </svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
       </button>
     </div>
-    
   </div>
 
 <!-- ==================== SCREEN 1: VIEW ENTRY ==================== -->
@@ -771,6 +787,7 @@
 <!-- ==================== BOTTOM NAVIGATION ==================== -->
 <div class="bottom-nav no-print">
   <div id="nav-dashboard" class="nav-item" onclick="navToDashboard()">Dashboard</div>
+  <div id="nav-customers" class="nav-item" onclick="navToCustomers()">Customers</div>
   <div id="nav-view" class="nav-item active" onclick="switchScreen('view')">View Entry</div>
   <div id="nav-enter" class="nav-item" onclick="navToAddEntry()">Add Entry</div>
   <div id="nav-settle" class="nav-item" onclick="navToSmartSettle()">Smart Settle</div>
@@ -1002,6 +1019,7 @@
   function switchScreen(screen) {
     // Hide all screens
     document.getElementById('screen-dashboard').classList.remove('active');
+    document.getElementById('screen-customers').classList.remove('active'); // NEW
     document.getElementById('screen-view').classList.remove('active');
     document.getElementById('screen-enter').classList.remove('active');
     if (document.getElementById('screen-settle')) document.getElementById('screen-settle').classList.remove('active');
@@ -1011,6 +1029,7 @@
     
     // Deactivate all nav tabs
     document.getElementById('nav-dashboard').classList.remove('active');
+    document.getElementById('nav-customers').classList.remove('active'); // NEW
     document.getElementById('nav-view').classList.remove('active');
     document.getElementById('nav-enter').classList.remove('active');
     if (document.getElementById('nav-settle')) document.getElementById('nav-settle').classList.remove('active');
@@ -1238,9 +1257,7 @@
     handleSearchChange(); 
   }
 
-async function navToDashboard() {
-    switchScreen('dashboard');
-
+  async function loadDashboardData() {
     if (typeof currentDashboardData !== 'undefined' && currentDashboardData && currentDashboardData.length > 0) {
       applyDashboardFilters();
     }
@@ -1253,7 +1270,6 @@ async function navToDashboard() {
       try {
         const data = await apiGet('getDashboardData');
         if (data) {
-          // --- NEW: Save the FULL payload globally so the new cards can read the sales numbers ---
           window.currentDashboardDataPayload = data; 
           
           if (data.customers) {
@@ -1267,16 +1283,26 @@ async function navToDashboard() {
           applyDashboardFilters(); 
         }
       } catch(e) {
-        console.error("Dashboard Sync Error: ", e); // This will log the exact issue if it ever fails again
+        console.error("Dashboard Sync Error: ", e);
         showToast("Failed to sync latest dashboard.", "error");
       } finally {
         hideLoading();
       }
     }
   }
+
+  async function navToDashboard() {
+    switchScreen('dashboard');
+    await loadDashboardData();
+  }
+
+  async function navToCustomers() {
+    switchScreen('customers');
+    await loadDashboardData();
+  }
   
   function applyDashboardFilters() {
-    const container = document.getElementById('dashboardContainer');
+    const container = document.getElementById('customersContainer');
     const totalElem = document.getElementById('dashboardTotalBalance');
     const countElem = document.getElementById('dashboardCustomerCount');
     const todayElem = document.getElementById('dashboardTodayCollection'); 
@@ -2562,7 +2588,7 @@ async function navToDashboard() {
     function togglePrivacy() {
       isPrivacyEnabled = !isPrivacyEnabled;
       const amounts = document.querySelectorAll('.privacy-blur');
-      const privacyIcon = document.getElementById('privacyIcon');
+      const privacyIcons = document.querySelectorAll('.privacyIconClass'); // Fetches all icons by class
       
       // Toggle the blur effect on the numbers
       amounts.forEach(el => {
@@ -2574,13 +2600,13 @@ async function navToDashboard() {
       });
 
       // Update the button icon to reflect the current state
-      if (privacyIcon) {
+      privacyIcons.forEach(icon => {
         if (isPrivacyEnabled) {
-          privacyIcon.innerText = '👁️'; // Blurred state
+          icon.innerText = '👁️'; // Blurred state
         } else {
-          privacyIcon.innerText = '🙈'; // Revealed state
+          icon.innerText = '🙈'; // Revealed state
         }
-      }
+      });
     }
     // ------------------------------------------
 
