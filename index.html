@@ -2696,10 +2696,10 @@
     }
   }
 
-  // --- NEW: DASHBOARD CARD TOGGLE LOGIC ---
+  // --- NEW: DASHBOARD CARD TOGGLE LOGIC (WITH ON-DEMAND FETCH) ---
   let activeDashboardCard = null;
 
-  function toggleDashboardCard(cardType) {
+  async function toggleDashboardCard(cardType) {
       const detailsSection = document.getElementById('dashboardDetailsSection');
       
       // Toggle closed if clicking the currently open card
@@ -2710,9 +2710,21 @@
           return;
       }
 
+      // If data isn't loaded yet, fetch it on the fly!
       if (!window.dashboardBreakdowns) {
-          showToast("Data is still loading...", "info");
-          return;
+          showToast("Fetching details...", "info"); // Show a quick loading toast
+          try {
+              const res = await apiGet('getDashboardBreakdowns');
+              if (res && !res.error) {
+                  window.dashboardBreakdowns = res;
+              } else {
+                  throw new Error(res.error || "Failed to fetch");
+              }
+          } catch (e) {
+              console.error("Drill-down fetch error:", e);
+              showToast("Failed to load details. Please try again.", "error");
+              return;
+          }
       }
 
       activeDashboardCard = cardType;
