@@ -321,14 +321,14 @@
       <!-- Dashboard Summary Cards -->
       <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px; padding: 0 16px;">
 
-        <!-- ROW 2: Yesterday & Today's Credit (Wine Red) -->
+      <!-- ROW 2: Yesterday & Today's Credit (Wine Red) -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div style="background: #fcf1f1; padding: 12px; border-radius: 8px; border: 1px solid #f2d7d7; text-align: left;">
+          <div id="card-yestCredit" onclick="toggleDashboardCard('yestCredit')" style="background: #fcf1f1; padding: 12px; border-radius: 8px; border: 1px solid #f2d7d7; text-align: left; cursor: pointer; transition: all 0.2s;">
             <div style="color: #721c24; font-size: 10px; font-weight: bold; text-transform: uppercase;">Yest. Credit</div>
             <div id="dashboardYesterdaySale" style="font-size: 18px; font-weight: bold; color: #721c24; margin-top: 4px;"><span class="privacy-blur">₹0</span></div>
             <div style="font-size: 11px; color: #721c24; margin-top: 2px;">Purchases yesterday</div>
           </div>
-          <div style="background: #fcf1f1; padding: 12px; border-radius: 8px; border: 1px solid #f2d7d7; text-align: left;">
+          <div id="card-todayCredit" onclick="toggleDashboardCard('todayCredit')" style="background: #fcf1f1; padding: 12px; border-radius: 8px; border: 1px solid #f2d7d7; text-align: left; cursor: pointer; transition: all 0.2s;">
             <div style="color: #721c24; font-size: 10px; font-weight: bold; text-transform: uppercase;">Today's Credit</div>
             <div id="dashboardTodaySale" style="font-size: 18px; font-weight: bold; color: #721c24; margin-top: 4px;"><span class="privacy-blur">₹0</span></div>
             <div style="font-size: 11px; color: #721c24; margin-top: 2px;">Purchases today</div>
@@ -337,16 +337,24 @@
 
         <!-- ROW 3: Yesterday & Today's Received (Green) -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div style="background: #e8f5e9; padding: 12px; border-radius: 8px; border: 1px solid #c8e6c9; text-align: left;">
+          <div id="card-yestReceived" onclick="toggleDashboardCard('yestReceived')" style="background: #e8f5e9; padding: 12px; border-radius: 8px; border: 1px solid #c8e6c9; text-align: left; cursor: pointer; transition: all 0.2s;">
             <div style="color: #2e7d32; font-size: 10px; font-weight: bold; text-transform: uppercase;">Yest. Received</div>
             <div id="dashboardYesterdayCollection" style="font-size: 18px; font-weight: bold; color: #1b5e20; margin-top: 4px;"><span class="privacy-blur">₹0</span></div>
             <div style="font-size: 11px; color: #2e7d32; margin-top: 2px;">Payments yesterday</div>
           </div>
-          <div style="background: #e8f5e9; padding: 12px; border-radius: 8px; border: 1px solid #c8e6c9; text-align: left;">
+          <div id="card-todayReceived" onclick="toggleDashboardCard('todayReceived')" style="background: #e8f5e9; padding: 12px; border-radius: 8px; border: 1px solid #c8e6c9; text-align: left; cursor: pointer; transition: all 0.2s;">
             <div style="color: #2e7d32; font-size: 10px; font-weight: bold; text-transform: uppercase;">Today's Received</div>
             <div id="dashboardTodayCollection" style="font-size: 18px; font-weight: bold; color: #1b5e20; margin-top: 4px;"><span class="privacy-blur">₹0</span></div>
             <div style="font-size: 11px; color: #2e7d32; margin-top: 2px;">Payments today</div>
           </div>
+        </div>
+
+        <!-- DASHBOARD DETAILS TABLE (Hidden by default) -->
+        <div id="dashboardDetailsSection" style="display: none; margin-top: 8px;">
+           <div id="dashboardDetailsHeader" style="font-size: 13px; font-weight: bold; color: var(--text-color); margin-bottom: 8px; padding: 0 4px;">Details</div>
+           <div class="card" style="padding: 0; overflow: hidden;" id="dashboardDetailsContainer">
+              <!-- Table injected here -->
+           </div>
         </div>
 
       </div>
@@ -1270,9 +1278,17 @@
       }
       
       try {
-        const data = await apiGet('getDashboardData');
+        // Fetch main data and the clickable drill-down data in parallel
+        const [data, breakdowns] = await Promise.all([
+           apiGet('getDashboardData'),
+           new Promise((resolve, reject) => {
+              google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getDashboardBreakdowns();
+           }).catch(() => null) // Fallback in case of router error
+        ]);
+
         if (data) {
           window.currentDashboardDataPayload = data; 
+          window.dashboardBreakdowns = breakdowns; // Store breakdowns for click events
           
           if (data.customers) {
             currentDashboardData = data.customers;
@@ -1282,6 +1298,10 @@
             currentTodaysCollection = 0;
           }
           isDashboardStale = false; 
+          
+          // Reset card UI in case it was left open during a refresh
+          if(activeDashboardCard) { toggleDashboardCard(activeDashboardCard); }
+          
           applyDashboardFilters(); 
         }
       } catch(e) {
@@ -2675,6 +2695,102 @@
       toggleInlineEdit(btn, false);
     }
   }
+
+  // --- NEW: DASHBOARD CARD TOGGLE LOGIC ---
+  let activeDashboardCard = null;
+
+  function toggleDashboardCard(cardType) {
+      const detailsSection = document.getElementById('dashboardDetailsSection');
+      
+      // Toggle closed if clicking the currently open card
+      if (activeDashboardCard === cardType) {
+          detailsSection.style.display = 'none';
+          activeDashboardCard = null;
+          resetCardStyles();
+          return;
+      }
+
+      if (!window.dashboardBreakdowns) {
+          showToast("Data is still loading...", "info");
+          return;
+      }
+
+      activeDashboardCard = cardType;
+      resetCardStyles();
+      
+      // Highlight the actively selected card
+      const activeEl = document.getElementById('card-' + cardType);
+      if (activeEl) {
+          activeEl.style.transform = 'scale(1.03)';
+          activeEl.style.boxShadow = '0 4px 10px rgba(0,0,0,0.15)';
+          activeEl.style.opacity = '1';
+          activeEl.style.border = cardType.includes('Credit') ? '1px solid #d32f2f' : '1px solid #2e7d32';
+      }
+
+      renderDetailsTable(cardType, window.dashboardBreakdowns[cardType] || []);
+  }
+
+  function resetCardStyles() {
+      ['yestCredit', 'todayCredit', 'yestReceived', 'todayReceived'].forEach(c => {
+          const el = document.getElementById('card-' + c);
+          if (el) {
+              el.style.transform = 'scale(1)';
+              el.style.boxShadow = 'none';
+              el.style.opacity = '0.6'; // Dim inactive cards
+              el.style.border = c.includes('Credit') ? '1px solid #f2d7d7' : '1px solid #c8e6c9';
+          }
+      });
+      
+      // If closing the panel, restore full opacity to everything
+      if (!activeDashboardCard) {
+          ['yestCredit', 'todayCredit', 'yestReceived', 'todayReceived'].forEach(c => {
+              const el = document.getElementById('card-' + c);
+              if (el) el.style.opacity = '1';
+          });
+      }
+  }
+
+  function renderDetailsTable(cardType, data) {
+      const container = document.getElementById('dashboardDetailsContainer');
+      const section = document.getElementById('dashboardDetailsSection');
+      const header = document.getElementById('dashboardDetailsHeader');
+      
+      let title = "";
+      if (cardType === 'yestCredit') title = "Yesterday's Credit Breakdown";
+      if (cardType === 'todayCredit') title = "Today's Credit Breakdown";
+      if (cardType === 'yestReceived') title = "Yesterday's Received Breakdown";
+      if (cardType === 'todayReceived') title = "Today's Received Breakdown";
+      
+      header.innerText = title;
+
+      if (data.length === 0) {
+          container.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;">No transactions recorded.</div>';
+      } else {
+          let html = `<table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                         <tr style="background: var(--pill-bg); border-bottom: 1px solid var(--border-light); text-transform: uppercase; font-size: 11px; color: var(--text-muted);">
+                            <th style="padding: 10px 16px; text-align: left; width: 45px;">S No.</th>
+                            <th style="padding: 10px 16px; text-align: left;">Customer Name</th>
+                            <th style="padding: 10px 16px; text-align: right;">Amount</th>
+                         </tr>`;
+          data.forEach((item, index) => {
+              // Integrate the privacy blur functionality natively
+              let privacyClass = (typeof isPrivacyEnabled !== 'undefined' && !isPrivacyEnabled) ? "privacy-blur revealed" : "privacy-blur";
+              let amountColor = cardType.includes('Credit') ? '#d32f2f' : '#2e7d32'; // Red for credit, Green for Received
+              
+              html += `<tr style="border-bottom: 1px solid var(--border-light);">
+                          <td style="padding: 12px 16px; text-align: left;">${index + 1}</td>
+                          <td style="padding: 12px 16px; text-align: left; font-weight: bold;">${item.name}</td>
+                          <td style="padding: 12px 16px; text-align: right; color: ${amountColor}; font-weight: bold;">
+                              <span class="${privacyClass}">₹${item.amount.toLocaleString('en-IN')}</span>
+                          </td>
+                       </tr>`;
+          });
+          html += `</table>`;
+          container.innerHTML = html;
+      }
+      section.style.display = 'block';
+  }
+  
  
 </script>
 </body>
