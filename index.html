@@ -320,15 +320,6 @@
       
       <!-- Dashboard Summary Cards -->
       <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px; padding: 0 16px;">
-        
-        <!-- ROW 1: Full Width Pending Balance -->
-        <div style="background: var(--pill-bg); padding: 16px 20px; border-radius: 8px; border: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center;">
-          <div style="color: var(--text-muted); font-size: 13px; font-weight: bold; text-transform: uppercase;">Total Pending</div>
-          <div style="text-align: right;">
-            <div id="dashboardTotalBalance" style="font-size: 24px; font-weight: bold; color: #d32f2f; line-height: 1;"><span class="privacy-blur">₹0</span></div>
-            <div id="dashboardCustomerCount" style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">0 Customers</div>
-          </div>
-        </div>
 
         <!-- ROW 2: Yesterday & Today's Credit (Wine Red) -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -380,6 +371,17 @@
       
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px;">
         <h2 style="margin:0;">Credit Customers</h2>
+      </div>
+
+      <!-- RELOCATED: Total Pending Card -->
+      <div style="padding: 0 16px; margin-top: 16px;">
+        <div style="background: var(--pill-bg); padding: 16px 20px; border-radius: 8px; border: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center;">
+          <div style="color: var(--text-muted); font-size: 13px; font-weight: bold; text-transform: uppercase;">Total Pending</div>
+          <div style="text-align: right;">
+            <div id="dashboardTotalBalance" style="font-size: 24px; font-weight: bold; color: #d32f2f; line-height: 1;"><span class="privacy-blur">₹0</span></div>
+            <div id="dashboardCustomerCount" style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">0 Customers</div>
+          </div>
+        </div>
       </div>
       
       <div class="alphabet-filter" id="alphabetFilter" style="margin-top: 16px; border-bottom: none;"></div>
