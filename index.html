@@ -465,8 +465,13 @@
     </div>
 
     <!-- 2. Action Buttons (Full Width) -->
-    <div class="no-print" style="margin-bottom: 12px;">
+    <div class="no-print" style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
       <button class="btn btn-blue btn-sm" style="width: 100%; border-radius: 8px;" onclick="navToAddEntry()">+ Add New Entry</button>
+      
+      <!-- ⚡ BULK ENTRY TRIGGER BUTTON -->
+      <button onclick="openBulkModal()" class="no-print" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; gap: 8px; transition: transform 0.1s;">
+        <span style="font-size: 16px;">⚡</span> BULK ENTRY
+      </button>
     </div>
 
     <!-- 3. Recent Customers Box -->
@@ -544,6 +549,14 @@
 
   <!-- ==================== SCREEN 2: ADD ENTRY ==================== -->
   <div id="screen-enter" class="screen">
+    
+    <!-- ⚡ BULK ENTRY TRIGGER BUTTON -->
+    <div style="margin-bottom: 12px;">
+      <button onclick="openBulkModal()" class="no-print" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; gap: 8px; transition: transform 0.1s;">
+        <span style="font-size: 16px;">⚡</span> BULK ENTRY
+      </button>
+    </div>
+
     <div class="card">
       <h3>Add Entry</h3>
       <label>Customer Name</label>
