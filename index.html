@@ -3024,17 +3024,18 @@
 
     showLoading();
     try {
+      // 1. FIXED: Correctly separate the payload data
       const payload = {
-        action: 'addBulkEntries',
         type: currentBulkType,
         date: dateVal,
-        entries: validRows,
-        userEmail: 'PWA_User' 
+        entries: validRows
       };
 
-      const res = await apiPost(payload);
+      // 2. FIXED: Pass the 'action' and 'payload' as two separate arguments
+      const res = await apiPost('addBulkEntries', payload);
+      
       if (res && res.status === 'success') {
-        localStorage.removeItem(BULK_DRAFT_KEY); // Clear draft ONLY on success
+        localStorage.removeItem(BULK_DRAFT_KEY); 
         showToast(`Saved ${validRows.length} entries successfully!`, "success");
         closeBulkModal();
         isDashboardStale = true;
