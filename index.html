@@ -683,6 +683,20 @@
     </div>
   </div>
 
+  <!-- ==================== BULK DRAFT PROMPT MODAL ==================== -->
+  <div id="bulkDraftModal" class="modal-overlay" style="z-index: 2500;">
+    <div class="card" style="width: 100%; max-width: 320px; text-align: center;">
+      <div style="font-size: 40px; margin-bottom: 8px;">📝</div>
+      <h3 style="margin-bottom: 8px;">Unsaved Draft</h3>
+      <p id="bulkDraftMessage" style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">You have an unsaved bulk entry draft. Do you want to resume where you left off?</p>
+      
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button class="btn btn-blue" style="width: 100%; border-radius: 8px;" onclick="resumeBulkDraftAction()">Resume Draft</button>
+        <button class="btn btn-outline" style="width: 100%; border-radius: 8px; color: var(--text-muted); border-color: var(--border-color);" onclick="discardBulkDraftAction()">Discard & Start Fresh</button>
+      </div>
+    </div>
+  </div>
+
   <datalist id="customerList"></datalist>
 
   <!-- ==================== SCREEN 3: SMART SETTLE ==================== -->
@@ -2866,27 +2880,47 @@
   let currentBulkType = '';
 
   function openBulkModal() {
-    document.getElementById('bulkEntryModal').style.display = 'flex';
-    
     const draft = localStorage.getItem(BULK_DRAFT_KEY);
     if (draft) {
       try {
         const parsed = JSON.parse(draft);
-        if (confirm(`You have an unsaved draft for Bulk ${parsed.type}s. Do you want to resume it?`)) {
-           restoreBulkDraft(parsed);
-           return;
-        } else {
-           localStorage.removeItem(BULK_DRAFT_KEY);
-        }
-      } catch(e) { localStorage.removeItem(BULK_DRAFT_KEY); }
+        document.getElementById('bulkDraftMessage').innerText = `You have an unsaved draft for Bulk ${parsed.type}s. Do you want to resume it?`;
+        document.getElementById('bulkDraftModal').style.display = 'flex';
+        return; // Stop here and wait for the user to click a button
+      } catch(e) { 
+        localStorage.removeItem(BULK_DRAFT_KEY); 
+      }
     }
     
-    // Fresh Start
+    // If there is no draft, open fresh immediately
+    initFreshBulkModal();
+  }
+
+  function initFreshBulkModal() {
+    document.getElementById('bulkEntryModal').style.display = 'flex';
     setBulkType('Purchase');
-    bulkDatePicker.setDate(new Date());
+    if (bulkDatePicker) bulkDatePicker.setDate(new Date());
     document.getElementById('bulkRowsContainer').innerHTML = '';
-    addBulkRow(); // ONLY 1 ROW ADDED BY DEFAULT
+    addBulkRow(); 
     updateBulkTotal();
+  }
+
+  function resumeBulkDraftAction() {
+    document.getElementById('bulkDraftModal').style.display = 'none';
+    document.getElementById('bulkEntryModal').style.display = 'flex';
+    
+    const draft = localStorage.getItem(BULK_DRAFT_KEY);
+    if (draft) {
+       restoreBulkDraft(JSON.parse(draft));
+    } else {
+       initFreshBulkModal(); // Fallback just in case
+    }
+  }
+
+  function discardBulkDraftAction() {
+    document.getElementById('bulkDraftModal').style.display = 'none';
+    localStorage.removeItem(BULK_DRAFT_KEY);
+    initFreshBulkModal();
   }
 
   function closeBulkModal() {
