@@ -464,14 +464,18 @@
       </div>
     </div>
 
-    <!-- 2. Action Buttons (Full Width) -->
-    <div class="no-print" style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
-      <button class="btn btn-blue btn-sm" style="width: 100%; border-radius: 8px;" onclick="navToAddEntry()">+ Add New Entry</button>
+    <!-- 2. Action Buttons (Compact Row) -->
+    <div class="no-print" style="margin-bottom: 12px; display: flex; flex-direction: row; gap: 10px;">
+      
+      <button class="btn btn-blue" style="flex: 1; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 6px;" onclick="navToAddEntry()">
+        <span style="font-size: 16px;">➕</span> Add Entry
+      </button>
       
       <!-- ⚡ BULK ENTRY TRIGGER BUTTON -->
-      <button onclick="openBulkModal()" class="no-print" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; gap: 8px; transition: transform 0.1s;">
-        <span style="font-size: 16px;">⚡</span> BULK ENTRY
+      <button onclick="openBulkModal()" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; gap: 6px; transition: transform 0.1s;">
+        <span style="font-size: 16px;">⚡</span> Bulk Entry
       </button>
+      
     </div>
 
     <!-- 3. Recent Customers Box -->
