@@ -117,9 +117,9 @@
     .dayContainer { display: flex !important; flex-wrap: wrap !important; justify-content: flex-start !important; width: 100% !important; min-width: 100% !important; max-width: 100% !important; }
     .flatpickr-day { flex: 0 0 14.2857% !important; max-width: 14.2857% !important; height: 38px !important; line-height: 38px !important; margin: 0 !important; box-sizing: border-box !important; }
 
-    .dashboard-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; cursor: pointer; border-bottom: 1px solid var(--border-light); }
-    .dashboard-item:last-child { border-bottom: none; }
-    .dashboard-item:active { opacity: 0.7; }
+    .-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; cursor: pointer; border-bottom: 1px solid var(--border-light); }
+    .-item:last-child { border-bottom: none; }
+    .-item:active { opacity: 0.7; }
 
     @media print { .bottom-nav, .no-print, #toast, #loadingOverlay, #loginOverlay, #app-header { display: none !important; } body { background: #fff; padding: 0; } .card { box-shadow: none; border: 1px solid #000; margin-bottom: 0; } .sticky-header { position: relative; top: 0; } }
 
@@ -317,17 +317,16 @@
   <div id="screen-dashboard" class="screen">
     <div class="sticky-header" style="margin-bottom: 0; padding: 16px 0 0 0; border-bottom: none; top: 0;">
       
-    <!-- Dashboard Header with Sync Button -->
+    <!-- Dashboard Header with Sync Button (Compact Icon) -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
       <h2 style="margin: 0;">Dashboard</h2>
       
-      <button id="syncCacheBtn" onclick="forceCacheRefresh()" style="background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: background 0.2s;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button id="syncCacheBtn" onclick="forceCacheRefresh()" style="background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 50%; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: background 0.2s;" title="Sync Cache">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"></polyline>
           <polyline points="1 20 1 14 7 14"></polyline>
           <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
         </svg>
-        Sync Cache
       </button>
     </div>
       
@@ -3140,11 +3139,9 @@
 
   async function forceCacheRefresh() {
     const btn = document.getElementById('syncCacheBtn');
-    const originalContent = btn.innerHTML;
     
-    // Change button state to show activity
-    btn.innerHTML = 'Syncing...';
-    btn.style.opacity = '0.7';
+    // Dim and disable the button to indicate activity without breaking the layout
+    btn.style.opacity = '0.4';
     btn.disabled = true;
     
     showToast("Rebuilding archive cache... This may take a moment.", "info");
@@ -3172,7 +3169,6 @@
       showToast("Failed to sync cache.", "error");
     } finally {
       // Restore button state
-      btn.innerHTML = originalContent;
       btn.style.opacity = '1';
       btn.disabled = false;
     }
