@@ -3028,29 +3028,32 @@
     saveBulkDraft();
   }
 
-  function addBulkRow(cust = '', amt = '', notes = '') {
+  function addBulkRow(cust = '', amt = '') {
     const container = document.getElementById('bulkRowsContainer');
     const rowId = 'row_' + Date.now() + Math.random().toString(36).substr(2, 5);
     
-    // NEW: Compact 2-Row Stacked Layout
+    // Compact Single-Row Layout + Inline Suggestion Box
     const html = `
-      <div id="${rowId}" class="bulk-row" style="background: var(--card-bg); padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <div id="${rowId}" class="bulk-row" style="background: var(--card-bg); padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
         
-        <!-- Top Row: S No, Customer, Amount -->
-        <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 6px;">
+        <!-- Main Input Row -->
+        <div style="display: flex; gap: 6px; align-items: center;">
           <div class="bulk-sno" style="font-weight: bold; font-size: 13px; color: var(--text-muted); width: 22px; text-align: center; flex-shrink: 0;"></div>
-          <input type="text" class="input-field bulk-cust" placeholder="Customer Name" value="${cust}" style="flex: 2; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="saveBulkDraft()" list="customerList">
-          <input type="number" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="flex: 1; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="updateBulkTotal(); saveBulkDraft()">
+          
+          <input type="text" class="input-field bulk-cust" placeholder="Customer Name" value="${cust}" style="flex: 2; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="checkBulkSimilarity(this); saveBulkDraft()" autocomplete="off">
+          
+          <input type="number" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="flex: 1.2; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="updateBulkTotal(); saveBulkDraft()">
+          
+          <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
+            <button class="bulk-remove-btn" onclick="removeBulkRow('${rowId}')" style="background: none; border: none; color: #d32f2f; font-size: 18px; padding: 0 4px; cursor: pointer; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;" title="Remove">✕</button>
+            <button class="bulk-add-btn" onclick="addBulkRow()" style="background: #007bff; color: white; border: none; border-radius: 6px; width: 28px; height: 28px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 0 2px 4px rgba(0,123,255,0.3);" title="Add Row">＋</button>
+          </div>
         </div>
 
-        <!-- Bottom Row: Notes, Action Buttons -->
-        <div style="display: flex; gap: 6px; align-items: center; padding-left: 28px;">
-          <input type="text" class="input-field bulk-notes" placeholder="Notes (Optional)" value="${notes}" style="flex: 1; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="saveBulkDraft()">
-          
-          <div style="display: flex; gap: 4px; align-items: center;">
-            <button class="bulk-remove-btn" onclick="removeBulkRow('${rowId}')" style="background: none; border: none; color: #d32f2f; font-size: 18px; padding: 0 4px; cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;" title="Remove">✕</button>
-            <button class="bulk-add-btn" onclick="addBulkRow()" style="background: #007bff; color: white; border: none; border-radius: 6px; width: 32px; height: 32px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 0 2px 4px rgba(0,123,255,0.3);" title="Add Row">＋</button>
-          </div>
+        <!-- Row-specific Similarity Warning (Hidden by default) -->
+        <div class="bulk-similarity-warning" style="display: none; font-size: 11px; color: #d32f2f; margin-top: 6px; background: #ffebee; padding: 6px; border-radius: 4px;">
+          <strong>Similar names found:</strong>
+          <div class="bulk-similarity-chips" style="margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;"></div>
         </div>
         
       </div>
@@ -3077,17 +3080,16 @@
   function removeBulkRow(rowId) {
     const container = document.getElementById('bulkRowsContainer');
     
-    // Don't delete the row if it's the only one left, just wipe the fields clean
     if (container.children.length > 1) {
       document.getElementById(rowId).remove();
     } else {
       const row = document.getElementById(rowId);
       row.querySelector('.bulk-cust').value = '';
       row.querySelector('.bulk-amt').value = '';
-      row.querySelector('.bulk-notes').value = '';
+      row.querySelector('.bulk-similarity-warning').style.display = 'none';
     }
     
-    updateBulkRowUI(); // Instantly recalculate Serial Numbers
+    updateBulkRowUI(); 
     updateBulkTotal();
     saveBulkDraft();
   }
@@ -3107,8 +3109,7 @@
     document.querySelectorAll('.bulk-row').forEach(row => {
       rows.push({
         customer: row.querySelector('.bulk-cust').value,
-        amount: row.querySelector('.bulk-amt').value,
-        notes: row.querySelector('.bulk-notes').value
+        amount: row.querySelector('.bulk-amt').value
       });
     });
     
@@ -3120,13 +3121,54 @@
     localStorage.setItem(BULK_DRAFT_KEY, JSON.stringify(draft));
   }
 
+  function checkBulkSimilarity(inputElement) {
+    const row = inputElement.closest('.bulk-row');
+    const warningBox = row.querySelector('.bulk-similarity-warning');
+    const chipContainer = row.querySelector('.bulk-similarity-chips');
+    
+    // Strip invalid characters immediately
+    let inputStr = inputElement.value.replace(/[^a-zA-Z0-9 ]/g, '');
+    inputElement.value = inputStr; 
+
+    const lowerInput = inputStr.toLowerCase().trim();
+    
+    warningBox.style.display = 'none'; 
+    chipContainer.innerHTML = '';
+    
+    if (lowerInput.length < 3) return;
+
+    // If it's a perfect match, no need to warn
+    const exactMatch = allCustomers.find(c => c.toLowerCase() === lowerInput);
+    if (exactMatch) return; 
+
+    // Find similar names
+    const similar = allCustomers.filter(c => c.toLowerCase().includes(lowerInput));
+    if (similar.length > 0) {
+      warningBox.style.display = 'block';
+      similar.forEach(c => {
+        let chip = document.createElement('span'); 
+        chip.className = 'suggestion-chip'; 
+        chip.style.fontSize = '10px';
+        chip.style.padding = '4px 8px';
+        chip.innerText = c;
+        chip.onclick = function() {
+          inputElement.value = c;
+          warningBox.style.display = 'none';
+          saveBulkDraft();
+        };
+        chipContainer.appendChild(chip);
+      });
+    }
+  }
+
   function restoreBulkDraft(draft) {
     setBulkType(draft.type);
     bulkDatePicker.setDate(draft.date);
     
     document.getElementById('bulkRowsContainer').innerHTML = '';
     if (draft.rows && draft.rows.length > 0) {
-      draft.rows.forEach(r => addBulkRow(r.customer, r.amount, r.notes));
+      // Rebuild rows without notes
+      draft.rows.forEach(r => addBulkRow(r.customer, r.amount));
     } else {
       addBulkRow();
     }
@@ -3137,15 +3179,25 @@
     const dateVal = document.getElementById('bulkDate').value;
     const rowEls = document.querySelectorAll('.bulk-row');
     const validRows = [];
+    const newCustomers = []; // Track potential new customers for safety warning
 
     // Validation
     for (let row of rowEls) {
-      const cust = row.querySelector('.bulk-cust').value.trim();
+      let cust = row.querySelector('.bulk-cust').value.trim();
       const amt = parseFloat(row.querySelector('.bulk-amt').value);
-      const notes = row.querySelector('.bulk-notes').value.trim();
 
       if (cust && amt > 0) {
-        validRows.push({ customerName: cust, amount: amt, notes: notes });
+        // Auto-correct casing if an exact case-insensitive match exists
+        const exactMatch = allCustomers.find(c => c.toLowerCase() === cust.toLowerCase());
+        if (exactMatch) {
+          cust = exactMatch;
+        } else {
+          // It's a completely new customer
+          if (!newCustomers.includes(cust)) newCustomers.push(cust);
+        }
+        
+        // Pass empty notes to satisfy backend requirements without cluttering the UI
+        validRows.push({ customerName: cust, amount: amt, notes: "" });
       } else if (cust || amt > 0) {
         showToast("Error: A row has missing customer or amount.", "error");
         return;
@@ -3157,16 +3209,20 @@
       return;
     }
 
+    // Safety Catch: Warn if creating brand new customers
+    if (newCustomers.length > 0) {
+       const proceed = confirm("⚠️ You are about to create NEW ledger accounts for:\n\n• " + newCustomers.join("\n• ") + "\n\nIs this correct? (Check for spelling mistakes)");
+       if (!proceed) return;
+    }
+
     showLoading();
     try {
-      // 1. FIXED: Correctly separate the payload data
       const payload = {
         type: currentBulkType,
         date: dateVal,
         entries: validRows
       };
 
-      // 2. FIXED: Pass the 'action' and 'payload' as two separate arguments
       const res = await apiPost('addBulkEntries', payload);
       
       if (res && res.status === 'success') {
