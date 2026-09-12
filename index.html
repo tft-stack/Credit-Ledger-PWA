@@ -3040,7 +3040,7 @@
         <div style="display: flex; gap: 6px; align-items: center;">
           <div class="bulk-sno" style="font-weight: bold; font-size: 13px; color: var(--text-muted); width: 22px; text-align: center; flex-shrink: 0;"></div>
           
-          <input type="text" class="input-field bulk-cust" placeholder="Customer Name" value="${cust}" style="flex: 2; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="checkBulkSimilarity(this); saveBulkDraft()" autocomplete="off">
+          <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Customer Name" value="${cust}" style="flex: 2; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="checkBulkSimilarity(this); saveBulkDraft()">
           
           <input type="number" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="flex: 1.2; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="updateBulkTotal(); saveBulkDraft()">
           
