@@ -1275,6 +1275,10 @@
 
     // --- 2. RENDER RULE 4 (High Volume Warnings) ---
     if (rule4Data && rule4Data.length > 0) {
+      
+      // SORT IN DESCENDING ORDER BY PURCHASE COUNT
+      rule4Data.sort((a, b) => b.purchaseCount - a.purchaseCount);
+      
       html += `<h4 style="margin-top: 24px; margin-bottom: 12px; color: #d32f2f; border-bottom: 2px solid #ffcdd2; padding-bottom: 4px;">⚠️ High Volume Action Required</h4>`;
       
       rule4Data.forEach(flag => {
