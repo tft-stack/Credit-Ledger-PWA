@@ -1467,14 +1467,14 @@
     const totalElem = document.getElementById('dashboardTotalBalance');
     const countElem = document.getElementById('dashboardCustomerCount');
     const todayElem = document.getElementById('dashboardTodayCollection'); 
-    const yestElem = document.getElementById('dashboardYesterdayCollection'); // NEW
+    const yestElem = document.getElementById('dashboardYesterdayCollection');
     const todaySaleElem = document.getElementById('dashboardTodaySale'); 
     const yesterdaySaleElem = document.getElementById('dashboardYesterdaySale'); 
 
     // --- SAFELY Extract the new sales data ---
     let payload = window.currentDashboardDataPayload || {};
     let todayColl = payload.todaysCollection || 0;
-    let yestColl = payload.yesterdaysCollection || 0; // NEW
+    let yestColl = payload.yesterdaysCollection || 0;
     let todaySale = payload.todaysSale || 0;
     let yestSale = payload.yesterdaysSale || 0;
 
@@ -1482,11 +1482,9 @@
     let blurClass = isPrivacyEnabled ? 'privacy-blur' : 'privacy-blur revealed';
     
     if (todayElem) todayElem.innerHTML = `<span class="${blurClass}">₹${(todayColl).toLocaleString('en-IN')}</span>`;
-    if (yestElem) yestElem.innerHTML = `<span class="${blurClass}">₹${(yestColl).toLocaleString('en-IN')}</span>`; // NEW
+    if (yestElem) yestElem.innerHTML = `<span class="${blurClass}">₹${(yestColl).toLocaleString('en-IN')}</span>`;
     if (todaySaleElem) todaySaleElem.innerHTML = `<span class="${blurClass}">₹${(todaySale).toLocaleString('en-IN')}</span>`;
     if (yesterdaySaleElem) yesterdaySaleElem.innerHTML = `<span class="${blurClass}">₹${(yestSale).toLocaleString('en-IN')}</span>`;
-
-    // ... (rest of the function stays exactly the same)
 
     let filtered = currentDashboardData.filter(cust => {
       if (cust.balance === 0) return false; 
@@ -1526,17 +1524,29 @@
           : `<span style="color: #d32f2f;">No payments recorded</span>`;
           
       let html = `
-        <div class="dashboard-item" onclick="jumpToCustomer('${cust.name}')">
-          <div style="display: flex; align-items: center; gap: 14px;">
-            <div style="font-size: 12px; font-weight: bold; color: var(--text-muted); width: 20px; text-align: center;">${index + 1}</div>
-            <div>
-              <div style="font-weight: bold; font-size: 15px; color: var(--text-main); margin-bottom: 4px;">${cust.name}</div>
-              <div style="font-size: 12px; color: var(--text-muted);">${lastPayText}</div>
+        <!-- Main row container MUST have align-items: center and flex-wrap disabled -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-light); cursor: pointer;" onclick="jumpToCustomer('${cust.name}')">
+          
+          <!-- Serial Number -->
+          <div style="width: 35px; text-align: center; font-size: 12px; font-weight: bold; color: var(--text-muted);">
+            ${index + 1}
+          </div>
+          
+          <!-- Middle Section: flex: 1 and min-width: 0 are critical to prevent pushing the amount down -->
+          <div style="flex: 1; padding: 0 12px; min-width: 0;">
+            <div style="font-weight: bold; font-size: 15px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              ${cust.name}
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              ${lastPayText}
             </div>
           </div>
-          <div style="text-align: right;">
-            <div style="font-weight: bold; font-size: 16px; color: #d32f2f;"><span class="${blurClass}">₹${cust.balance.toLocaleString('en-IN')}</span></div>
+          
+          <!-- Right Section: white-space: nowrap keeps the amount intact on one line -->
+          <div style="font-weight: bold; font-size: 16px; color: #d32f2f; white-space: nowrap; text-align: right; padding-right: 8px;">
+            <span class="${blurClass}">₹${cust.balance.toLocaleString('en-IN')}</span>
           </div>
+          
         </div>
       `;
       container.innerHTML += html;
