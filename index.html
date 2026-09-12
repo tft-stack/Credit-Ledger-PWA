@@ -1375,12 +1375,10 @@
       }
       
       try {
-        // Fetch main data and the clickable drill-down data in parallel
+        // Fetch main data and the clickable drill-down data in parallel via API
         const [data, breakdowns] = await Promise.all([
            apiGet('getDashboardData'),
-           new Promise((resolve, reject) => {
-              google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getDashboardBreakdowns();
-           }).catch(() => null) // Fallback in case of router error
+           apiGet('getDashboardBreakdowns').catch(() => null) 
         ]);
 
         if (data) {
@@ -2810,14 +2808,11 @@
       // If data isn't loaded yet, fetch it on the fly using a direct pipeline!
       if (!window.dashboardBreakdowns) {
           showToast("Fetching details...", "info"); 
+      // If data isn't loaded yet, fetch it via the API
+      if (!window.dashboardBreakdowns) {
+          showToast("Fetching details...", "info"); 
           try {
-              // FIXED: Swapped apiGet for google.script.run to bypass missing doGet routes
-              const res = await new Promise((resolve, reject) => {
-                  google.script.run
-                    .withSuccessHandler(resolve)
-                    .withFailureHandler(reject)
-                    .getDashboardBreakdowns();
-              });
+              const res = await apiGet('getDashboardBreakdowns');
               
               if (res && !res.error) {
                   window.dashboardBreakdowns = res;
@@ -2829,6 +2824,7 @@
               showToast("Failed to load details. Please try again.", "error");
               return;
           }
+      }
       }
 
       activeDashboardCard = cardType;
