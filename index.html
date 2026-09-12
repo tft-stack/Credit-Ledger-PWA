@@ -3094,15 +3094,6 @@
     saveBulkDraft();
   }
 
-  function updateBulkTotal() {
-    const amts = document.querySelectorAll('.bulk-amt');
-    let total = 0;
-    amts.forEach(input => {
-      total += parseFloat(input.value) || 0;
-    });
-    document.getElementById('bulkTotalDisplay').innerText = `₹${total.toLocaleString('en-IN')}`;
-  }
-
   function saveBulkDraft() {
     if (!currentBulkType) return; 
     const rows = [];
@@ -3119,6 +3110,15 @@
       rows: rows
     };
     localStorage.setItem(BULK_DRAFT_KEY, JSON.stringify(draft));
+  }
+
+  function updateBulkTotal() {
+    const amts = document.querySelectorAll('.bulk-amt');
+    let total = 0;
+    amts.forEach(input => {
+      total += parseFloat(input.value) || 0;
+    });
+    document.getElementById('bulkTotalDisplay').innerText = `₹${total.toLocaleString('en-IN')}`;
   }
 
   function checkBulkSimilarity(inputElement) {
