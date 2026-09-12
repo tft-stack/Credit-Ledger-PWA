@@ -2807,11 +2807,18 @@
           return;
       }
 
-      // If data isn't loaded yet, fetch it on the fly!
+      // If data isn't loaded yet, fetch it on the fly using a direct pipeline!
       if (!window.dashboardBreakdowns) {
-          showToast("Fetching details...", "info"); // Show a quick loading toast
+          showToast("Fetching details...", "info"); 
           try {
-              const res = await apiGet('getDashboardBreakdowns');
+              // FIXED: Swapped apiGet for google.script.run to bypass missing doGet routes
+              const res = await new Promise((resolve, reject) => {
+                  google.script.run
+                    .withSuccessHandler(resolve)
+                    .withFailureHandler(reject)
+                    .getDashboardBreakdowns();
+              });
+              
               if (res && !res.error) {
                   window.dashboardBreakdowns = res;
               } else {
