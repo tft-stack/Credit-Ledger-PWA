@@ -1319,20 +1319,23 @@
       // SORT IN DESCENDING ORDER BY PURCHASE COUNT
       rule4Data.sort((a, b) => b.purchaseCount - a.purchaseCount);
       
-      html += `<h4 style="margin-top: 24px; margin-bottom: 12px; color: #d32f2f; border-bottom: 2px solid #ffcdd2; padding-bottom: 4px;">⚠️ High Volume Action Required</h4>`;
+      // Updated the border color to adapt nicely in dark mode
+      html += `<h4 style="margin-top: 24px; margin-bottom: 12px; color: #d32f2f; border-bottom: 1px solid var(--border-light); padding-bottom: 8px;">⚠️ High Volume Action Required</h4>`;
       
       rule4Data.forEach(flag => {
         let escapedFlagName = flag.customerName.replace(/'/g, "\\'");
         html += `
-          <div class="card" style="border-left: 5px solid #d32f2f; margin-bottom: 12px; background: #fffafb;">
+          <!-- Removed hardcoded #fffafb background so it adapts to dark/light mode naturally -->
+          <div class="card" style="border-left: 5px solid #d32f2f; margin-bottom: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div>
-                <strong style="font-size: 16px;">${flag.customerName}</strong>
+                <strong style="font-size: 16px; color: var(--text-main);">${flag.customerName}</strong>
                 <p style="color: #d32f2f; margin: 4px 0 0 0; font-size: 13px; font-weight: bold;">
                   ${flag.purchaseCount} Unsettled Purchases
                 </p>
               </div>
-              <button onclick="jumpToCustomer('${escapedFlagName}')" style="background: var(--bg-color); color: #d32f2f; border: 1px solid #d32f2f; border-radius: 6px; padding: 6px 12px; font-weight: bold; cursor: pointer;">
+              <!-- Replaced hardcoded inline styles with adaptive btn-outline-red class -->
+              <button onclick="jumpToCustomer('${escapedFlagName}')" class="btn btn-outline-red btn-sm" style="padding: 6px 12px; border-radius: 6px;">
                 Review
               </button>
             </div>
