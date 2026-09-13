@@ -848,6 +848,20 @@
     </div>
   </div>
 
+  <!-- ==================== ARCHIVE CONFIRM MODAL ==================== -->
+  <div id="archiveConfirmModal" class="modal-overlay" style="z-index: 2500;">
+    <div class="card" style="width: 100%; max-width: 320px; text-align: center;">
+      <div style="font-size: 40px; margin-bottom: 8px;">📦</div>
+      <h3 style="margin-bottom: 8px;">Archive Settled Items</h3>
+      <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">Do you want to clear all settled entries now?</p>
+      
+      <div style="display: flex; gap: 10px;">
+        <button class="btn btn-outline" style="flex: 1; border-radius: 8px;" onclick="closeArchiveModal()">Cancel</button>
+        <button class="btn btn-blue" style="flex: 1; border-radius: 8px;" onclick="confirmManualArchive()">Archive</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== ITEM DETAIL MODAL ==================== -->
   <div id="itemModalOverlay" class="modal-overlay no-print" style="z-index: 100;">
     <div class="card modal" style="width: 90%; max-width: 350px; background: var(--card-bg); padding: 20px; border-radius: 10px;">
@@ -3307,13 +3321,22 @@
     }
   }
 
-  async function triggerManualArchive() {
-    const confirmAction = confirm("This will immediately move all 'Settled' transactions from the active ledger to your Archive sheet. Do you want to proceed?");
-    if (!confirmAction) return;
+  function triggerManualArchive() {
+    document.getElementById('archiveConfirmModal').style.display = 'flex';
+  }
+
+  function closeArchiveModal() {
+    document.getElementById('archiveConfirmModal').style.display = 'none';
+  }
+
+  async function confirmManualArchive() {
+    closeArchiveModal();
 
     const btn = document.getElementById('manualArchiveBtn');
-    btn.style.opacity = '0.4';
-    btn.disabled = true;
+    if(btn) {
+      btn.style.opacity = '0.4';
+      btn.disabled = true;
+    }
     
     showToast("Archiving settled items... This may take a minute.", "info");
     showLoading();
@@ -3323,7 +3346,7 @@
       if (res && res.status === 'success') {
         showToast("Archive completed successfully!", "success");
         isDashboardStale = true;
-        await navToSmartSettle(); // Refresh the Smart Settle data
+        await navToSmartSettle(); 
       } else {
         throw new Error(res.error || "Unknown error");
       }
@@ -3331,8 +3354,10 @@
       console.error("Manual archive failed:", e);
       showToast("Failed to run archive process.", "error");
     } finally {
-      btn.style.opacity = '1';
-      btn.disabled = false;
+      if(btn) {
+        btn.style.opacity = '1';
+        btn.disabled = false;
+      }
       hideLoading();
     }
   }
