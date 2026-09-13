@@ -714,9 +714,21 @@
   <!-- ==================== SCREEN 3: SMART SETTLE ==================== -->
   <div id="screen-settle" class="screen">
     <div class="sticky-header" style="margin-bottom: 0; padding: 16px 0 12px 0; border-bottom: none; top: 0;">
+      
+      <!-- Updated Header with Sleek Archive Button -->
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px;">
         <h2 style="margin:0;">Smart Settle</h2>
+        
+        <button id="manualArchiveBtn" onclick="triggerManualArchive()" style="background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 16px; padding: 6px 12px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: opacity 0.2s;" title="Run Archive Now">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+          Archive
+        </button>
       </div>
+
       <p style="color: var(--text-muted); font-size: 13px; margin: 4px 16px 0 16px; text-align: left;">
         Auto-detected matching purchases and payments. Select items to clear them from your ledger.
       </p>
@@ -3292,6 +3304,36 @@
       // Restore button state
       btn.style.opacity = '1';
       btn.disabled = false;
+    }
+  }
+
+  async function triggerManualArchive() {
+    const confirmAction = confirm("This will immediately move all 'Settled' transactions from the active ledger to your Archive sheet. Do you want to proceed?");
+    if (!confirmAction) return;
+
+    const btn = document.getElementById('manualArchiveBtn');
+    btn.style.opacity = '0.4';
+    btn.disabled = true;
+    
+    showToast("Archiving settled items... This may take a minute.", "info");
+    showLoading();
+
+    try {
+      const res = await apiGet('runManualArchive');
+      if (res && res.status === 'success') {
+        showToast("Archive completed successfully!", "success");
+        isDashboardStale = true;
+        await navToSmartSettle(); // Refresh the Smart Settle data
+      } else {
+        throw new Error(res.error || "Unknown error");
+      }
+    } catch (e) {
+      console.error("Manual archive failed:", e);
+      showToast("Failed to run archive process.", "error");
+    } finally {
+      btn.style.opacity = '1';
+      btn.disabled = false;
+      hideLoading();
     }
   }
   
