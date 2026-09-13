@@ -715,17 +715,16 @@
   <div id="screen-settle" class="screen">
     <div class="sticky-header" style="margin-bottom: 0; padding: 16px 0 12px 0; border-bottom: none; top: 0;">
       
-      <!-- Updated Header with Sleek Archive Button -->
+      <!-- Updated Header with Sleek "Clear" Button -->
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px;">
         <h2 style="margin:0;">Smart Settle</h2>
         
-        <button id="manualArchiveBtn" onclick="triggerManualArchive()" style="background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 16px; padding: 6px 12px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: opacity 0.2s;" title="Run Archive Now">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="21 8 21 21 3 21 3 8"></polyline>
-            <rect x="1" y="3" width="22" height="5"></rect>
-            <line x1="10" y1="12" x2="14" y2="12"></line>
+        <button id="manualArchiveBtn" onclick="triggerManualArchive()" style="background: #e3f2fd; color: #007bff; border: 1px solid #bbdefb; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: opacity 0.2s;" title="Clear Settled Entries">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6L7 17l-5-5"></path>
+            <path d="M22 10l-11 11"></path>
           </svg>
-          Archive
+          Clear
         </button>
       </div>
 
@@ -851,13 +850,13 @@
   <!-- ==================== ARCHIVE CONFIRM MODAL ==================== -->
   <div id="archiveConfirmModal" class="modal-overlay" style="z-index: 2500;">
     <div class="card" style="width: 100%; max-width: 320px; text-align: center;">
-      <div style="font-size: 40px; margin-bottom: 8px;">📦</div>
+      <div style="font-size: 40px; margin-bottom: 8px;">✨</div>
       <h3 style="margin-bottom: 8px;">Clear Settled Entries</h3>
       <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">Do you want to clear all settled entries now?</p>
       
       <div style="display: flex; gap: 10px;">
         <button class="btn btn-outline" style="flex: 1; border-radius: 8px;" onclick="closeArchiveModal()">Cancel</button>
-        <button class="btn btn-blue" style="flex: 1; border-radius: 8px;" onclick="confirmManualArchive()">Archive</button>
+        <button class="btn btn-blue" style="flex: 1; border-radius: 8px;" onclick="confirmManualArchive()">Clear</button>
       </div>
     </div>
   </div>
@@ -3338,13 +3337,15 @@
       btn.disabled = true;
     }
     
-    showToast("Archiving settled items... This may take a minute.", "info");
+    // UPDATED: User-friendly notification text
+    showToast("Clearing settled entries... This may take a minute.", "info");
     showLoading();
 
     try {
       const res = await apiGet('runManualArchive');
       if (res && res.status === 'success') {
-        showToast("Archive completed successfully!", "success");
+        // UPDATED: Success message
+        showToast("Entries cleared successfully!", "success");
         isDashboardStale = true;
         await navToSmartSettle(); 
       } else {
@@ -3352,7 +3353,7 @@
       }
     } catch (e) {
       console.error("Manual archive failed:", e);
-      showToast("Failed to run archive process.", "error");
+      showToast("Failed to clear entries.", "error");
     } finally {
       if(btn) {
         btn.style.opacity = '1';
