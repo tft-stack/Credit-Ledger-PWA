@@ -1198,16 +1198,19 @@
           pendingDisplay = `<div style="font-size: 14px; font-weight: bold; color: #2e7d32; margin-bottom: 8px;">Pending: ₹0</div>`;
         }
 
-        // Variables to handle the specific Rule 3 click-to-navigate feature
+        // Variables to handle the click-to-navigate feature
         let rule3TotalDisplay = '';
         let headerClickAttr = '';
         let headerCursorStyle = '';
         let reviewLinkHtml = '';
 
-        if (custMatch.matchRule.includes("Rule 3")) {
-          if (custMatch.totalAmount) {
+        // Show matching total if provided by backend (usually Rule 3)
+        if (custMatch.totalAmount) {
              rule3TotalDisplay = `<div style="color: #2e7d32; font-weight: bold; margin-top: 8px; font-size: 14px;">Matching Total: ₹${custMatch.totalAmount.toLocaleString('en-IN')}</div>`;
-          }
+        }
+
+        // Apply clickable header logic to BOTH Rule 1 and Rule 3
+        if (custMatch.matchRule.includes("Rule 1") || custMatch.matchRule.includes("Rule 3")) {
           // Escape quotes in name just in case
           let escapedName = custMatch.customerName.replace(/'/g, "\\'");
           headerClickAttr = `onclick="jumpToCustomer('${escapedName}')"`;
@@ -1218,7 +1221,7 @@
         html += `
           <div class="card smart-settle-card" id="card_${safeCustName}" data-customer="${custMatch.customerName}" style="margin-bottom: 16px; padding: 0; overflow: hidden; border: 1px solid var(--border-light);">
             
-            <!-- Centered Header mimicking the View Entry screen (Clickable for Rule 3) -->
+            <!-- Centered Header mimicking the View Entry screen (Clickable for Rule 1 & 3) -->
             <div ${headerClickAttr} style="background: var(--pill-bg); padding: 12px 16px; border-bottom: 1px solid var(--border-light); text-align: center; ${headerCursorStyle}">
               <div style="font-weight: bold; font-size: 18px; color: var(--text-main); margin-bottom: 2px;">${custMatch.customerName}</div>
               ${pendingDisplay}
