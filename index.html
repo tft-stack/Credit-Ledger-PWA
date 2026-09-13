@@ -1198,23 +1198,35 @@
           pendingDisplay = `<div style="font-size: 14px; font-weight: bold; color: #2e7d32; margin-bottom: 8px;">Pending: ₹0</div>`;
         }
 
-        // Display the calculated matching total specifically for Rule 3 subsets
+        // Variables to handle the specific Rule 3 click-to-navigate feature
         let rule3TotalDisplay = '';
-        if (custMatch.matchRule.includes("Rule 3") && custMatch.totalAmount) {
-          rule3TotalDisplay = `<div style="color: #2e7d32; font-weight: bold; margin-top: 8px; font-size: 14px;">Matching Total: ₹${custMatch.totalAmount.toLocaleString('en-IN')}</div>`;
+        let headerClickAttr = '';
+        let headerCursorStyle = '';
+        let reviewLinkHtml = '';
+
+        if (custMatch.matchRule.includes("Rule 3")) {
+          if (custMatch.totalAmount) {
+             rule3TotalDisplay = `<div style="color: #2e7d32; font-weight: bold; margin-top: 8px; font-size: 14px;">Matching Total: ₹${custMatch.totalAmount.toLocaleString('en-IN')}</div>`;
+          }
+          // Escape quotes in name just in case
+          let escapedName = custMatch.customerName.replace(/'/g, "\\'");
+          headerClickAttr = `onclick="jumpToCustomer('${escapedName}')"`;
+          headerCursorStyle = `cursor: pointer;`;
+          reviewLinkHtml = `<div style="margin-top: 8px; font-size: 11px; font-weight: bold; color: #007bff;">Tap to view ledger ➔</div>`;
         }
 
         html += `
           <div class="card smart-settle-card" id="card_${safeCustName}" data-customer="${custMatch.customerName}" style="margin-bottom: 16px; padding: 0; overflow: hidden; border: 1px solid var(--border-light);">
             
-            <!-- Centered Header mimicking the View Entry screen -->
-            <div style="background: var(--pill-bg); padding: 12px 16px; border-bottom: 1px solid var(--border-light); text-align: center;">
+            <!-- Centered Header mimicking the View Entry screen (Clickable for Rule 3) -->
+            <div ${headerClickAttr} style="background: var(--pill-bg); padding: 12px 16px; border-bottom: 1px solid var(--border-light); text-align: center; ${headerCursorStyle}">
               <div style="font-weight: bold; font-size: 18px; color: var(--text-main); margin-bottom: 2px;">${custMatch.customerName}</div>
               ${pendingDisplay}
               ${rule3TotalDisplay}
               <div style="display: inline-block; background: #e3f2fd; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: bold; color: #007bff; text-transform: uppercase; border: 1px solid #bbdefb; margin-top: 4px;">
                 ✨ ${custMatch.matchRule}
               </div>
+              ${reviewLinkHtml}
             </div>
             
             <div style="padding: 12px 16px;">
@@ -1282,6 +1294,7 @@
       html += `<h4 style="margin-top: 24px; margin-bottom: 12px; color: #d32f2f; border-bottom: 2px solid #ffcdd2; padding-bottom: 4px;">⚠️ High Volume Action Required</h4>`;
       
       rule4Data.forEach(flag => {
+        let escapedFlagName = flag.customerName.replace(/'/g, "\\'");
         html += `
           <div class="card" style="border-left: 5px solid #d32f2f; margin-bottom: 12px; background: #fffafb;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1291,7 +1304,7 @@
                   ${flag.purchaseCount} Unsettled Purchases
                 </p>
               </div>
-              <button onclick="jumpToCustomer('${flag.customerName}')" style="background: var(--bg-color); color: #d32f2f; border: 1px solid #d32f2f; border-radius: 6px; padding: 6px 12px; font-weight: bold; cursor: pointer;">
+              <button onclick="jumpToCustomer('${escapedFlagName}')" style="background: var(--bg-color); color: #d32f2f; border: 1px solid #d32f2f; border-radius: 6px; padding: 6px 12px; font-weight: bold; cursor: pointer;">
                 Review
               </button>
             </div>
