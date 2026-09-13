@@ -2282,6 +2282,16 @@
       rowDiv.innerHTML = buildCell(row.left, true) + buildCell(row.right, false);
       container.appendChild(rowDiv);
     });
+
+    // --- CACHE TRACKING INDICATOR ---
+    if (data.dataSource) {
+      const indicatorHTML = `
+        <div style="text-align: center; font-size: 10px; font-weight: bold; color: var(--text-muted); opacity: 0.5; margin-top: 24px; padding-bottom: 24px; letter-spacing: 0.5px; display: flex; justify-content: center; align-items: center;">
+          ${data.dataSource}
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', indicatorHTML);
+    }
   }
 
   function openEditCustomerModal() {
