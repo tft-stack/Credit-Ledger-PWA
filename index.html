@@ -1319,23 +1319,21 @@
       // SORT IN DESCENDING ORDER BY PURCHASE COUNT
       rule4Data.sort((a, b) => b.purchaseCount - a.purchaseCount);
       
-      // Updated the border color to adapt nicely in dark mode
       html += `<h4 style="margin-top: 24px; margin-bottom: 12px; color: #d32f2f; border-bottom: 1px solid var(--border-light); padding-bottom: 8px;">⚠️ High Volume Action Required</h4>`;
       
       rule4Data.forEach(flag => {
         let escapedFlagName = flag.customerName.replace(/'/g, "\\'");
         html += `
-          <!-- Removed hardcoded #fffafb background so it adapts to dark/light mode naturally -->
           <div class="card" style="border-left: 5px solid #d32f2f; margin-bottom: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <strong style="font-size: 16px; color: var(--text-main);">${flag.customerName}</strong>
-                <p style="color: #d32f2f; margin: 4px 0 0 0; font-size: 13px; font-weight: bold;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 16px; font-weight: bold; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${flag.customerName}</div>
+                <div style="color: #d32f2f; margin-top: 4px; font-size: 13px; font-weight: bold;">
                   ${flag.purchaseCount} Unsettled Purchases
-                </p>
+                </div>
               </div>
-              <!-- Replaced hardcoded inline styles with adaptive btn-outline-red class -->
-              <button onclick="jumpToCustomer('${escapedFlagName}')" class="btn btn-outline-red btn-sm" style="padding: 6px 12px; border-radius: 6px;">
+              <!-- Added 'flex: none' to stop the button from stretching -->
+              <button onclick="jumpToCustomer('${escapedFlagName}')" class="btn btn-outline-red btn-sm" style="flex: none; width: auto; padding: 8px 16px; border-radius: 6px; margin: 0;">
                 Review
               </button>
             </div>
