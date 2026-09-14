@@ -3284,43 +3284,6 @@
     }
   }
 
-  async function forceCacheRefresh() {
-    const btn = document.getElementById('syncCacheBtn');
-    
-    // Dim and disable the button to indicate activity without breaking the layout
-    btn.style.opacity = '0.4';
-    btn.disabled = true;
-    
-    showToast("Rebuilding archive cache... This may take a moment.", "info");
-
-    try {
-      const res = await apiGet('forceCacheRefresh');
-      
-      if (res && res.status === 'success') {
-        showToast("Cache successfully updated!", "success");
-        
-        // Wipe the local memory so the next tap fetches the fresh data
-        window.dashboardBreakdowns = null;
-        
-        // If a card is currently open, close it to reset the view
-        if (activeDashboardCard) {
-            document.getElementById('dashboardDetailsSection').style.display = 'none';
-            activeDashboardCard = null;
-            resetCardStyles();
-        }
-      } else {
-        throw new Error(res.error || "Unknown error");
-      }
-    } catch (e) {
-      console.error("Manual cache sync failed:", e);
-      showToast("Failed to sync cache.", "error");
-    } finally {
-      // Restore button state
-      btn.style.opacity = '1';
-      btn.disabled = false;
-    }
-  }
-
   function triggerManualArchive() {
     document.getElementById('archiveConfirmModal').style.display = 'flex';
   }
