@@ -1459,27 +1459,20 @@
       }
       
       try {
-        // Fetch main data and the clickable drill-down data in parallel via API
-        const [data, breakdowns] = await Promise.all([
-           apiGet('getDashboardData'),
-           apiGet('getDashboardBreakdowns').catch(() => null) 
-        ]);
+        // Only fetch lightweight summary metrics
+        const data = await apiGet('getDashboardData');
 
-        if (data) {
+        if (data && data.customers) {
           window.currentDashboardDataPayload = data; 
-          window.dashboardBreakdowns = breakdowns; // Store breakdowns for click events
+          window.dashboardBreakdowns = {}; // Reset local cache for card breakdowns
           
-          if (data.customers) {
-            currentDashboardData = data.customers;
-            currentTodaysCollection = data.todaysCollection;
-          } else if (Array.isArray(data)) {
-            currentDashboardData = data;
-            currentTodaysCollection = 0;
-          }
+          currentDashboardData = data.customers;
+          currentTodaysCollection = data.todaysCollection || 0;
           isDashboardStale = false; 
           
-          // Reset card UI in case it was left open during a refresh
-          if(activeDashboardCard) { toggleDashboardCard(activeDashboardCard); }
+          if (activeDashboardCard) { 
+            toggleDashboardCard(activeDashboardCard); 
+          }
           
           applyDashboardFilters(); 
         }
@@ -2898,52 +2891,55 @@
   // --- NEW: DASHBOARD CARD TOGGLE LOGIC (WITH ON-DEMAND FETCH) ---
   let activeDashboardCard = null;
 
+  // On-demand drill-down fetch
   async function toggleDashboardCard(cardType) {
-      const detailsSection = document.getElementById('dashboardDetailsSection');
-      
-      // Toggle closed if clicking the currently open card
-      if (activeDashboardCard === cardType) {
-          detailsSection.style.display = 'none';
-          activeDashboardCard = null;
-          resetCardStyles();
-          return;
-      }
-
-      // If data isn't loaded yet, fetch it on the fly using a direct pipeline!
-      if (!window.dashboardBreakdowns) {
-          showToast("Fetching details...", "info"); 
-      // If data isn't loaded yet, fetch it via the API
-      if (!window.dashboardBreakdowns) {
-          showToast("Fetching details...", "info"); 
-          try {
-              const res = await apiGet('getDashboardBreakdowns');
-              
-              if (res && !res.error) {
-                  window.dashboardBreakdowns = res;
-              } else {
-                  throw new Error(res.error || "Failed to fetch");
-              }
-          } catch (e) {
-              console.error("Drill-down fetch error:", e);
-              showToast("Failed to load details. Please try again.", "error");
-              return;
-          }
-      }
-      }
-
-      activeDashboardCard = cardType;
+    const detailsSection = document.getElementById('dashboardDetailsSection');
+    
+    if (activeDashboardCard === cardType) {
+      detailsSection.style.display = 'none';
+      activeDashboardCard = null;
       resetCardStyles();
-      
-      // Highlight the actively selected card
-      const activeEl = document.getElementById('card-' + cardType);
-      if (activeEl) {
-          activeEl.style.transform = 'scale(1.03)';
-          activeEl.style.boxShadow = '0 4px 10px rgba(0,0,0,0.15)';
-          activeEl.style.opacity = '1';
-          activeEl.style.border = cardType.includes('Credit') ? '1px solid #d32f2f' : '1px solid #2e7d32';
-      }
+      return;
+    }
 
-      renderDetailsTable(cardType, window.dashboardBreakdowns[cardType] || []);
+    if (!window.dashboardBreakdowns) {
+      window.dashboardBreakdowns = {};
+    }
+
+    // Lazy load specific breakdown only if not yet fetched
+    if (!window.dashboardBreakdowns[cardType]) {
+      showLoading();
+      try {
+        const res = await apiGet('getDashboardBreakdowns', { cardType: cardType });
+        if (res && res.status === 'success') {
+          window.dashboardBreakdowns[cardType] = res.data;
+        } else if (res && Array.isArray(res)) {
+          window.dashboardBreakdowns[cardType] = res;
+        } else {
+          throw new Error(res.error || "Failed to fetch details");
+        }
+      } catch (e) {
+        console.error("Drill-down fetch error:", e);
+        showToast("Failed to load details.", "error");
+        hideLoading();
+        return;
+      } finally {
+        hideLoading();
+      }
+    }
+
+    activeDashboardCard = cardType;
+    resetCardStyles();
+    
+    const activeEl = document.getElementById('card-' + cardType);
+    if (activeEl) {
+      activeEl.style.transform = 'scale(1.03)';
+      activeEl.style.boxShadow = '0 4px 10px rgba(0,0,0,0.15)';
+      activeEl.style.opacity = '1';
+      activeEl.style.border = cardType.includes('Credit') ? '1px solid #d32f2f' : '1px solid #2e7d32';
+    }
+
+    renderDetailsTable(cardType, window.dashboardBreakdowns[cardType] || []);
   }
 
   function resetCardStyles() {
