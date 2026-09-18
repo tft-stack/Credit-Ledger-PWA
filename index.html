@@ -317,9 +317,17 @@
   <div id="screen-dashboard" class="screen">
     <div class="sticky-header" style="margin-bottom: 0; padding: 16px 0 0 0; border-bottom: none; top: 0;">
       
-    <!-- Dashboard Header -->
-    <div style="margin-bottom: 16px; padding: 0 16px; text-align: left;">
+    <!-- Dashboard Header with Yesterday Sync Button -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 16px;">
       <h2 style="margin: 0;">Dashboard</h2>
+      
+      <button id="syncYesterdayBtn" onclick="forceYesterdaySync()" style="background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 50%; width: 34px; height: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: background 0.2s;" title="Sync Yesterday's Data">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+      </button>
     </div>
       
       <!-- Dashboard Summary Cards -->
@@ -1438,6 +1446,49 @@
     toggleClearSearch('searchCustomerInput', 'clearSearchBtn');
     clearFilters(); 
     handleSearchChange(); 
+  }
+
+  // --- MANUAL YESTERDAY SYNC ---
+  async function forceYesterdaySync() {
+    const btn = document.getElementById('syncYesterdayBtn');
+    
+    // Dim and disable the button to prevent spam clicks
+    btn.style.opacity = '0.4';
+    btn.disabled = true;
+    
+    showToast("Syncing yesterday's data...", "info");
+    showLoading();
+
+    try {
+      const res = await apiGet('syncYesterdayData');
+      
+      if (res && res.status === 'success') {
+        showToast("Yesterday's data synced!", "success");
+        
+        // Force the dashboard to fully fetch the updated numbers
+        isDashboardStale = true;
+        window.dashboardBreakdowns = {}; // Clear cached breakdowns
+        
+        // If a card is currently open, close it to reset the view
+        if (activeDashboardCard) {
+            document.getElementById('dashboardDetailsSection').style.display = 'none';
+            activeDashboardCard = null;
+            resetCardStyles();
+        }
+        
+        await loadDashboardData();
+      } else {
+        throw new Error(res.error || "Unknown error");
+      }
+    } catch (e) {
+      console.error("Manual sync failed:", e);
+      showToast("Failed to sync data.", "error");
+    } finally {
+      // Restore button state
+      btn.style.opacity = '1';
+      btn.disabled = false;
+      hideLoading();
+    }
   }
 
   async function loadDashboardData() {
