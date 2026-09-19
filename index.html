@@ -1556,14 +1556,20 @@
     let yestColl = payload.yesterdaysCollection || 0;
     let todaySale = payload.todaysSale || 0;
     let yestSale = payload.yesterdaysSale || 0;
+    let activeTxCount = payload.activeTransactionCount || 0; // NEW
 
-    // Inject the amounts wrapped in the privacy span
-    let blurClass = isPrivacyEnabled ? 'privacy-blur' : 'privacy-blur revealed';
+    // Inject the amounts wrapped in the privacy span safely
+    let blurClass = (typeof isPrivacyEnabled !== 'undefined' && !isPrivacyEnabled) ? 'privacy-blur revealed' : 'privacy-blur';
     
     if (todayElem) todayElem.innerHTML = `<span class="${blurClass}">₹${(todayColl).toLocaleString('en-IN')}</span>`;
     if (yestElem) yestElem.innerHTML = `<span class="${blurClass}">₹${(yestColl).toLocaleString('en-IN')}</span>`;
     if (todaySaleElem) todaySaleElem.innerHTML = `<span class="${blurClass}">₹${(todaySale).toLocaleString('en-IN')}</span>`;
     if (yesterdaySaleElem) yesterdaySaleElem.innerHTML = `<span class="${blurClass}">₹${(yestSale).toLocaleString('en-IN')}</span>`;
+
+    if (!currentDashboardData || !Array.isArray(currentDashboardData)) {
+      if (container) container.innerHTML = '<div style="text-align:center; padding: 40px 16px; color: var(--text-light); font-size: 14px;">Error loading data.</div>';
+      return;
+    }
 
     let filtered = currentDashboardData.filter(cust => {
       if (cust.balance === 0) return false; 
@@ -1579,19 +1585,22 @@
       }
     });
 
-    document.getElementById('sortIconName').innerText = dashboardSortCol === 'name' ? (dashboardSortDir === 'asc' ? '▲' : '▼') : '';
-    document.getElementById('sortIconAmount').innerText = dashboardSortCol === 'amount' ? (dashboardSortDir === 'asc' ? '▲' : '▼') : '';
+    const sortIconName = document.getElementById('sortIconName');
+    const sortIconAmt = document.getElementById('sortIconAmount');
+    if (sortIconName) sortIconName.innerText = dashboardSortCol === 'name' ? (dashboardSortDir === 'asc' ? '▲' : '▼') : '';
+    if (sortIconAmt) sortIconAmt.innerText = dashboardSortCol === 'amount' ? (dashboardSortDir === 'asc' ? '▲' : '▼') : '';
 
     let totalOutstanding = 0;
     filtered.forEach(c => totalOutstanding += c.balance);
 
     // Apply privacy blur to the giant Total Outstanding number
-    totalElem.innerHTML = `<span class="${blurClass}">₹${totalOutstanding.toLocaleString('en-IN')}</span>`;
-    countElem.innerText = `${filtered.length} Unique Customers`;
-
-    // NEW: Inject Active Transactions Count
+    if (totalElem) totalElem.innerHTML = `<span class="${blurClass}">₹${totalOutstanding.toLocaleString('en-IN')}</span>`;
+    if (countElem) countElem.innerText = `${filtered.length} Unique Customers`;
+    
+    // NEW: Inject Active Transactions Count safely
     if (txCountElem) txCountElem.innerText = `${activeTxCount} Active Transactions`;
 
+    if (!container) return;
     container.innerHTML = '';
     
     if (filtered.length === 0) {
@@ -1600,21 +1609,15 @@
     }
 
     filtered.forEach((cust, index) => {
-      // Apply privacy blur to the specific customer's amounts
       let lastPayText = cust.lastPaymentAmount 
           ? `Last Pay: <span class="${blurClass}">₹${cust.lastPaymentAmount.toLocaleString('en-IN')}</span> on ${cust.lastPaymentDate}` 
           : `<span style="color: #d32f2f;">No payments recorded</span>`;
           
       let html = `
-        <!-- Main row container MUST have align-items: center and flex-wrap disabled -->
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-light); cursor: pointer;" onclick="jumpToCustomer('${cust.name}')">
-          
-          <!-- Serial Number -->
           <div style="width: 35px; text-align: center; font-size: 12px; font-weight: bold; color: var(--text-muted);">
             ${index + 1}
           </div>
-          
-          <!-- Middle Section: flex: 1 and min-width: 0 are critical to prevent pushing the amount down -->
           <div style="flex: 1; padding: 0 12px; min-width: 0;">
             <div style="font-weight: bold; font-size: 15px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
               ${cust.name}
@@ -1623,12 +1626,9 @@
               ${lastPayText}
             </div>
           </div>
-          
-          <!-- Right Section: white-space: nowrap keeps the amount intact on one line -->
           <div style="font-weight: bold; font-size: 16px; color: #d32f2f; white-space: nowrap; text-align: right; padding-right: 8px;">
             <span class="${blurClass}">₹${cust.balance.toLocaleString('en-IN')}</span>
           </div>
-          
         </div>
       `;
       container.innerHTML += html;
