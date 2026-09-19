@@ -400,6 +400,8 @@
           <div style="text-align: right;">
             <div id="dashboardTotalBalance" style="font-size: 24px; font-weight: bold; color: #d32f2f; line-height: 1;"><span class="privacy-blur">₹0</span></div>
             <div id="dashboardCustomerCount" style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">0 Customers</div>
+            <!-- NEW: Active Transactions Count -->
+            <div id="dashboardTransactionCount" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">0 Active Transactions</div>
           </div>
         </div>
       </div>
@@ -1542,6 +1544,7 @@
     const container = document.getElementById('customersContainer');
     const totalElem = document.getElementById('dashboardTotalBalance');
     const countElem = document.getElementById('dashboardCustomerCount');
+    const txCountElem = document.getElementById('dashboardTransactionCount'); // NEW
     const todayElem = document.getElementById('dashboardTodayCollection'); 
     const yestElem = document.getElementById('dashboardYesterdayCollection');
     const todaySaleElem = document.getElementById('dashboardTodaySale'); 
@@ -1585,6 +1588,9 @@
     // Apply privacy blur to the giant Total Outstanding number
     totalElem.innerHTML = `<span class="${blurClass}">₹${totalOutstanding.toLocaleString('en-IN')}</span>`;
     countElem.innerText = `${filtered.length} Unique Customers`;
+
+    // NEW: Inject Active Transactions Count
+    if (txCountElem) txCountElem.innerText = `${activeTxCount} Active Transactions`;
 
     container.innerHTML = '';
     
