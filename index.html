@@ -1924,17 +1924,18 @@
     const header = document.getElementById(headerId);
     const initialAddBtn = document.getElementById(btnId);
 
+    // FIX 1: Always keep the main blue '+' button visible
+    if (initialAddBtn) initialAddBtn.style.display = 'flex'; 
+
     if (rows.length === 0) {
       header.style.display = 'none';
-      initialAddBtn.style.display = 'flex'; 
     } else {
       header.style.display = 'flex';
-      initialAddBtn.style.display = 'none'; 
     }
 
     rows.forEach((row, index) => {
       const addBtn = row.querySelector('.btn-add-row');
-      addBtn.style.display = index === rows.length - 1 ? 'inline-flex' : 'none';
+      if (addBtn) addBtn.style.display = index === rows.length - 1 ? 'inline-flex' : 'none';
     });
   }
   
@@ -2655,7 +2656,7 @@
       <!-- VIEW MODE (Responsive Flex Wrap) -->
       <div class="view-mode" style="${startInEditMode ? 'display: none;' : 'display: flex;'} flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px; width: 100%;">
         
-        <!-- Data Group (Forces Fruit, Qty, Price, Total to stay in a horizontal line) -->
+        <!-- Data Group -->
         <div style="display: flex; flex-direction: row; align-items: center; gap: 4px; flex: 1 1 0%; min-width: 170px;">
           <div class="disp-fruit" style="flex: 1 1 auto; font-weight: bold; font-size: 13px; color: var(--text-main); white-space: normal; word-break: break-word;">${fruit}</div>
           <div class="disp-qty" style="width: 22px; font-size: 12px; text-align: center; color: var(--text-main); flex-shrink: 0;">${qty}</div>
@@ -2663,7 +2664,7 @@
           <div class="detail-total" style="width: 46px; font-size: 12px; font-weight: bold; text-align: right; color: #007bff; flex-shrink: 0;">₹${total.toLocaleString('en-IN')}</div>
         </div>
         
-        <!-- Action Buttons (Wraps to the next line right-aligned if Fruit name is too long) -->
+        <!-- Action Buttons -->
         <div style="display: flex; flex-direction: row; gap: 4px; width: 80px; flex: 0 0 80px; justify-content: flex-end; margin-left: auto;">
           <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this, '${context}')" title="Remove" style="width: 24px; height: 24px; font-size: 12px; border-radius: 6px;">✕</button>
           <button type="button" class="item-action-btn btn-modify" onclick="toggleInlineEdit(this, true)" title="Modify" style="width: 24px; height: 24px; font-size: 12px; border-radius: 6px;">✎</button>
@@ -2675,16 +2676,18 @@
       <!-- EDIT MODE -->
       <div class="edit-mode" style="${startInEditMode ? 'display: block;' : 'display: none;'} background: var(--pill-bg); padding: 10px; border-radius: 8px; border: 1px dashed var(--border-color); margin-top: 4px;">
         <div style="display: grid; grid-template-columns: 2fr 1fr 1.2fr; gap: 6px; margin-bottom: 10px;">
-          <input type="text" class="inline-edit-fruit" value="${fruit}" placeholder="Fruit" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);">
-          <input type="number" class="inline-edit-qty" value="${qty}" placeholder="Qty" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="updateInlinePreview(this)">
-          <input type="number" class="inline-edit-price" value="${price}" placeholder="Price" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="updateInlinePreview(this)">
+          <input type="text" class="inline-edit-fruit" value="${fruit}" placeholder="Fruit" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)">
+          <input type="number" class="inline-edit-qty" value="${qty}" placeholder="Qty" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)">
+          <input type="number" class="inline-edit-price" value="${price}" placeholder="Price" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)">
         </div>
         
         <div style="display: flex; justify-content: space-between; align-items: center;">
            <div class="inline-edit-total" style="font-weight: bold; font-size: 16px; color: #007bff;">₹${total.toLocaleString('en-IN')}</div>
-           <div style="display: flex; justify-content: flex-end; gap: 8px;">
-             <button type="button" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: bold; cursor: pointer;" onclick="cancelInlineEdit(this)">Cancel</button>
-             <button type="button" style="background: #28a745; color: white; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="saveInlineEdit(this)">Save</button>
+           
+           <!-- FIX 2: Replaced Text Buttons with Action Icons -->
+           <div style="display: flex; justify-content: flex-end; gap: 6px;">
+             <button type="button" class="item-action-btn btn-remove" onclick="cancelInlineEdit(this)" title="Cancel / Remove" style="width: 32px; height: 32px; font-size: 14px; border-radius: 6px;">✕</button>
+             <button type="button" class="item-action-btn" onclick="saveAndAddNewRow(this, '${context}')" title="Save & Add Next" style="width: 32px; height: 32px; font-size: 18px; border-radius: 6px; background: #28a745;">＋</button>
            </div>
         </div>
       </div>
@@ -2880,51 +2883,57 @@
     row.querySelector('.edit-mode').style.display = showEdit ? 'block' : 'none';
   }
 
-  function updateInlinePreview(input) {
+  // --- NEW: Real-Time Data Sync ---
+  function syncInlineData(input) {
     const row = input.closest('.detail-row');
-    const qty = parseFloat(row.querySelector('.inline-edit-qty').value) || 0;
-    const price = parseFloat(row.querySelector('.inline-edit-price').value) || 0;
-    row.querySelector('.inline-edit-total').innerText = '₹' + (qty * price).toLocaleString('en-IN');
-  }
-
-  function saveInlineEdit(btn) {
-    const row = btn.closest('.detail-row');
-    
-    const fruit = row.querySelector('.inline-edit-fruit').value.trim();
+    const fruit = row.querySelector('.inline-edit-fruit').value;
     const qty = parseFloat(row.querySelector('.inline-edit-qty').value) || 0;
     const price = parseFloat(row.querySelector('.inline-edit-price').value) || 0;
     const total = qty * price;
 
-    if (!fruit) { alert("Please enter an Item name."); return; }
-
-    // Safely locate the parent container without complex selectors
-    const container = row.closest('#detailsContainer') || row.closest('#editDetailsContainer');
-    const containerId = container ? container.id : 'detailsContainer';
-    const dateInputId = containerId === 'editDetailsContainer' ? 'editDate' : 'entryDate';
-    const mainDate = document.getElementById(dateInputId).value;
-
-    // Update hidden fields
+    // Instantly push values to the hidden data fields (so the main modal save works)
     row.querySelector('.detail-fruit').value = fruit;
     row.querySelector('.detail-qty').value = qty;
     row.querySelector('.detail-price').value = price;
-    row.querySelector('.detail-date').value = mainDate; // Force sync to parent date
 
-    // Update view mode display
+    // Instantly prep the View Mode texts so it looks seamless when switching
     row.querySelector('.disp-fruit').innerText = fruit;
     row.querySelector('.disp-qty').innerText = qty;
     row.querySelector('.disp-price').innerText = '₹' + price;
     row.querySelector('.detail-total').innerText = '₹' + total.toLocaleString('en-IN');
 
-    toggleInlineEdit(btn, false);
+    // Update the Edit Mode total display
+    row.querySelector('.inline-edit-total').innerText = '₹' + total.toLocaleString('en-IN');
+
+    // Trigger a recalculation of the grand total at the top of the modal
+    const containerId = row.closest('#detailsContainer') ? 'detailsContainer' : 'editDetailsContainer';
     calculateDetails(containerId);
   }
 
+  // --- NEW: Green '+' Button Logic ---
+  function saveAndAddNewRow(btn, context) {
+    const row = btn.closest('.detail-row');
+    const fruit = row.querySelector('.inline-edit-fruit').value.trim();
+    
+    if (!fruit) {
+      showToast("Please enter a Fruit name before adding a new row.", "error");
+      return;
+    }
+    
+    // Switch the current row to View Mode (Data is already saved via syncInlineData)
+    toggleInlineEdit(btn, false);
+    
+    // Automatically open a new blank row directly underneath
+    openItemModal(null, context);
+  }
+
+  // --- UPDATED: Red 'X' Button Logic ---
   function cancelInlineEdit(btn) {
     const row = btn.closest('.detail-row');
     const fruit = row.querySelector('.detail-fruit').value.trim();
     
     if (!fruit) {
-      // Safely locate the parent container without complex selectors
+      // If it was a new empty row, delete it completely
       const container = row.closest('#detailsContainer') || row.closest('#editDetailsContainer');
       const containerId = container ? container.id : 'detailsContainer';
       
@@ -2932,7 +2941,7 @@
       updateRowButtons(containerId);
       calculateDetails(containerId);
     } else {
-      // It was an existing row, just hide the edit mode
+      // If it was an existing row, just close the editor and revert to view mode
       toggleInlineEdit(btn, false);
     }
   }
