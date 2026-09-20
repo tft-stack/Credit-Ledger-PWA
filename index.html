@@ -579,7 +579,7 @@
       <h3>Add Entry</h3>
       <label>Customer Name</label>
       <div style="position: relative; margin-bottom: 8px;">
-        <input type="text" id="entryCustomerInput" list="customerList" placeholder="🔍 Search or type new..." oninput="this.value = this.value.replace(/[^a-zA-Z0-9 ]/g, ''); checkSimilarity(this.value); toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
+        <input type="text" id="entryCustomerInput" list="customerList" placeholder="🔍 Search or type new..." oninput="this.value = this.value.replace(/[^a-zA-Z0-9 ]/g, ''); checkSimilarity(this.value); toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn'); saveEntryDraft();" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
         <div id="clearAddSearchBtn" onclick="clearSearch('entryCustomerInput', 'clearAddSearchBtn')" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--border-color); color: var(--btn-text); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer; transition: background 0.3s, color 0.3s;">✕</div>
       </div>
       
@@ -591,8 +591,8 @@
       <div style="background: var(--bg-color); padding: 12px; border-radius: 8px; border: 1px solid var(--border-light); margin-top: 12px; transition: background 0.3s, border-color 0.3s;">
         <label>New Entry</label>
         <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-            <button type="button" id="btnPurchase" class="btn btn-red btn-sm" onclick="setAddType('Purchase')">Purchase</button>
-            <button type="button" id="btnPayment" class="btn btn-outline-green btn-sm" onclick="setAddType('Payment')">Payment</button>
+            <button type="button" id="btnPurchase" class="btn btn-red btn-sm" onclick="setAddType('Purchase'); saveEntryDraft();">Purchase</button>
+            <button type="button" id="btnPayment" class="btn btn-outline-green btn-sm" onclick="setAddType('Payment'); saveEntryDraft();">Payment</button>
         </div>
         <input type="hidden" id="entryTypeSelected" value="Purchase">
         
@@ -600,12 +600,14 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
           <div>
             <label>Amount (₹)</label>
-            <input type="number" id="entryAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
+            <!-- Added saveEntryDraft to oninput -->
+            <input type="number" id="entryAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); saveEntryDraft();">
           </div>
           <div>
             <label>Date</label>
             <div style="position: relative; margin-bottom: 0;">
-              <input type="text" id="entryDate" required style="margin-bottom: 0; padding-right: 34px; background: var(--input-bg);" placeholder="Select Date" readonly>
+              <!-- Added saveEntryDraft to onchange -->
+              <input type="text" id="entryDate" required style="margin-bottom: 0; padding-right: 34px; background: var(--input-bg);" placeholder="Select Date" readonly onchange="saveEntryDraft()">
               <div onclick="openDatePicker('entryDate')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px;">📅</div>
             </div>
           </div>
@@ -613,7 +615,8 @@
 
         <!-- Brought Forward Checkbox moved right under Amount/Date block -->
         <div id="addBFContainer" style="display: flex; align-items: center; gap: 6px; margin-bottom: 16px;">
-          <input type="checkbox" id="broughtForward" onchange="toggleBF()" style="width:18px; height:18px; margin:0;">
+          <!-- Added saveEntryDraft to onchange -->
+          <input type="checkbox" id="broughtForward" onchange="toggleBF(); saveEntryDraft();" style="width:18px; height:18px; margin:0;">
           <label for="broughtForward" style="margin:0; text-transform:none; font-size:14px; color: var(--text-main);">Brought forward</label>
         </div>
 
@@ -621,7 +624,11 @@
         <div id="detailedItemsWrapper" style="margin-top: 16px; margin-bottom: 16px;">
           
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <span style="font-size: 13px; font-weight: bold; color: var(--text-muted);">Enter Item Details</span>
+            <span style="font-size: 13px; font-weight: bold; color: var(--text-muted); display: flex; align-items: center;">
+              Enter Item Details
+              <!-- NEW: Draft Indicator Badge -->
+              <span id="draftIndicator" style="display: none; background: #fff3cd; color: #856404; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; border: 1px solid #ffeeba;">Unsaved Draft</span>
+            </span>
             
             <button type="button" id="initialAddBtn" onclick="openItemModal()" style="background: #007bff; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Add Items">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -646,7 +653,7 @@
           <div id="detailsContainer"></div>
         </div>
         
-        <input type="text" id="entryNotes" placeholder="Notes (Optional)" style="margin-bottom: 16px;">
+        <input type="text" id="entryNotes" placeholder="Notes (Optional)" style="margin-bottom: 16px;" oninput="saveEntryDraft()">
         
         <!-- Action Buttons: Cancel + Save in the same row -->
         <div style="display: flex; gap: 8px;">
@@ -707,6 +714,34 @@
       <div style="display: flex; flex-direction: column; gap: 10px;">
         <button class="btn btn-blue" style="width: 100%; border-radius: 8px;" onclick="resumeBulkDraftAction()">Resume Draft</button>
         <button class="btn btn-outline" style="width: 100%; border-radius: 8px; color: var(--text-muted); border-color: var(--border-color);" onclick="discardBulkDraftAction()">Discard & Start Fresh</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ENTRY DRAFT PROMPT MODAL ==================== -->
+  <div id="entryDraftModal" class="modal-overlay" style="z-index: 2500;">
+    <div class="card" style="width: 100%; max-width: 320px; text-align: center;">
+      <div style="font-size: 40px; margin-bottom: 8px;">📝</div>
+      <h3 style="margin-bottom: 8px;">Unsaved Entry</h3>
+      <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">You have an unsaved draft from earlier today. Do you want to resume where you left off?</p>
+      
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button class="btn btn-blue" style="width: 100%; border-radius: 8px;" onclick="resumeEntryDraftAction()">Resume Draft</button>
+        <button class="btn btn-outline" style="width: 100%; border-radius: 8px; color: var(--text-muted); border-color: var(--border-color);" onclick="discardEntryDraftAction()">Discard & Start Fresh</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== EDIT DRAFT PROMPT MODAL ==================== -->
+  <div id="editDraftModal" class="modal-overlay" style="z-index: 2600;">
+    <div class="card" style="width: 100%; max-width: 320px; text-align: center;">
+      <div style="font-size: 40px; margin-bottom: 8px;">📝</div>
+      <h3 style="margin-bottom: 8px;">Unsaved Edits</h3>
+      <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">You have unsaved changes for this transaction. Do you want to resume editing?</p>
+      
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button class="btn btn-blue" style="width: 100%; border-radius: 8px;" onclick="resumeEditDraftAction()">Resume Draft</button>
+        <button class="btn btn-outline" style="width: 100%; border-radius: 8px; color: var(--text-muted); border-color: var(--border-color);" onclick="discardEditDraftAction()">Discard & Start Fresh</button>
       </div>
     </div>
   </div>
@@ -782,13 +817,13 @@
         <div>
           <label>Date</label>
           <div style="position: relative; margin-bottom: 0;">
-            <input type="text" id="editDate" required style="margin-bottom: 0; padding-right: 34px; background: var(--input-bg);" placeholder="Select Date" readonly>
+            <input type="text" id="editDate" required style="margin-bottom: 0; padding-right: 34px; background: var(--input-bg);" placeholder="Select Date" readonly onchange="saveEditDraft()">
             <div onclick="openDatePicker('editDate')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px;">📅</div>
           </div>
         </div>
         <div>
           <label>Amount (₹)</label>
-          <input type="number" id="editAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
+          <input type="number" id="editAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); saveEditDraft();">
         </div>
       </div>
 
@@ -796,7 +831,11 @@
       <div id="editDetailedItemsWrapper" style="margin-top: 16px; margin-bottom: 16px; display: none;">
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <span style="font-size: 13px; font-weight: bold; color: var(--text-muted);">Enter Item Details</span>
+          <span style="font-size: 13px; font-weight: bold; color: var(--text-muted); display: flex; align-items: center;">
+            Enter Item Details
+            <!-- NEW: Edit Draft Indicator Badge -->
+            <span id="editDraftIndicator" style="display: none; background: #fff3cd; color: #856404; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; border: 1px solid #ffeeba;">Unsaved Draft</span>
+          </span>
           
           <button type="button" id="editInitialAddBtn" onclick="openItemModal(null, 'edit')" style="background: #007bff; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Add Items">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -822,12 +861,12 @@
       </div>
       
       <div id="editBFContainer" style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px; display: none;">
-        <input type="checkbox" id="editBroughtForward" onchange="toggleEditBF()" style="width:18px; height: 18px; margin:0;">
+        <input type="checkbox" id="editBroughtForward" onchange="toggleEditBF(); saveEditDraft();" style="width:18px; height: 18px; margin:0;">
         <label for="editBroughtForward" style="margin:0; text-transform:none; font-size:14px; color: var(--text-main);">Brought forward</label>
       </div>
 
       <label>Notes</label>
-      <input type="text" id="editNotes">
+      <input type="text" id="editNotes" oninput="saveEditDraft()">
       
       <div class="btn-group">
         <button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
@@ -956,6 +995,11 @@
   
   let entryDatePicker, editDatePicker, modalDatePicker, bulkDatePicker;
 
+  // --- DRAFT Caching Constants ---
+  const ENTRY_DRAFT_KEY = 'ledger_single_entry_draft';
+  const EDIT_DRAFT_KEY = 'ledger_edit_draft';
+  let pendingEditId = null; 
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(() => console.log("Service Worker Registered"));
   }
@@ -1041,8 +1085,8 @@
     const fpConfig = { disableMobile: true, dateFormat: "Y-m-d" };
     entryDatePicker = flatpickr("#entryDate", { ...fpConfig, defaultDate: "today" });
     editDatePicker = flatpickr("#editDate", fpConfig);
-    modalDatePicker = flatpickr("#modalDate", fpConfig); // NEW: Initialize modal calendar
-    bulkDatePicker = flatpickr("#bulkDate", { ...fpConfig, defaultDate: "today" }); // NEW
+    modalDatePicker = flatpickr("#modalDate", fpConfig); 
+    bulkDatePicker = flatpickr("#bulkDate", { ...fpConfig, defaultDate: "today" }); 
     
     renderRecentCustomers(); 
     initAlphabetFilter();
@@ -1160,25 +1204,216 @@
   }
 
   function switchScreen(screen) {
-    // Hide all screens
     document.getElementById('screen-dashboard').classList.remove('active');
-    document.getElementById('screen-customers').classList.remove('active'); // NEW
+    document.getElementById('screen-customers').classList.remove('active'); 
     document.getElementById('screen-view').classList.remove('active');
     document.getElementById('screen-enter').classList.remove('active');
     if (document.getElementById('screen-settle')) document.getElementById('screen-settle').classList.remove('active');
     
-    // Show target screen
     document.getElementById('screen-' + screen).classList.add('active');
     
-    // Deactivate all nav tabs
     document.getElementById('nav-dashboard').classList.remove('active');
-    document.getElementById('nav-customers').classList.remove('active'); // NEW
+    document.getElementById('nav-customers').classList.remove('active'); 
     document.getElementById('nav-view').classList.remove('active');
     document.getElementById('nav-enter').classList.remove('active');
     if (document.getElementById('nav-settle')) document.getElementById('nav-settle').classList.remove('active');
     
-    // Activate target nav tab
     document.getElementById('nav-' + screen).classList.add('active');
+  }
+
+  // --- SAVE DRAFT STATE ---
+  function saveEntryDraft() {
+    const custElem = document.getElementById('entryCustomerInput');
+    if (!custElem) return;
+
+    const cust = custElem.value;
+    const amt = document.getElementById('entryAmount').value;
+    const type = document.getElementById('entryTypeSelected').value;
+    const date = document.getElementById('entryDate').value;
+    const notes = document.getElementById('entryNotes').value;
+    const isBF = document.getElementById('broughtForward').checked;
+
+    let details = [];
+    const detailRows = document.getElementById('detailsContainer').querySelectorAll('.detail-row');
+    detailRows.forEach(row => {
+      const fruit = row.querySelector('.detail-fruit').value;
+      const qty = row.querySelector('.detail-qty').value;
+      const price = row.querySelector('.detail-price').value;
+      const itemDate = row.querySelector('.detail-date').value;
+      if (fruit || qty || price) {
+        details.push({ fruit, qty, price, date: itemDate });
+      }
+    });
+
+    if (!cust && !amt && !notes && details.length === 0) {
+      localStorage.removeItem(ENTRY_DRAFT_KEY);
+      document.getElementById('draftIndicator').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('draftIndicator').style.display = 'inline-block';
+
+    const draft = {
+      savedDay: new Date().toDateString(),
+      cust, amt, type, date, notes, isBF, details
+    };
+    localStorage.setItem(ENTRY_DRAFT_KEY, JSON.stringify(draft));
+  }
+
+  function resumeEntryDraftAction() {
+    document.getElementById('entryDraftModal').style.display = 'none';
+    const draft = JSON.parse(localStorage.getItem(ENTRY_DRAFT_KEY));
+    
+    document.getElementById('entryCustomerInput').value = draft.cust || '';
+    if(draft.cust) toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');
+    
+    document.getElementById('entryAmount').value = draft.amt || '';
+    document.getElementById('entryNotes').value = draft.notes || '';
+    
+    setAddType(draft.type || 'Purchase');
+    document.getElementById('broughtForward').checked = draft.isBF || false;
+    toggleBF();
+    
+    if (draft.date && !draft.isBF) {
+      entryDatePicker.setDate(draft.date);
+    }
+
+    clearDetailsContainer();
+    if (draft.details && draft.details.length > 0) {
+      draft.details.forEach(d => {
+        addDisplayRow('detailsContainer', d.fruit, d.qty, d.price, d.date, false);
+      });
+    }
+    
+    document.getElementById('draftIndicator').style.display = 'inline-block';
+    switchScreen('enter');
+  }
+
+  function discardEntryDraftAction() {
+    document.getElementById('entryDraftModal').style.display = 'none';
+    localStorage.removeItem(ENTRY_DRAFT_KEY);
+    initFreshAddEntry();
+  }
+
+  function saveEditDraft() {
+    const id = document.getElementById('editId').value;
+    if (!id) return;
+
+    const amt = document.getElementById('editAmount').value;
+    const date = document.getElementById('editDate').value;
+    const notes = document.getElementById('editNotes').value;
+    const isBF = document.getElementById('editBroughtForward').checked;
+    
+    let details = [];
+    const detailRows = document.getElementById('editDetailsContainer').querySelectorAll('.detail-row');
+    detailRows.forEach(row => {
+      const fruit = row.querySelector('.detail-fruit').value;
+      const qty = row.querySelector('.detail-qty').value;
+      const price = row.querySelector('.detail-price').value;
+      const itemDate = row.querySelector('.detail-date').value;
+      if (fruit || qty || price) details.push({ fruit, qty, price, date: itemDate });
+    });
+
+    document.getElementById('editDraftIndicator').style.display = 'inline-block';
+
+    const draft = {
+      savedDay: new Date().toDateString(),
+      id, amt, date, notes, isBF, details
+    };
+    localStorage.setItem(EDIT_DRAFT_KEY, JSON.stringify(draft));
+  }
+
+  function resumeEditDraftAction() {
+    document.getElementById('editDraftModal').style.display = 'none';
+    const draft = JSON.parse(localStorage.getItem(EDIT_DRAFT_KEY));
+    
+    document.getElementById('editAmount').value = draft.amt || '';
+    document.getElementById('editNotes').value = draft.notes || '';
+    document.getElementById('editBroughtForward').checked = draft.isBF || false;
+    toggleEditBF();
+    
+    if (draft.date && !draft.isBF) editDatePicker.setDate(draft.date);
+
+    document.getElementById('editDetailsContainer').innerHTML = '';
+    if (draft.details && draft.details.length > 0) {
+      draft.details.forEach(d => {
+        addDisplayRow('editDetailsContainer', d.fruit, d.qty, d.price, d.date, false);
+      });
+    }
+    
+    document.getElementById('editDraftIndicator').style.display = 'inline-block';
+    document.getElementById('editModal').style.display = 'flex';
+  }
+
+  function discardEditDraftAction() {
+    document.getElementById('editDraftModal').style.display = 'none';
+    localStorage.removeItem(EDIT_DRAFT_KEY);
+    openModal(pendingEditId, true); 
+  }
+
+  // --- ROUTING UPDATES ---
+  function navToAddEntry() {
+    const draftStr = localStorage.getItem(ENTRY_DRAFT_KEY);
+    if (draftStr) {
+      try {
+        const draft = JSON.parse(draftStr);
+        if (draft.savedDay === new Date().toDateString()) {
+           document.getElementById('entryDraftModal').style.display = 'flex';
+           return; 
+        } else {
+           localStorage.removeItem(ENTRY_DRAFT_KEY);
+        }
+      } catch(e) {
+        localStorage.removeItem(ENTRY_DRAFT_KEY);
+      }
+    }
+    initFreshAddEntry();
+  }
+
+  function initFreshAddEntry() {
+    document.getElementById('entryCustomerInput').value = '';
+    toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');
+    document.getElementById('similarityWarning').style.display = 'none';
+    
+    setAddType('Purchase'); 
+    document.getElementById('broughtForward').checked = false;
+    toggleBF(); 
+    
+    document.getElementById('entryAmount').value = '';
+    document.getElementById('entryNotes').value = '';
+    clearDetailsContainer();
+    
+    document.getElementById('draftIndicator').style.display = 'none';
+    
+    switchScreen('enter');
+  }
+
+  function routeToAddData(targetType) {
+    localStorage.removeItem(ENTRY_DRAFT_KEY); 
+    
+    const currentCust = document.getElementById('searchCustomerInput').value;
+    
+    document.getElementById('entryAmount').value = '';
+    document.getElementById('entryNotes').value = '';
+    document.getElementById('broughtForward').checked = false;
+    toggleBF(); 
+    clearDetailsContainer();
+    
+    document.getElementById('draftIndicator').style.display = 'none';
+
+    if (currentCust) {
+      document.getElementById('entryCustomerInput').value = currentCust;
+      checkSimilarity(currentCust);
+      toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');
+    } else {
+      document.getElementById('entryCustomerInput').value = '';
+      toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');
+    }
+
+    if (targetType === 'purchase') setAddType('Purchase');
+    else if (targetType === 'payment') setAddType('Payment');
+    
+    switchScreen('enter');
   }
 
   // --- SMART SETTLE FUNCTIONS ---
@@ -1188,7 +1423,6 @@
     try {
       const res = await apiGet('getReadyToSettleData');
       if (res && res.data) {
-        // Pass both standard matches and Rule 4 high-volume data to the renderer
         renderSmartSettle(res.data, res.rule4Data);
       } else {
         showToast("Failed to load smart settle data", "error");
@@ -1206,7 +1440,6 @@
 
     container.innerHTML = '';
 
-    // Check if both data sets are completely empty
     if ((!data || data.length === 0) && (!rule4Data || rule4Data.length === 0)) {
       emptyState.style.display = 'block';
       return;
@@ -1215,7 +1448,6 @@
     emptyState.style.display = 'none';
     let html = '';
 
-    // --- 1. RENDER ALL SMART SETTLE MATCHES (Rules 1, 2, 3, and 4) ---
     if (data && data.length > 0) {
       data.forEach((custMatch) => {
         let safeCustName = custMatch.customerName.replace(/[^a-zA-Z0-9]/g, '');
@@ -1225,15 +1457,11 @@
           pendingDisplay = `<div style="font-size: 14px; font-weight: bold; color: #2e7d32; margin-bottom: 8px;">Pending: ₹0</div>`;
         }
 
-        // Variables to handle the click-to-navigate feature
         let ruleTotalDisplay = '';
-
-        // Show matching total if provided by backend (usually Rule 3 and Rule 4)
         if (custMatch.totalAmount) {
              ruleTotalDisplay = `<div style="color: #2e7d32; font-weight: bold; margin-top: 8px; font-size: 14px;">Matching Total: ₹${custMatch.totalAmount.toLocaleString('en-IN')}</div>`;
         }
 
-        // Apply clickable header logic to ALL rule matches automatically
         let escapedName = custMatch.customerName.replace(/'/g, "\\'");
         let headerClickAttr = `onclick="jumpToCustomer('${escapedName}')"`;
         let headerCursorStyle = `cursor: pointer;`;
@@ -1242,7 +1470,6 @@
         html += `
           <div class="card smart-settle-card" id="card_${safeCustName}" data-customer="${custMatch.customerName}" style="margin-bottom: 16px; padding: 0; overflow: hidden; border: 1px solid var(--border-light);">
             
-            <!-- Centered Header mimicking the View Entry screen (Clickable for ALL Rules) -->
             <div ${headerClickAttr} style="background: var(--pill-bg); padding: 12px 16px; border-bottom: 1px solid var(--border-light); text-align: center; ${headerCursorStyle}">
               <div style="font-weight: bold; font-size: 18px; color: var(--text-main); margin-bottom: 2px;">${custMatch.customerName}</div>
               ${pendingDisplay}
@@ -1272,7 +1499,6 @@
             if (!item) return `<div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''}"></div>`;
             
             let siblingAttr = '';
-            // Retain sibling logic for Rule 1 1:1 matches
             if (custMatch.matchRule.includes("Rule 1") && pur && pay) {
                 siblingAttr = `data-sibling-id="${isLeft ? pay.id : pur.id}"`;
             }
@@ -1300,7 +1526,6 @@
           `;
         }
         
-        // Add the specific "Mark Settled" button inside the card, hidden by default
         html += `
             <div id="btnContainer_${safeCustName}" style="display: none; border-top: 1px dashed var(--border-color); margin-top: 12px; padding-top: 12px;">
               <button class="btn btn-blue btn-sm" style="width: 100%; padding: 10px; border-radius: 8px; font-size: 14px;" onclick="submitSmartSettled('${safeCustName}')">✔️ Mark Paid (<span id="count_${safeCustName}">0</span>)</button>
@@ -1310,12 +1535,8 @@
       });
     }
 
-    // --- 2. RENDER RULE 4 (High Volume Warnings Fallback) ---
     if (rule4Data && rule4Data.length > 0) {
-      
-      // SORT IN DESCENDING ORDER BY PURCHASE COUNT
       rule4Data.sort((a, b) => b.purchaseCount - a.purchaseCount);
-      
       html += `<h4 style="margin-top: 24px; margin-bottom: 12px; color: #d32f2f; border-bottom: 1px solid var(--border-light); padding-bottom: 8px;">⚠️ High Volume Action Required</h4>`;
       
       rule4Data.forEach(flag => {
@@ -1352,7 +1573,6 @@
       });
     }
 
-    // Find which customer card this checkbox belongs to
     const card = element.closest('.smart-settle-card');
     if (!card) return;
 
@@ -1361,7 +1581,6 @@
     const btnContainer = document.getElementById('btnContainer_' + safeCustName);
     const countSpan = document.getElementById('count_' + safeCustName);
 
-    // Show/Hide the button ONLY for this specific customer
     if (cardCheckboxes.length > 0) {
       btnContainer.style.display = 'block';
       countSpan.innerText = cardCheckboxes.length;
@@ -1371,7 +1590,6 @@
   }
 
   async function submitSmartSettled(safeCustName) {
-    // Only target the checkboxes inside this specific customer's card
     const card = document.getElementById('card_' + safeCustName);
     const checkedBoxes = card.querySelectorAll('.smart-settle-checkbox:checked');
     let idsToUpdate = [];
@@ -1450,11 +1668,9 @@
     handleSearchChange(); 
   }
 
-  // --- MANUAL YESTERDAY SYNC ---
   async function forceYesterdaySync() {
     const btn = document.getElementById('syncYesterdayBtn');
     
-    // Dim and disable the button to prevent spam clicks
     btn.style.opacity = '0.4';
     btn.disabled = true;
     
@@ -1467,11 +1683,9 @@
       if (res && res.status === 'success') {
         showToast("Yesterday's data synced!", "success");
         
-        // Force the dashboard to fully fetch the updated numbers
         isDashboardStale = true;
-        window.dashboardBreakdowns = {}; // Clear cached breakdowns
+        window.dashboardBreakdowns = {}; 
         
-        // If a card is currently open, close it to reset the view
         if (activeDashboardCard) {
             document.getElementById('dashboardDetailsSection').style.display = 'none';
             activeDashboardCard = null;
@@ -1486,7 +1700,6 @@
       console.error("Manual sync failed:", e);
       showToast("Failed to sync data.", "error");
     } finally {
-      // Restore button state
       btn.style.opacity = '1';
       btn.disabled = false;
       hideLoading();
@@ -1504,12 +1717,11 @@
       }
       
       try {
-        // Only fetch lightweight summary metrics
         const data = await apiGet('getDashboardData');
 
         if (data && data.customers) {
           window.currentDashboardDataPayload = data; 
-          window.dashboardBreakdowns = {}; // Reset local cache for card breakdowns
+          window.dashboardBreakdowns = {}; 
           
           currentDashboardData = data.customers;
           currentTodaysCollection = data.todaysCollection || 0;
@@ -1544,21 +1756,19 @@
     const container = document.getElementById('customersContainer');
     const totalElem = document.getElementById('dashboardTotalBalance');
     const countElem = document.getElementById('dashboardCustomerCount');
-    const txCountElem = document.getElementById('dashboardTransactionCount'); // NEW
+    const txCountElem = document.getElementById('dashboardTransactionCount'); 
     const todayElem = document.getElementById('dashboardTodayCollection'); 
     const yestElem = document.getElementById('dashboardYesterdayCollection');
     const todaySaleElem = document.getElementById('dashboardTodaySale'); 
     const yesterdaySaleElem = document.getElementById('dashboardYesterdaySale'); 
 
-    // --- SAFELY Extract the new sales data ---
     let payload = window.currentDashboardDataPayload || {};
     let todayColl = payload.todaysCollection || 0;
     let yestColl = payload.yesterdaysCollection || 0;
     let todaySale = payload.todaysSale || 0;
     let yestSale = payload.yesterdaysSale || 0;
-    let activeTxCount = payload.activeTransactionCount || 0; // NEW
+    let activeTxCount = payload.activeTransactionCount || 0; 
 
-    // Inject the amounts wrapped in the privacy span safely
     let blurClass = (typeof isPrivacyEnabled !== 'undefined' && !isPrivacyEnabled) ? 'privacy-blur revealed' : 'privacy-blur';
     
     if (todayElem) todayElem.innerHTML = `<span class="${blurClass}">₹${(todayColl).toLocaleString('en-IN')}</span>`;
@@ -1593,11 +1803,9 @@
     let totalOutstanding = 0;
     filtered.forEach(c => totalOutstanding += c.balance);
 
-    // Apply privacy blur to the giant Total Outstanding number
     if (totalElem) totalElem.innerHTML = `<span class="${blurClass}">₹${totalOutstanding.toLocaleString('en-IN')}</span>`;
     if (countElem) countElem.innerText = `${filtered.length} Unique Customers`;
     
-    // NEW: Inject Active Transactions Count safely
     if (txCountElem) txCountElem.innerText = `${activeTxCount} Active Transactions`;
 
     if (!container) return;
@@ -1640,45 +1848,6 @@
     toggleClearSearch('searchCustomerInput', 'clearSearchBtn');
     switchScreen('view');
     handleSearchChange();
-  }
-
-  // --- ADD ENTRY & VIEW FUNCTIONS ---
-  function navToAddEntry() {
-    document.getElementById('entryCustomerInput').value = '';
-    toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');
-    document.getElementById('similarityWarning').style.display = 'none';
-    
-    setAddType('Purchase'); 
-    document.getElementById('broughtForward').checked = false;
-    toggleBF(); 
-    
-    document.getElementById('entryAmount').value = '';
-    document.getElementById('entryNotes').value = '';
-    
-    switchScreen('enter');
-  }
-
-  function routeToAddData(targetType) {
-    const currentCust = document.getElementById('searchCustomerInput').value;
-    
-    document.getElementById('entryAmount').value = '';
-    document.getElementById('entryNotes').value = '';
-    document.getElementById('broughtForward').checked = false;
-    toggleBF(); 
-
-    if (currentCust) {
-      document.getElementById('entryCustomerInput').value = currentCust;
-      checkSimilarity(currentCust);
-      toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');
-    } else {
-      document.getElementById('entryCustomerInput').value = '';
-      toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');
-    }
-
-    // UPDATED: Pass the new shortened strings
-    if (targetType === 'purchase') setAddType('Purchase');
-    else if (targetType === 'payment') setAddType('Payment');
-    switchScreen('enter');
   }
 
   function updateRecentCustomers(name) {
@@ -1733,7 +1902,6 @@
       dateInput.disabled = true;
       dateInput.style.opacity = "0.5";
       
-      // Inject B/F if not present
       if (!notesInput.value.toLowerCase().includes("b/f") && !notesInput.value.toLowerCase().includes("brought forward")) {
         notesInput.value = notesInput.value ? "B/F - " + notesInput.value : "B/F";
       }
@@ -1742,7 +1910,6 @@
       dateInput.style.opacity = "1";
       entryDatePicker.setDate(new Date());
       
-      // Clean up B/F or legacy text safely if unchecked
       notesInput.value = notesInput.value.replace(/\(?B\/F\)?\s*-?\s*/ig, "").replace(/\(?Brought Forward\)?\s*-?\s*/ig, "").trim();
     }
   }
@@ -1757,7 +1924,6 @@
       dateInput.disabled = true;
       dateInput.style.opacity = "0.5";
       
-      // Inject B/F if not present
       if (!notesInput.value.toLowerCase().includes("b/f") && !notesInput.value.toLowerCase().includes("brought forward")) {
         notesInput.value = notesInput.value ? "B/F - " + notesInput.value : "B/F";
       }
@@ -1766,10 +1932,10 @@
       dateInput.style.opacity = "1";
       if (!dateInput.value) editDatePicker.setDate(new Date());
       
-      // Clean up B/F or legacy text safely if unchecked
       notesInput.value = notesInput.value.replace(/\(?B\/F\)?\s*-?\s*/ig, "").replace(/\(?Brought Forward\)?\s*-?\s*/ig, "").trim();
     }
   }
+  
   function checkSimilarity(inputStr) {
     const warningBox = document.getElementById('similarityWarning');
     const chipContainer = document.getElementById('similarityChips');
@@ -1788,6 +1954,7 @@
         chip.onclick = function() {
           document.getElementById('entryCustomerInput').value = c;
           warningBox.style.display = 'none';
+          saveEntryDraft();
         };
         chipContainer.appendChild(chip);
       });
@@ -1805,7 +1972,6 @@
     
     if (lowerInput.length < 3) return;
 
-    // Find similar names, but ignore the customer's current name
     const similar = allCustomers.filter(c => c.toLowerCase().includes(lowerInput) && c.toLowerCase() !== oldName);
     
     if (similar.length > 0) {
@@ -1827,12 +1993,11 @@
   // ITEM DETAIL MODAL LOGIC
   // ==========================================
   let editingRow = null; 
-  let currentActiveContainer = 'detailsContainer'; // Tracks if we are in Add or Edit mode
+  let currentActiveContainer = 'detailsContainer'; 
 
   function openItemModal(btn = null, context = 'add') {
     const containerId = context === 'edit' ? 'editDetailsContainer' : 'detailsContainer';
     
-    // Find a default date to use
     let defaultDate = new Date().toISOString().split('T')[0];
     const container = document.getElementById(containerId);
     const rows = container.querySelectorAll('.detail-row');
@@ -1846,7 +2011,6 @@
       if (mainDate) defaultDate = mainDate;
     }
 
-    // Bypass the modal completely and instantly add a new inline row!
     addDisplayRow(containerId, '', '', '', defaultDate, true);
   }
 
@@ -1871,7 +2035,6 @@
     }
 
     if (editingRow) {
-      // Modify Existing
       editingRow.querySelector('.detail-fruit').value = fruit;
       editingRow.querySelector('.detail-qty').value = qty;
       editingRow.querySelector('.detail-price').value = price;
@@ -1885,8 +2048,9 @@
       
       updateRowButtons(currentActiveContainer);
       calculateDetails(currentActiveContainer);
+      if(currentActiveContainer === 'detailsContainer') saveEntryDraft();
+      else saveEditDraft();
     } else {
-      // Add New using Unified Builder
       addDisplayRow(currentActiveContainer, fruit, qty, price, date);
     }
 
@@ -1913,6 +2077,9 @@
     const containerId = context === 'edit' ? 'editDetailsContainer' : 'detailsContainer';
     updateRowButtons(containerId); 
     calculateDetails(containerId);
+    
+    if (context === 'add') saveEntryDraft();
+    else if (context === 'edit') saveEditDraft();
   }
 
   function updateRowButtons(containerId = 'detailsContainer') {
@@ -1924,7 +2091,6 @@
     const header = document.getElementById(headerId);
     const initialAddBtn = document.getElementById(btnId);
 
-    // FIX 1: Always keep the main blue '+' button visible
     if (initialAddBtn) initialAddBtn.style.display = 'flex'; 
 
     if (rows.length === 0) {
@@ -1945,7 +2111,6 @@
     const amountInputId = containerId === 'editDetailsContainer' ? 'editAmount' : 'entryAmount';
     const broadAmountInput = document.getElementById(amountInputId);
     
-    // THE FIX: Explicitly clear the amount if no rows exist
     if (rows.length === 0) {
       broadAmountInput.value = ''; 
       broadAmountInput.readOnly = false;
@@ -1967,8 +2132,8 @@
 
   function clearDetailsContainer() {
     document.getElementById('detailsContainer').innerHTML = '';
-    calculateDetails();
-    updateRowButtons();
+    calculateDetails('detailsContainer');
+    updateRowButtons('detailsContainer');
   }
   
   async function submitEntry() {
@@ -1986,25 +2151,20 @@
       notes = notes ? "B/F - " + notes : "B/F"; 
     }
 
-    // ==========================================
-    // NEW: STRICT DUPLICATE & SIMILARITY ENFORCEMENT
-    // ==========================================
     const existingExact = allCustomers.find(c => c.toLowerCase() === name.toLowerCase());
     
     if (existingExact) {
-      // 1. AUTO-CORRECT: If it's an exact match (just wrong casing), force the correct casing!
       name = existingExact; 
     } else {
-      // 2. NEW CUSTOMER: Check if the similarity warning is visible
       const warningBox = document.getElementById('similarityWarning');
       if (warningBox.style.display === 'block') {
         const proceed = confirm(`"${name}" is very similar to an existing customer. Are you sure you want to create a brand new account?`);
-        if (!proceed) return; // Stop if they realize they made a mistake
+        if (!proceed) return; 
       }
     }
 
     let detailsArray = [];
-    const detailRows = document.querySelectorAll('.detail-row');
+    const detailRows = document.getElementById('detailsContainer').querySelectorAll('.detail-row');
     if (detailRows.length > 0) {
       detailRows.forEach(row => {
         const fruit = row.querySelector('.detail-fruit').value.trim();
@@ -2038,6 +2198,9 @@
       });
       
       if(result.status === 'success' || !result.error) {
+         localStorage.removeItem(ENTRY_DRAFT_KEY);
+         document.getElementById('draftIndicator').style.display = 'none';
+        
          showToast("Entry Saved Successfully!", "success");
          isDashboardStale = true;
         
@@ -2047,9 +2210,7 @@
          document.getElementById('broughtForward').checked = false;
          toggleBF(); 
 
-         if (typeof clearDetailsContainer === 'function') {
-           clearDetailsContainer();
-         }
+         clearDetailsContainer();
 
          document.getElementById('entryCustomerInput').value = ''; 
          toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn');
@@ -2132,7 +2293,6 @@
     checkedBoxes.forEach(box => {
       idsToUpdate.push(box.value.toString());
       
-      // Tally up the selected amounts based on type
       let type = box.getAttribute('data-type');
       let amt = parseFloat(box.getAttribute('data-amount')) || 0;
       
@@ -2145,10 +2305,9 @@
 
     if (idsToUpdate.length === 0) return;
 
-    // VALIDATION: Ensure selected purchases exactly equal selected payments
     if (totalPurchaseSelected !== totalPaymentSelected) {
       showToast(`Mismatch! Purchases: ₹${totalPurchaseSelected} | Payments: ₹${totalPaymentSelected}`, "error");
-      return; // Stop execution, don't mark as paid
+      return; 
     }
 
     showLoading();
@@ -2170,13 +2329,11 @@
 
   function renderLedger(data) {
 
-    // --- NEW: Calculate and Display Last Paid from Dashboard Data (SAFE VERSION) ---
     try {
       const lastPaidContainer = document.getElementById('viewEntryLastPaid');
       const lastPaidAmountEl = document.getElementById('viewLastPaidAmount');
       const lastPaidDateEl = document.getElementById('viewLastPaidDate');
       
-      // Only proceed if the HTML elements actually exist on the page
       if (lastPaidContainer && lastPaidAmountEl && lastPaidDateEl) {
         const searchInput = document.getElementById('searchCustomerInput');
         const currentCustName = searchInput ? searchInput.value.trim().toLowerCase() : '';
@@ -2199,7 +2356,6 @@
     } catch (e) {
       console.error("Last Paid Pill skipped due to error:", e);
     }
-    // ------------------------------------------
     
     currentLedgerHistory = data.history; 
     document.getElementById('ledgerCard').style.display = 'block';
@@ -2266,15 +2422,9 @@
             siblingAttr = `data-sibling-id="${isLeft ? rightId : leftId}"`;
         }
 
-        // ==========================================
-        // DYNAMIC AMOUNT DISPLAY & ACCORDION
-        // ==========================================
         let detailsHtml = '';
-        
-        // Default amount style (No details)
         let amountDisplayHtml = `<div style="font-weight: bold; font-size: 14px; color: var(--text-main);">₹${item.amount.toLocaleString('en-IN')}</div>`;
         
-        // FIX: Enforce that only Purchase rows can render the accordion
         if ((item.type === 'Purchase' || item.type === 'Goods Purchased') && item.details && item.details.length > 0) {
           
           let rowsHtml = item.details.map(d => `
@@ -2290,10 +2440,8 @@
             </div>
           `;
           
-          // Upgraded Amount style (Clickable, Blue, with Arrow)
           amountDisplayHtml = `<div onclick="toggleDetails('desc_${item.id}')" style="font-weight: bold; font-size: 14px; color: #007bff; cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 4px;" title="View Items">₹${item.amount.toLocaleString('en-IN')} <span style="font-size: 10px;">▼</span></div>`;
         }
-        // ==========================================
 
         return `
           <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
@@ -2321,7 +2469,6 @@
       container.appendChild(rowDiv);
     });
 
-    // --- CACHE TRACKING INDICATOR ---
     if (data.dataSource) {
       const indicatorHTML = `
         <div style="text-align: center; font-size: 10px; font-weight: bold; color: var(--text-muted); opacity: 0.5; margin-top: 24px; padding-bottom: 24px; letter-spacing: 0.5px; display: flex; justify-content: center; align-items: center;">
@@ -2350,22 +2497,17 @@
     if (!newName) { alert("Customer name cannot be empty."); return; }
     if (oldName === newName) { closeEditCustomerModal(); return; }
 
-    // ==========================================
-    // NEW: STRICT DUPLICATE PREVENTION
-    // ==========================================
     const duplicateCheck = allCustomers.find(c => c.toLowerCase() === newName.toLowerCase() && c.toLowerCase() !== oldName.toLowerCase());
     if (duplicateCheck) {
       alert(`The name "${duplicateCheck}" already exists in your ledger! You cannot merge accounts this way. Please choose a different name.`);
       return;
     }
 
-    // ENFORCE SIMILARITY WARNING
     const warningBox = document.getElementById('editSimilarityWarning');
     if (warningBox.style.display === 'block') {
       const proceed = confirm(`"${newName}" is very similar to an existing customer. Are you sure you want to proceed?`);
       if (!proceed) return; 
     }
-    // ==========================================
 
     closeEditCustomerModal();
     showLoading();
@@ -2407,7 +2549,6 @@
     const custName = document.getElementById('dispCustomerName').innerText;
     if (!custName) return;
 
-    // 1. Sort history chronologically (oldest to newest)
     let history = [...currentLedgerHistory];
     history.sort((a, b) => (a.rawDate || 0) - (b.rawDate || 0));
 
@@ -2415,11 +2556,9 @@
     let totalPayment = 0;
     let runningBalance = 0;
 
-    // 2. Generate Table Rows and Calculate Totals
     let tableRowsHtml = '';
 
     history.forEach(item => {
-      // Support both new and legacy string types
       let isPurchase = (item.type === 'Purchase' || item.type === 'Goods Purchased');
       let isPayment = (item.type === 'Payment' || item.type === 'Amount Received');
       
@@ -2432,31 +2571,25 @@
       runningBalance += purAmt;
       runningBalance -= payAmt;
 
-      // Formatting Date safely (Ultra short for receipt: e.g., 23/08)
       let dateStr = item.date;
       if (item.rawDate && item.date !== 'B/F') {
         let d = new Date(item.rawDate);
         dateStr = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth()+1)).slice(-2);
-        // FIX: Check for the new 'B/F' string alongside the legacy string
       } else if (item.date === 'B/F' || (item.notes && (item.notes.includes('Brought Forward') || item.notes.includes('B/F')))) {
         dateStr = 'B/F';
       }
 
-      // Formatting Particulars (Includes notes and itemized fruits)
       let particulars = isPurchase ? 'Purchase' : 'Payment';
       if (item.notes) {
          particulars += `<br><span style="font-size: 8px; opacity: 0.8;">${item.notes}</span>`;
       }
       
-      // FIX: Ensure PDFs don't accidentally print details for Payments
       if (isPurchase && item.details && item.details.length > 0) {
          item.details.forEach(d => {
-           // UPDATED: Added " x ₹Price" to match the UI display
            particulars += `<br><span style="font-size: 8px; opacity: 0.8;">• ${d.fruit} (${d.qty} x ₹${d.price})</span>`; 
          });
       }
 
-      // NEW: Apply Green color to Payment rows
       let rowColorStyle = isPayment ? 'color: #2e7d32;' : 'color: #000;';
 
       tableRowsHtml += `
@@ -2470,15 +2603,12 @@
       `;
     });
 
-    // 3. Construct the full HTML for the PDF as a pure String
     const todayDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
     
-    // NEW: Dynamic colors for Pending vs Advance
-    let balanceColor = runningBalance >= 0 ? '#d32f2f' : '#2e7d32'; // Red for Pending, Green for Advance
+    let balanceColor = runningBalance >= 0 ? '#d32f2f' : '#2e7d32'; 
     let balanceLabel = runningBalance >= 0 ? "Pending:" : "Advance:";
     let displayBalance = Math.abs(runningBalance).toLocaleString('en-IN');
 
-    // NEW: Added a 100% width wrapper and 'margin: 0 auto' to perfectly center the 280px receipt
     const receiptHTML = `
       <div style="width: 100%; display: flex; justify-content: center; background: #fff;">
         <div style="width: 280px; margin: 0 auto; padding: 15px 10px; background: #fff; color: #000; font-family: Helvetica, Arial, sans-serif; box-sizing: border-box;">
@@ -2529,7 +2659,6 @@
       </div>
     `;
 
-    // 4. Safe Measurement Trick (Visually Hidden, Not Physically Removed)
     const measureDiv = document.createElement('div');
     measureDiv.style.position = 'absolute';
     measureDiv.style.visibility = 'hidden';
@@ -2537,13 +2666,11 @@
     measureDiv.innerHTML = receiptHTML;
     document.body.appendChild(measureDiv);
     
-    // Grab the exact pixel height it needs, then immediately destroy it
     const pxHeight = measureDiv.offsetHeight; 
     document.body.removeChild(measureDiv);
 
     const mmHeight = (pxHeight * 0.264583) + 10; 
     
-    // NEW: File name formatting without the word "Statement"
     const filename = `${custName.replace(/\s+/g, '_')}_${todayDate}.pdf`;
 
     const opt = {
@@ -2556,7 +2683,6 @@
 
     showLoading();
     try {
-      // THE MAGIC: Feed the raw HTML String to the engine! 
       const worker = html2pdf().set(opt).from(receiptHTML);
       const pdfBlob = await worker.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
@@ -2588,13 +2714,11 @@
   function closeDeleteModal() { document.getElementById('deleteModal').style.display = 'none'; }
 
   async function confirmDelete() {
-    // Keep the ID exactly as it is (avoids type-mismatch crashes)
     const id = document.getElementById('deleteId').value;
     closeDeleteModal();
     
     showLoading();
     try {
-      // The new backend only needs the ID!
       const res = await apiPost('deleteEntry', { id: id });
       
       if(res.status === 'success' || !res.error) {
@@ -2602,11 +2726,9 @@
         isDashboardStale = true;
         await loadLedger();
       } else {
-         // Show the real backend error if one occurs
          alert("BACKEND ERROR: " + res.error); 
       }
     } catch (e) {
-      // Show the real frontend error if the browser crashes
       alert("FRONTEND ERROR: " + e.message); 
     } finally {
       hideLoading();
@@ -2623,7 +2745,7 @@
       if(res.status === 'success' || !res.error) {
         showToast("Item Deleted Successfully", "success");
         isDashboardStale = true;
-        await loadLedger(); // Refreshes the UI instantly
+        await loadLedger(); 
       } else {
          alert("BACKEND ERROR: " + res.error); 
       }
@@ -2634,7 +2756,6 @@
     }
   }
 
-  // --- UNIFIED ROW BUILDER (Responsive Single Line / Wrap) ---
   function addDisplayRow(containerId, fruit = '', qty = '', price = '', date = '', startInEditMode = false) {
     const container = document.getElementById(containerId);
     const total = (parseFloat(qty) || 0) * (parseFloat(price) || 0);
@@ -2647,16 +2768,12 @@
     rowDiv.style.marginBottom = "4px";
     
     rowDiv.innerHTML = `
-      <!-- Hidden Storage -->
       <input type="hidden" class="detail-fruit" value="${fruit}">
       <input type="hidden" class="detail-qty" value="${qty}">
       <input type="hidden" class="detail-price" value="${price}">
       <input type="hidden" class="detail-date" value="${date}">
       
-      <!-- VIEW MODE (Responsive Flex Wrap) -->
       <div class="view-mode" style="${startInEditMode ? 'display: none;' : 'display: flex;'} flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px; width: 100%;">
-        
-        <!-- Data Group -->
         <div style="display: flex; flex-direction: row; align-items: center; gap: 4px; flex: 1 1 0%; min-width: 170px;">
           <div class="disp-fruit" style="flex: 1 1 auto; font-weight: bold; font-size: 13px; color: var(--text-main); white-space: normal; word-break: break-word;">${fruit}</div>
           <div class="disp-qty" style="width: 22px; font-size: 12px; text-align: center; color: var(--text-main); flex-shrink: 0;">${qty}</div>
@@ -2664,16 +2781,13 @@
           <div class="detail-total" style="width: 46px; font-size: 12px; font-weight: bold; text-align: right; color: #007bff; flex-shrink: 0;">₹${total.toLocaleString('en-IN')}</div>
         </div>
         
-        <!-- Action Buttons -->
         <div style="display: flex; flex-direction: row; gap: 4px; width: 80px; flex: 0 0 80px; justify-content: flex-end; margin-left: auto;">
           <button type="button" class="item-action-btn btn-remove" onclick="removeDetailRow(this, '${context}')" title="Remove" style="width: 24px; height: 24px; font-size: 12px; border-radius: 6px;">✕</button>
           <button type="button" class="item-action-btn btn-modify" onclick="toggleInlineEdit(this, true)" title="Modify" style="width: 24px; height: 24px; font-size: 12px; border-radius: 6px;">✎</button>
           <button type="button" class="item-action-btn btn-add-row" onclick="openItemModal(null, '${context}')" title="Add Row" style="width: 24px; height: 24px; font-size: 14px; border-radius: 6px;">＋</button>
         </div>
-
       </div>
 
-      <!-- EDIT MODE -->
       <div class="edit-mode" style="${startInEditMode ? 'display: block;' : 'display: none;'} background: var(--pill-bg); padding: 10px; border-radius: 8px; border: 1px dashed var(--border-color); margin-top: 4px;">
         <div style="display: grid; grid-template-columns: 2fr 1fr 1.2fr; gap: 6px; margin-bottom: 10px;">
           <input type="text" class="inline-edit-fruit" value="${fruit}" placeholder="Fruit" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)">
@@ -2684,7 +2798,6 @@
         <div style="display: flex; justify-content: space-between; align-items: center;">
            <div class="inline-edit-total" style="font-weight: bold; font-size: 16px; color: #007bff;">₹${total.toLocaleString('en-IN')}</div>
            
-           <!-- FIX 2: Replaced Text Buttons with Action Icons -->
            <div style="display: flex; justify-content: flex-end; gap: 6px;">
              <button type="button" class="item-action-btn btn-remove" onclick="cancelInlineEdit(this)" title="Cancel / Remove" style="width: 32px; height: 32px; font-size: 14px; border-radius: 6px;">✕</button>
              <button type="button" class="item-action-btn" onclick="saveAndAddNewRow(this, '${context}')" title="Save & Add Next" style="width: 32px; height: 32px; font-size: 18px; border-radius: 6px; background: #28a745;">＋</button>
@@ -2697,13 +2810,35 @@
     calculateDetails(containerId);
   }
 
-  function openModal(id) {
+  function openModal(id, forceFresh = false) {
     try {
       const searchId = id.toString().trim();
+
+      if (!forceFresh) {
+        const draftStr = localStorage.getItem(EDIT_DRAFT_KEY);
+        if (draftStr) {
+          try {
+            const draft = JSON.parse(draftStr);
+            if (draft.savedDay === new Date().toDateString() && draft.id === searchId) {
+               pendingEditId = searchId;
+               const row = currentLedgerHistory.find(r => r.id.toString().trim() === searchId);
+               const isPurchase = (row.type === 'Purchase' || row.type === 'Goods Purchased');
+               document.getElementById('editModalTitle').innerText = isPurchase ? 'Edit Purchase Transaction' : 'Edit Payment';
+               
+               document.getElementById('editDraftModal').style.display = 'flex';
+               return; 
+            } else {
+               localStorage.removeItem(EDIT_DRAFT_KEY);
+            }
+          } catch(e) { localStorage.removeItem(EDIT_DRAFT_KEY); }
+        }
+      }
+
+      document.getElementById('editDraftIndicator').style.display = 'none';
+
       const row = currentLedgerHistory.find(r => r.id.toString().trim() === searchId);
       if (!row) return;
 
-      // Check for both new and legacy type names
       const isPurchase = (row.type === 'Purchase' || row.type === 'Goods Purchased');
 
       document.getElementById('editModalTitle').innerText = isPurchase ? 'Edit Purchase Transaction' : 'Edit Payment';
@@ -2712,7 +2847,6 @@
       document.getElementById('editOldAmount').value = row.amount;
       document.getElementById('editType').value = row.type;
       
-      // FIX: Explicitly unlock the amount field and reset its background every time the modal opens
       const editAmountField = document.getElementById('editAmount');
       editAmountField.value = row.amount;
       editAmountField.readOnly = false;
@@ -2721,12 +2855,10 @@
       let notes = row.notes || '';
       let isBF = false;
       
-      // Determine if this was a Brought Forward entry based on the note or date
       if (notes.toLowerCase().includes("b/f") || notes.toLowerCase().includes("brought forward") || row.date === 'B/F') {
         isBF = true;
       }
       
-      // Pass the raw note directly to the UI box
       document.getElementById('editNotes').value = notes;
 
       const bfCheckboxContainer = document.getElementById('editBFContainer');
@@ -2734,22 +2866,19 @@
       const wrapper = document.getElementById('editDetailedItemsWrapper');
       const container = document.getElementById('editDetailsContainer');
       
-      container.innerHTML = ''; // Clear old data
+      container.innerHTML = ''; 
 
-      // Set the main date early so blank item rows can inherit it
       if (row.rawDate && !isBF) {
         editDatePicker.setDate(new Date(row.rawDate));
       } else {
         editDatePicker.clear();
       }
 
-      // Use the boolean flag here instead of the hardcoded string
       if (isPurchase) {
         bfCheckboxContainer.style.display = 'flex'; 
         bfCheckbox.checked = isBF;
         wrapper.style.display = 'block'; 
         
-        // Inject existing details directly as display rows
         if (row.details && row.details.length > 0) {
           row.details.forEach(d => {
             let rowDate = '';
@@ -2763,7 +2892,6 @@
         wrapper.style.display = 'none'; 
       }
 
-      // Enforce the visual state based on the checkbox
       toggleEditBF(); 
       document.getElementById('editModal').style.display = 'flex';
       
@@ -2790,7 +2918,6 @@
       notes = notes ? "B/F - " + notes : "B/F"; 
     }
 
-    // Scrape modified details from the UNIFIED display rows
     let updatedDetails = [];
     const detailRows = document.getElementById('editDetailsContainer').querySelectorAll('.detail-row');
     if (detailRows.length > 0) {
@@ -2813,9 +2940,11 @@
       const res = await apiPost('updateEntry', {
         id: id, customerName: custName, type: type, 
         oldAmount: oldAmount, amount: amount, date: date, notes: notes,
-        details: updatedDetails // Send the Upsert payload
+        details: updatedDetails 
       });
       if (res.status === 'success' || !res.error) {
+        localStorage.removeItem(EDIT_DRAFT_KEY);
+        
         showToast("Changes Saved Successfully!", "success");
         isDashboardStale = true;
         await loadLedger();
@@ -2848,15 +2977,13 @@
     switchScreen('view');
   }
 
-    // --- UPDATED: PRIVACY BUTTON LOGIC ---
-    let isPrivacyEnabled = true; // Defaults to blurred on load
+    let isPrivacyEnabled = true; 
 
     function togglePrivacy() {
       isPrivacyEnabled = !isPrivacyEnabled;
       const amounts = document.querySelectorAll('.privacy-blur');
-      const privacyIcons = document.querySelectorAll('.privacyIconClass'); // Fetches all icons by class
+      const privacyIcons = document.querySelectorAll('.privacyIconClass'); 
       
-      // Toggle the blur effect on the numbers
       amounts.forEach(el => {
         if (isPrivacyEnabled) {
           el.classList.remove('revealed');
@@ -2865,25 +2992,21 @@
         }
       });
 
-      // Update the button icon to reflect the current state
       privacyIcons.forEach(icon => {
         if (isPrivacyEnabled) {
-          icon.innerText = '👁️'; // Blurred state
+          icon.innerText = '👁️'; 
         } else {
-          icon.innerText = '🙈'; // Revealed state
+          icon.innerText = '🙈'; 
         }
       });
     }
-    // ------------------------------------------
 
   function toggleInlineEdit(btn, showEdit) {
     const row = btn.closest('.detail-row');
-    // FIX: Restore to 'flex' instead of 'block' so the responsive layout doesn't break
     row.querySelector('.view-mode').style.display = showEdit ? 'none' : 'flex';
     row.querySelector('.edit-mode').style.display = showEdit ? 'block' : 'none';
   }
 
-  // --- NEW: Real-Time Data Sync ---
   function syncInlineData(input) {
     const row = input.closest('.detail-row');
     const fruit = row.querySelector('.inline-edit-fruit').value;
@@ -2891,26 +3014,24 @@
     const price = parseFloat(row.querySelector('.inline-edit-price').value) || 0;
     const total = qty * price;
 
-    // Instantly push values to the hidden data fields (so the main modal save works)
     row.querySelector('.detail-fruit').value = fruit;
     row.querySelector('.detail-qty').value = qty;
     row.querySelector('.detail-price').value = price;
 
-    // Instantly prep the View Mode texts so it looks seamless when switching
     row.querySelector('.disp-fruit').innerText = fruit;
     row.querySelector('.disp-qty').innerText = qty;
     row.querySelector('.disp-price').innerText = '₹' + price;
     row.querySelector('.detail-total').innerText = '₹' + total.toLocaleString('en-IN');
 
-    // Update the Edit Mode total display
     row.querySelector('.inline-edit-total').innerText = '₹' + total.toLocaleString('en-IN');
 
-    // Trigger a recalculation of the grand total at the top of the modal
     const containerId = row.closest('#detailsContainer') ? 'detailsContainer' : 'editDetailsContainer';
     calculateDetails(containerId);
+    
+    if (row.closest('#detailsContainer')) saveEntryDraft();
+    if (row.closest('#editDetailsContainer')) saveEditDraft();
   }
 
-  // --- NEW: Green '+' Button Logic ---
   function saveAndAddNewRow(btn, context) {
     const row = btn.closest('.detail-row');
     const fruit = row.querySelector('.inline-edit-fruit').value.trim();
@@ -2920,36 +3041,31 @@
       return;
     }
     
-    // Switch the current row to View Mode (Data is already saved via syncInlineData)
     toggleInlineEdit(btn, false);
-    
-    // Automatically open a new blank row directly underneath
     openItemModal(null, context);
   }
 
-  // --- UPDATED: Red 'X' Button Logic ---
   function cancelInlineEdit(btn) {
     const row = btn.closest('.detail-row');
     const fruit = row.querySelector('.detail-fruit').value.trim();
     
     if (!fruit) {
-      // If it was a new empty row, delete it completely
       const container = row.closest('#detailsContainer') || row.closest('#editDetailsContainer');
       const containerId = container ? container.id : 'detailsContainer';
       
       row.remove();
       updateRowButtons(containerId);
       calculateDetails(containerId);
+      
+      if (containerId === 'detailsContainer') saveEntryDraft();
+      else saveEditDraft();
     } else {
-      // If it was an existing row, just close the editor and revert to view mode
       toggleInlineEdit(btn, false);
     }
   }
 
-  // --- NEW: DASHBOARD CARD TOGGLE LOGIC (WITH ON-DEMAND FETCH) ---
   let activeDashboardCard = null;
 
-  // On-demand drill-down fetch
   async function toggleDashboardCard(cardType) {
     const detailsSection = document.getElementById('dashboardDetailsSection');
     
@@ -2964,7 +3080,6 @@
       window.dashboardBreakdowns = {};
     }
 
-    // Lazy load specific breakdown only if not yet fetched
     if (!window.dashboardBreakdowns[cardType]) {
       showLoading();
       try {
@@ -3006,12 +3121,11 @@
           if (el) {
               el.style.transform = 'scale(1)';
               el.style.boxShadow = 'none';
-              el.style.opacity = '0.6'; // Dim inactive cards
+              el.style.opacity = '0.6'; 
               el.style.border = c.includes('Credit') ? '1px solid #f2d7d7' : '1px solid #c8e6c9';
           }
       });
       
-      // If closing the panel, restore full opacity to everything
       if (!activeDashboardCard) {
           ['yestCredit', 'todayCredit', 'yestReceived', 'todayReceived'].forEach(c => {
               const el = document.getElementById('card-' + c);
@@ -3043,9 +3157,8 @@
                             <th style="padding: 10px 16px; text-align: right;">Amount</th>
                          </tr>`;
           data.forEach((item, index) => {
-              // Integrate the privacy blur functionality natively
               let privacyClass = (typeof isPrivacyEnabled !== 'undefined' && !isPrivacyEnabled) ? "privacy-blur revealed" : "privacy-blur";
-              let amountColor = cardType.includes('Credit') ? '#d32f2f' : '#2e7d32'; // Red for credit, Green for Received
+              let amountColor = cardType.includes('Credit') ? '#d32f2f' : '#2e7d32'; 
               
               html += `<tr style="border-bottom: 1px solid var(--border-light);">
                           <td style="padding: 12px 16px; text-align: left;">${index + 1}</td>
@@ -3071,13 +3184,12 @@
         const parsed = JSON.parse(draft);
         document.getElementById('bulkDraftMessage').innerText = `You have an unsaved draft for Bulk ${parsed.type}s. Do you want to resume it?`;
         document.getElementById('bulkDraftModal').style.display = 'flex';
-        return; // Stop here and wait for the user to click a button
+        return; 
       } catch(e) { 
         localStorage.removeItem(BULK_DRAFT_KEY); 
       }
     }
     
-    // If there is no draft, open fresh immediately
     initFreshBulkModal();
   }
 
@@ -3098,7 +3210,7 @@
     if (draft) {
        restoreBulkDraft(JSON.parse(draft));
     } else {
-       initFreshBulkModal(); // Fallback just in case
+       initFreshBulkModal(); 
     }
   }
 
@@ -3132,11 +3244,9 @@
     const container = document.getElementById('bulkRowsContainer');
     const rowId = 'row_' + Date.now() + Math.random().toString(36).substr(2, 5);
     
-    // Compact Single-Row Layout + Inline Suggestion Box
     const html = `
       <div id="${rowId}" class="bulk-row" style="background: var(--card-bg); padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
         
-        <!-- Main Input Row -->
         <div style="display: flex; gap: 6px; align-items: center;">
           <div class="bulk-sno" style="font-weight: bold; font-size: 13px; color: var(--text-muted); width: 22px; text-align: center; flex-shrink: 0;"></div>
           
@@ -3150,7 +3260,6 @@
           </div>
         </div>
 
-        <!-- Row-specific Similarity Warning (Hidden by default) -->
         <div class="bulk-similarity-warning" style="display: none; font-size: 11px; color: #d32f2f; margin-top: 6px; background: #ffebee; padding: 6px; border-radius: 4px;">
           <strong>Similar names found:</strong>
           <div class="bulk-similarity-chips" style="margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;"></div>
@@ -3159,17 +3268,15 @@
       </div>
     `;
     container.insertAdjacentHTML('beforeend', html);
-    updateBulkRowUI(); // Re-index all rows immediately
+    updateBulkRowUI(); 
   }
 
   function updateBulkRowUI() {
     const rows = document.querySelectorAll('.bulk-row');
     rows.forEach((row, index) => {
-      // 1. Update Serial Number dynamically
       const snoEl = row.querySelector('.bulk-sno');
       if (snoEl) snoEl.innerText = (index + 1) + '.';
       
-      // 2. Hide/Show the '+' button so it only appears on the very last row
       const addBtn = row.querySelector('.bulk-add-btn');
       if (addBtn) {
         addBtn.style.display = (index === rows.length - 1) ? 'flex' : 'none';
@@ -3226,7 +3333,6 @@
     const warningBox = row.querySelector('.bulk-similarity-warning');
     const chipContainer = row.querySelector('.bulk-similarity-chips');
     
-    // Strip invalid characters immediately
     let inputStr = inputElement.value.replace(/[^a-zA-Z0-9 ]/g, '');
     inputElement.value = inputStr; 
 
@@ -3237,11 +3343,9 @@
     
     if (lowerInput.length < 3) return;
 
-    // If it's a perfect match, no need to warn
     const exactMatch = allCustomers.find(c => c.toLowerCase() === lowerInput);
     if (exactMatch) return; 
 
-    // Find similar names
     const similar = allCustomers.filter(c => c.toLowerCase().includes(lowerInput));
     if (similar.length > 0) {
       warningBox.style.display = 'block';
@@ -3267,7 +3371,6 @@
     
     document.getElementById('bulkRowsContainer').innerHTML = '';
     if (draft.rows && draft.rows.length > 0) {
-      // Rebuild rows without notes
       draft.rows.forEach(r => addBulkRow(r.customer, r.amount));
     } else {
       addBulkRow();
@@ -3279,24 +3382,20 @@
     const dateVal = document.getElementById('bulkDate').value;
     const rowEls = document.querySelectorAll('.bulk-row');
     const validRows = [];
-    const newCustomers = []; // Track potential new customers for safety warning
+    const newCustomers = []; 
 
-    // Validation
     for (let row of rowEls) {
       let cust = row.querySelector('.bulk-cust').value.trim();
       const amt = parseFloat(row.querySelector('.bulk-amt').value);
 
       if (cust && amt > 0) {
-        // Auto-correct casing if an exact case-insensitive match exists
         const exactMatch = allCustomers.find(c => c.toLowerCase() === cust.toLowerCase());
         if (exactMatch) {
           cust = exactMatch;
         } else {
-          // It's a completely new customer
           if (!newCustomers.includes(cust)) newCustomers.push(cust);
         }
         
-        // Pass empty notes to satisfy backend requirements without cluttering the UI
         validRows.push({ customerName: cust, amount: amt, notes: "" });
       } else if (cust || amt > 0) {
         showToast("Error: A row has missing customer or amount.", "error");
@@ -3309,7 +3408,6 @@
       return;
     }
 
-    // Safety Catch: Warn if creating brand new customers
     if (newCustomers.length > 0) {
        const proceed = confirm("⚠️ You are about to create NEW ledger accounts for:\n\n• " + newCustomers.join("\n• ") + "\n\nIs this correct? (Check for spelling mistakes)");
        if (!proceed) return;
@@ -3359,14 +3457,12 @@
       btn.disabled = true;
     }
     
-    // UPDATED: User-friendly notification text
     showToast("Clearing settled entries... This may take a minute.", "info");
     showLoading();
 
     try {
       const res = await apiGet('runManualArchive');
       if (res && res.status === 'success') {
-        // UPDATED: Success message
         showToast("Entries cleared successfully!", "success");
         isDashboardStale = true;
         await navToSmartSettle(); 
