@@ -2179,6 +2179,7 @@
       });
     }
 
+    learnNewFruits(detailsArray);
     showLoading(); 
 
     if (!allCustomers.includes(name)) {
@@ -2788,12 +2789,16 @@
         </div>
       </div>
 
+      <!-- EDIT MODE -->
       <div class="edit-mode" style="${startInEditMode ? 'display: block;' : 'display: none;'} background: var(--pill-bg); padding: 10px; border-radius: 8px; border: 1px dashed var(--border-color); margin-top: 4px;">
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1.2fr; gap: 6px; margin-bottom: 10px;">
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1.2fr; gap: 6px; margin-bottom: 6px;">
           <input type="text" class="inline-edit-fruit" value="${fruit}" placeholder="Fruit" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)">
           <input type="number" class="inline-edit-qty" value="${qty}" placeholder="Qty" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)">
           <input type="number" class="inline-edit-price" value="${price}" placeholder="Price" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)">
         </div>
+        
+        <!-- NEW: Fruit Warning Container -->
+        <div class="fruit-warning-container" style="display: none; font-size: 11px; margin-bottom: 10px; padding: 6px; border-radius: 4px; line-height: 1.4;"></div>
         
         <div style="display: flex; justify-content: space-between; align-items: center;">
            <div class="inline-edit-total" style="font-weight: bold; font-size: 16px; color: #007bff;">₹${total.toLocaleString('en-IN')}</div>
@@ -2934,6 +2939,7 @@
       });
     }
 
+    learnNewFruits(updatedDetails);
     document.getElementById('editModal').style.display = 'none';
     showLoading();
     try {
@@ -3013,6 +3019,11 @@
     const qty = parseFloat(row.querySelector('.inline-edit-qty').value) || 0;
     const price = parseFloat(row.querySelector('.inline-edit-price').value) || 0;
     const total = qty * price;
+
+    // Trigger similarity check if the user is typing in the fruit field
+    if (input.classList.contains('inline-edit-fruit')) {
+        checkFruitSimilarity(input);
+    }
 
     row.querySelector('.detail-fruit').value = fruit;
     row.querySelector('.detail-qty').value = qty;
@@ -3495,6 +3506,67 @@
       }
       hideLoading();
     }
+  }
+
+  // Initialize the global fruit database from cache
+  window.allFruits = JSON.parse(localStorage.getItem('allFruits')) || [];
+
+  function checkFruitSimilarity(inputElement) {
+    const row = inputElement.closest('.detail-row');
+    const warningBox = row.querySelector('.fruit-warning-container');
+    
+    let inputStr = inputElement.value; 
+    const lowerInput = inputStr.toLowerCase().trim();
+    
+    if (lowerInput.length < 2) {
+      warningBox.style.display = 'none';
+      return;
+    }
+
+    const exactMatch = window.allFruits.find(f => f.toLowerCase() === lowerInput);
+    if (exactMatch) {
+       warningBox.style.display = 'none';
+       return;
+    }
+
+    const similar = window.allFruits.filter(f => f.toLowerCase().includes(lowerInput));
+    
+    if (similar.length > 0) {
+      warningBox.style.background = '#ffebee';
+      warningBox.style.color = '#d32f2f';
+      warningBox.style.display = 'block';
+      
+      let chipsHtml = similar.map(f => `<span class="suggestion-chip" style="font-size: 11px; padding: 4px 8px; margin-right: 4px; margin-top: 4px; display: inline-block; background: #ffcdd2; color: #b71c1c; border-radius: 12px; cursor: pointer; font-weight: bold;" onclick="selectFruitSuggestion(this, '${f}')">${f}</span>`).join('');
+      
+      warningBox.innerHTML = `Similar names found: Did you mean to select one of these?<br><div>${chipsHtml}</div>`;
+    } else {
+      warningBox.style.background = '#e8f5e9';
+      warningBox.style.color = '#2e7d32';
+      warningBox.style.display = 'block';
+      warningBox.innerHTML = `<strong>New Fruit:</strong> "${inputStr}" does not exist and will be added.`;
+    }
+  }
+
+  function selectFruitSuggestion(chipElement, fruitName) {
+    const row = chipElement.closest('.detail-row');
+    const input = row.querySelector('.inline-edit-fruit');
+    input.value = fruitName;
+    row.querySelector('.fruit-warning-container').style.display = 'none';
+    syncInlineData(input); // Trigger recalculation and save to draft
+  }
+
+  // Helper to "learn" new fruits when entries are saved
+  function learnNewFruits(detailsArray) {
+      let changed = false;
+      detailsArray.forEach(d => {
+          if (d.fruit && !window.allFruits.find(f => f.toLowerCase() === d.fruit.toLowerCase())) {
+              window.allFruits.push(d.fruit);
+              changed = true;
+          }
+      });
+      if (changed) {
+          localStorage.setItem('allFruits', JSON.stringify(window.allFruits));
+      }
   }
   
  
