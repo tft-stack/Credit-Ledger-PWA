@@ -1155,6 +1155,12 @@
       fySelect.appendChild(opt);
     });
     if (currentSelection === 'ALL') allOpt.selected = true;
+
+    // NEW: Catch the historical fruits from the backend and populate the global array
+    if (data.fruits && data.fruits.length > 0) {
+      window.allFruits = data.fruits;
+      localStorage.setItem('allFruits', JSON.stringify(data.fruits));
+    }
   }
 
   function toggleClearSearch(inputId, btnId) {
