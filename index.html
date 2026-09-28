@@ -1509,17 +1509,41 @@
                 siblingAttr = `data-sibling-id="${isLeft ? pay.id : pur.id}"`;
             }
 
+            // --- NEW: Inject Details Accordion matching View Entry ---
+            let detailsHtml = '';
+            let amountDisplayHtml = `<div style="font-weight: bold; font-size: 14px; color: var(--text-main);">₹${item.amount.toLocaleString('en-IN')}</div>`;
+            
+            if ((item.type === 'Purchase' || item.type === 'Goods Purchased') && item.details && item.details.length > 0) {
+              let rowsHtml = item.details.map(d => `
+                <div class="details-dropdown-row" style="align-items: center; font-size: 11px; padding: 4px 0;">
+                  <div style="flex: 2; font-weight: 600; color: var(--text-main);">${d.fruit} <span style="font-weight: normal; color: var(--text-muted); font-size: 10px;">(${d.qty} x ₹${d.price})</span></div>
+                  <div style="flex: 1; text-align: right; color: #007bff; font-weight: bold;">₹${d.total.toLocaleString('en-IN')}</div>
+                </div>
+              `).join('');
+              
+              detailsHtml = `
+                <div id="smart_desc_${item.id}" class="details-dropdown" style="background: #f8f9fa; border: none; border-radius: 8px; padding: 8px 12px; margin-top: 8px;">
+                  ${rowsHtml}
+                </div>
+              `;
+              
+              amountDisplayHtml = `<div onclick="toggleDetails('smart_desc_${item.id}')" style="font-weight: bold; font-size: 14px; color: #007bff; cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 4px;" title="View Items">₹${item.amount.toLocaleString('en-IN')} <span style="font-size: 10px;">▼</span></div>`;
+            }
+
+            let shortDate = item.date === 'B/F' ? 'B/F' : item.date.substring(0, 5);
+
             return `
               <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
                   <div>
-                    <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px;">${item.date.substring(0, 5)}</div>
-                    <div style="font-weight: bold; font-size: 14px; color: var(--text-main);">₹${item.amount.toLocaleString('en-IN')}</div>
+                    <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px;">${shortDate}</div>
+                    ${amountDisplayHtml}
                   </div>
                   <div>
                     <input type="checkbox" class="smart-settle-checkbox" value="${item.id}" data-type="${item.type}" data-amount="${item.amount}" ${siblingAttr} onchange="handleSmartSettleCheck(this)" style="width:18px; height:18px; cursor: pointer; accent-color: #007bff;">
                   </div>
                 </div>
+                ${detailsHtml}
               </div>
             `;
           };
