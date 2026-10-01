@@ -2376,9 +2376,20 @@
           );
         }
 
-        if (dashboardInfo && dashboardInfo.lastPaymentAmount > 0) {
-          lastPaidAmountEl.innerText = '₹' + dashboardInfo.lastPaymentAmount.toLocaleString('en-IN');
-          lastPaidDateEl.innerText = dashboardInfo.lastPaymentDate || '--/--/----';
+        // Prefer fresh data directly from getFilteredLedger; fallback to dashboardInfo
+        let lpAmount = (data.lastPaymentAmount !== undefined) ? data.lastPaymentAmount : (dashboardInfo ? dashboardInfo.lastPaymentAmount : 0);
+        let lpDate = (data.lastPaymentDate !== undefined) ? data.lastPaymentDate : (dashboardInfo ? dashboardInfo.lastPaymentDate : null);
+
+        // Keep local dashboard cache in sync if it exists
+        if (dashboardInfo && data.lastPaymentAmount !== undefined) {
+          dashboardInfo.lastPaymentAmount = lpAmount;
+          dashboardInfo.lastPaymentDate = lpDate;
+          dashboardInfo.balance = data.overallBalance;
+        }
+
+        if (lpAmount > 0) {
+          lastPaidAmountEl.innerText = '₹' + lpAmount.toLocaleString('en-IN');
+          lastPaidDateEl.innerText = lpDate || '--/--/----';
           lastPaidContainer.style.display = 'block'; 
         } else {
           lastPaidContainer.style.display = 'none'; 
