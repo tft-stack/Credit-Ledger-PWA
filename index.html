@@ -100,7 +100,7 @@
     
     #loginOverlay { display: flex; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-color); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; padding: 20px; text-align: center; }
     
-    #loadingOverlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--card-bg); opacity: 0.85; z-index: 9999; justify-content: center; align-items: center; flex-direction: column; transition: background 0.3s; }
+    #loadingOverlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--card-bg); opacity: 1; z-index: 9999; justify-content: center; align-items: center; flex-direction: column; transition: background 0.3s; }
     .spinner { border: 4px solid var(--border-light); border-top: 4px solid #007bff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
@@ -290,16 +290,9 @@
 <div id="loginOverlay">
   <div class="card" style="width: 100%; max-width: 400px; padding: 30px 20px;">
     <h2>Credit Ledger</h2>
-    <div id="loginMainContent">
-      <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">Please sign in with your Google account to access and manage the ledger.</p>
-      <div id="g_id_onload" data-client_id="523411114198-b9v5d4rkk67m4eo4nn39bjjb91vs6540.apps.googleusercontent.com" data-callback="handleCredentialResponse" data-auto_prompt="false"></div>
-      <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left" style="display: flex; justify-content: center;"></div>
-    </div>
-    <!-- NEW: Solid Verifying State inside Login Overlay -->
-    <div id="loginVerifyingContent" style="display: none; flex-direction: column; align-items: center; padding: 16px 0;">
-      <div class="spinner" style="margin-bottom: 14px;"></div>
-      <div style="font-size: 14px; font-weight: bold; color: var(--text-muted);">Verifying access...</div>
-    </div>
+    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">Please sign in with your Google account to access and manage the ledger.</p>
+    <div id="g_id_onload" data-client_id="523411114198-b9v5d4rkk67m4eo4nn39bjjb91vs6540.apps.googleusercontent.com" data-callback="handleCredentialResponse" data-auto_prompt="false"></div>
+    <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left" style="display: flex; justify-content: center;"></div>
   </div>
 </div>
 
@@ -1030,6 +1023,9 @@
     navigator.serviceWorker.register('sw.js').then(() => console.log("Service Worker Registered"));
   }
 
+let currentUserPermissions = JSON.parse(localStorage.getItem('userPermissions')) || null;
+  let isFreshLogin = false;
+
   window.onload = function() {
     if (localStorage.getItem('savedUserEmail')) localStorage.removeItem('savedUserEmail');
 
@@ -1045,41 +1041,8 @@
           currentUserName = sessionData.name || "User";
           currentUserPic = sessionData.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUserName)}&background=007bff&color=fff`;
           
-          // Only hide loginOverlay immediately if we already have verified permissions for this email
-          const hasMatchingCachedPerms = currentUserPermissions && 
-            currentUserPermissions.email === currentUserEmail.toLowerCase().trim();
-
-          if (hasMatchingCachedPerms) {
-            document.getElementById('loginOverlay').style.display = 'none';
-          } else {
-            document.getElementById('loginMainContent').style.display = 'none';
-            document.getElementById('loginVerifyingContent').style.display = 'flex';
-          }
-          
-          initializeApp();
-          return; 
-        } else {
-          localStorage.removeItem('ledgerSession');
-        }
-      } catch (e) {
-        localStorage.removeItem('ledgerSession');
-      }
-    }
-  }; = function() {
-    if (localStorage.getItem('savedUserEmail')) localStorage.removeItem('savedUserEmail');
-
-    const sessionString = localStorage.getItem('ledgerSession');
-    if (sessionString) {
-      try {
-        const sessionData = JSON.parse(sessionString);
-        const now = Date.now();
-        const fourteenDaysInMs = 14 * 24 * 60 * 60 * 1000;
-        
-        if (now - sessionData.timestamp < fourteenDaysInMs) {
-          currentUserEmail = sessionData.email;
-          currentUserName = sessionData.name || "User";
-          currentUserPic = sessionData.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUserName)}&background=007bff&color=fff`;
-          
+          // Put up the solid loading screen before hiding the login screen
+          showLoading();
           document.getElementById('loginOverlay').style.display = 'none'; 
           initializeApp();
           return; 
@@ -1116,9 +1079,9 @@
     
     localStorage.setItem('ledgerSession', JSON.stringify(sessionData));
     
-    // DO NOT hide loginOverlay yet! Show the solid verifying spinner instead:
-    document.getElementById('loginMainContent').style.display = 'none';
-    document.getElementById('loginVerifyingContent').style.display = 'flex';
+    // Put up the 100% solid loading overlay FIRST, then hide loginOverlay
+    showLoading();
+    document.getElementById('loginOverlay').style.display = 'none'; 
     
     isFreshLogin = true;
     initializeApp();
@@ -1130,19 +1093,26 @@
     localStorage.removeItem('ledgerInitData');
     localStorage.removeItem('recentCustomers');
     
+    const unauthModal = document.getElementById('unauthorizedModal');
     const emailEl = document.getElementById('unauthEmailDisplay');
+    
     if (emailEl) emailEl.innerText = email || currentUserEmail || "selected";
     
-    // Show the opaque unauthorized modal BEFORE hiding loginOverlay so the app is never glimpsed
-    document.getElementById('unauthorizedModal').style.display = 'flex';
-    document.getElementById('loginOverlay').style.display = 'none';
+    if (unauthModal) {
+      unauthModal.style.display = 'flex';
+      hideLoading();
+    } else {
+      hideLoading();
+      alert("Access Restricted: Your account (" + (email || currentUserEmail) + ") does not have permission to access this app.");
+      logout();
+    }
   }
   
   function logout() {
     localStorage.removeItem('ledgerSession');
     localStorage.removeItem('userPermissions');
     localStorage.removeItem('ledgerInitData');
-    localStorage.removeItem('recentCustomers'); // Prevent previous user's recent customers from showing
+    localStorage.removeItem('recentCustomers');
     location.reload(); 
   }
 
@@ -1160,12 +1130,18 @@
   });
 
   function initializeApp() {
+    document.getElementById('app-header').style.display = 'flex';
+    document.getElementById('profileIcon').src = currentUserPic;
+    document.getElementById('profileName').innerText = currentUserName;
+    document.getElementById('profileEmail').innerText = currentUserEmail;
+
     const fpConfig = { disableMobile: true, dateFormat: "Y-m-d" };
-    entryDatePicker = flatpickr("#entryDate", { ...fpConfig, defaultDate: "today" });
-    editDatePicker = flatpickr("#editDate", fpConfig);
-    modalDatePicker = flatpickr("#modalDate", fpConfig); 
-    bulkDatePicker = flatpickr("#bulkDate", { ...fpConfig, defaultDate: "today" }); 
+    if (!entryDatePicker) entryDatePicker = flatpickr("#entryDate", { ...fpConfig, defaultDate: "today" });
+    if (!editDatePicker) editDatePicker = flatpickr("#editDate", fpConfig);
+    if (!modalDatePicker) modalDatePicker = flatpickr("#modalDate", fpConfig); 
+    if (!bulkDatePicker) bulkDatePicker = flatpickr("#bulkDate", { ...fpConfig, defaultDate: "today" }); 
     
+    renderRecentCustomers(); 
     initAlphabetFilter();
     
     const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
@@ -1175,16 +1151,14 @@
       currentUserPermissions.email === currentUserEmail.toLowerCase().trim();
 
     if (hasMatchingCachedPerms && !isFreshLogin) {
-      // Authorized returning user: reveal app immediately in 0ms
-      document.getElementById('app-header').style.display = 'flex';
-      document.getElementById('profileIcon').src = currentUserPic;
-      document.getElementById('profileName').innerText = currentUserName;
-      document.getElementById('profileEmail').innerText = currentUserEmail;
-      renderRecentCustomers();
+      // Returning verified user: unlock UI immediately in 0ms
       applyRolePermissions(currentUserPermissions);
-      
       const localData = localStorage.getItem('ledgerInitData');
       if (localData) populateInitialUI(JSON.parse(localData));
+      hideLoading();
+    } else {
+      // Fresh login or unverified user: keep solid loading screen up until API responds
+      showLoading();
     }
 
     const initParams = isFreshLogin ? { refreshAuth: 'true' } : {};
@@ -1195,19 +1169,12 @@
         showUnauthorizedModal(currentUserEmail);
         return;
       }
-      
-      // User is officially verified! Reveal the app UI and hide loginOverlay
-      document.getElementById('app-header').style.display = 'flex';
-      document.getElementById('profileIcon').src = currentUserPic;
-      document.getElementById('profileName').innerText = currentUserName;
-      document.getElementById('profileEmail').innerText = currentUserEmail;
-      renderRecentCustomers();
-
       localStorage.setItem('ledgerInitData', JSON.stringify(freshData));
       populateInitialUI(freshData);
-      document.getElementById('loginOverlay').style.display = 'none';
+      hideLoading();
     }).catch(err => {
       console.error("Data fetch failed", err);
+      hideLoading();
     });
   }
 
