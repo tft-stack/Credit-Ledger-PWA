@@ -1068,6 +1068,7 @@
   function logout() {
     localStorage.removeItem('ledgerSession');
     localStorage.removeItem('userPermissions');
+    localStorage.removeItem('ledgerInitData'); // Clear cached init data so old permissions don't carry over
     location.reload(); 
   }
 
@@ -1102,27 +1103,37 @@
     const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
     document.getElementById('themeToggleBtn').innerText = currentTheme === 'dark' ? '☀️' : '🌙';
     
-    // Apply cached permissions immediately for 0ms UI startup
-    if (currentUserPermissions) {
+    // Check if cached permissions belong to the exact user currently logged in
+    const hasMatchingCachedPerms = currentUserPermissions && 
+      currentUserPermissions.email === currentUserEmail.toLowerCase().trim();
+
+    if (hasMatchingCachedPerms && !isFreshLogin) {
+      // Same user reopening the app: apply cached permissions in 0ms
       applyRolePermissions(currentUserPermissions);
+      const localData = localStorage.getItem('ledgerInitData');
+      if (localData) populateInitialUI(JSON.parse(localData));
+    } else {
+      // Fresh login or switched user: keep loading overlay up until fresh permissions arrive
+      showLoading();
     }
 
-    const localData = localStorage.getItem('ledgerInitData');
-    if (localData) populateInitialUI(JSON.parse(localData));
-
-    // Pass refreshAuth: 'true' ONLY when the user just signed in
     const initParams = isFreshLogin ? { refreshAuth: 'true' } : {};
     isFreshLogin = false;
 
     apiGet('getInitialData', initParams).then(freshData => {
       if (freshData && freshData.status === 'unauthorized') {
+        hideLoading();
         alert(freshData.error);
         logout();
         return;
       }
       localStorage.setItem('ledgerInitData', JSON.stringify(freshData));
       populateInitialUI(freshData);
-    }).catch(err => console.error("Data fetch failed", err));
+    }).catch(err => {
+      console.error("Data fetch failed", err);
+    }).finally(() => {
+      hideLoading();
+    });
   }
 
   function showLoading() { document.getElementById('loadingOverlay').style.display = 'flex'; }
@@ -1160,8 +1171,8 @@
   function populateInitialUI(data) {
     if (!data || data.error) return;
 
-    // NEW: Save & Apply User Permissions from Backend
-    if (data.permissions) {
+    // Only apply permissions if they match the currently signed-in email
+    if (data.permissions && data.permissions.email === currentUserEmail.toLowerCase().trim()) {
       currentUserPermissions = data.permissions;
       localStorage.setItem('userPermissions', JSON.stringify(data.permissions));
       applyRolePermissions(data.permissions);
