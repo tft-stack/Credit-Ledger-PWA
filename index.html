@@ -100,7 +100,7 @@
     
     #loginOverlay { display: flex; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-color); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; padding: 20px; text-align: center; }
     
-    #loadingOverlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--card-bg); opacity: 1; z-index: 9999; justify-content: center; align-items: center; flex-direction: column; transition: background 0.3s; }
+    #loadingOverlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-color); opacity: 1; z-index: 9999; justify-content: center; align-items: center; flex-direction: column; transition: background 0.3s; }
     .spinner { border: 4px solid var(--border-light); border-top: 4px solid #007bff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
@@ -905,7 +905,7 @@
   </div>
 
   <!-- ==================== UNAUTHORIZED ACCESS MODAL ==================== -->
-  <div id="unauthorizedModal" class="modal-overlay" style="z-index: 3500; background: var(--bg-color);">
+  <div id="unauthorizedModal" class="modal-overlay" style="z-index: 10001; background: var(--bg-color);">
     <div class="card" style="width: 100%; max-width: 340px; text-align: center; padding: 24px 20px;">
       <div style="font-size: 42px; margin-bottom: 10px;">🔒</div>
       <h3 style="margin-bottom: 8px; color: var(--text-main);">Access Restricted</h3>
@@ -1001,12 +1001,17 @@
   let currentUserEmail = ""; 
   let currentUserName = "";
   let currentUserPic = "";
-  let currentUserPermissions = JSON.parse(localStorage.getItem('userPermissions')) || null;
+  let currentUserPermissions = null;
+  try {
+    currentUserPermissions = JSON.parse(localStorage.getItem('userPermissions')) || null;
+  } catch (e) {
+    currentUserPermissions = null;
+  }
   let isFreshLogin = false; // Flag for login-triggered cache refresh
   
   // Dashboard globals
   let currentDashboardData = [];
-  let currentTodaysCollection = 0; // NEW: Tracks today's total payments
+  let currentTodaysCollection = 0; // Tracks today's total payments
   let dashboardActiveAlphabet = 'ALL';
   let isDashboardStale = true;
   let dashboardSortCol = 'amount'; // Tracks current sort column
@@ -1022,9 +1027,6 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(() => console.log("Service Worker Registered"));
   }
-
-let currentUserPermissions = JSON.parse(localStorage.getItem('userPermissions')) || null;
-  let isFreshLogin = false;
 
   window.onload = function() {
     if (localStorage.getItem('savedUserEmail')) localStorage.removeItem('savedUserEmail');
@@ -3769,8 +3771,6 @@ let currentUserPermissions = JSON.parse(localStorage.getItem('userPermissions'))
           localStorage.setItem('allFruits', JSON.stringify(window.allFruits));
       }
   }
-  
- 
 </script>
 </body>
 </html>
