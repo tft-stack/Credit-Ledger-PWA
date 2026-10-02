@@ -304,6 +304,8 @@
       <div id="profilePopup" style="display: none; position: absolute; top: 48px; left: 0; background: var(--card-bg); padding: 16px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 2000; min-width: 220px; border: 1px solid var(--border-light); flex-direction: column;">
         <div style="font-weight: bold; font-size: 16px; color: var(--text-main); margin-bottom: 4px;" id="profileName">Name</div>
         <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; word-break: break-all;" id="profileEmail">email@example.com</div>
+        <!-- NEW: Role Badge -->
+        <div id="profileRoleBadge" style="font-size: 11px; font-weight: bold; color: #007bff; background: #e3f2fd; padding: 4px 8px; border-radius: 6px; margin-bottom: 12px; display: inline-block; align-self: flex-start;">Role: Loading...</div>
         <button class="btn btn-outline-red btn-sm" style="width: 100%; padding: 8px; font-size: 13px;" onclick="logout()">🚪 Sign Out</button>
       </div>
     </div>
@@ -984,6 +986,8 @@
   let currentUserEmail = ""; 
   let currentUserName = "";
   let currentUserPic = "";
+  let currentUserPermissions = JSON.parse(localStorage.getItem('userPermissions')) || null;
+  let isFreshLogin = false; // Flag for login-triggered cache refresh
   
   // Dashboard globals
   let currentDashboardData = [];
@@ -1055,11 +1059,15 @@
     
     localStorage.setItem('ledgerSession', JSON.stringify(sessionData));
     document.getElementById('loginOverlay').style.display = 'none'; 
+    
+    // Trigger a live App_Users sheet read on sign-in!
+    isFreshLogin = true;
     initializeApp();
   }
 
   function logout() {
     localStorage.removeItem('ledgerSession');
+    localStorage.removeItem('userPermissions');
     location.reload(); 
   }
 
@@ -1094,13 +1102,27 @@
     const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
     document.getElementById('themeToggleBtn').innerText = currentTheme === 'dark' ? '☀️' : '🌙';
     
+    // Apply cached permissions immediately for 0ms UI startup
+    if (currentUserPermissions) {
+      applyRolePermissions(currentUserPermissions);
+    }
+
     const localData = localStorage.getItem('ledgerInitData');
     if (localData) populateInitialUI(JSON.parse(localData));
 
-    apiGet('getInitialData').then(freshData => {
+    // Pass refreshAuth: 'true' ONLY when the user just signed in
+    const initParams = isFreshLogin ? { refreshAuth: 'true' } : {};
+    isFreshLogin = false;
+
+    apiGet('getInitialData', initParams).then(freshData => {
+      if (freshData && freshData.status === 'unauthorized') {
+        alert(freshData.error);
+        logout();
+        return;
+      }
       localStorage.setItem('ledgerInitData', JSON.stringify(freshData));
       populateInitialUI(freshData);
-    }).catch(err => console.error("Data fetch failed"));
+    }).catch(err => console.error("Data fetch failed", err));
   }
 
   function showLoading() { document.getElementById('loadingOverlay').style.display = 'flex'; }
@@ -1119,8 +1141,9 @@
     else if (id === 'bulkDate' && !document.getElementById('bulkDate').disabled) { bulkDatePicker.open(); }
   }
 
+  // UPDATED: Automatically attaches userEmail to every GET request
   async function apiGet(action, params = {}) {
-    const query = new URLSearchParams({ action, ...params }).toString();
+    const query = new URLSearchParams({ action, userEmail: currentUserEmail, ...params }).toString();
     const response = await fetch(`${API_URL}?${query}`, { method: 'GET', redirect: 'follow' });
     return await response.json();
   }
@@ -1135,7 +1158,16 @@
   }
 
   function populateInitialUI(data) {
-    allCustomers = data.customers;
+    if (!data || data.error) return;
+
+    // NEW: Save & Apply User Permissions from Backend
+    if (data.permissions) {
+      currentUserPermissions = data.permissions;
+      localStorage.setItem('userPermissions', JSON.stringify(data.permissions));
+      applyRolePermissions(data.permissions);
+    }
+
+    allCustomers = data.customers || [];
     const datalist = document.getElementById('customerList');
     datalist.innerHTML = ''; 
     allCustomers.forEach(c => {
@@ -1148,7 +1180,7 @@
     let allOpt = document.createElement('option'); allOpt.value = 'ALL'; allOpt.innerText = 'All Time';
     fySelect.appendChild(allOpt);
 
-    data.fyTabs.forEach(fy => {
+    (data.fyTabs || []).forEach(fy => {
       let opt = document.createElement('option'); opt.value = fy; opt.innerText = fy;
       if (!currentSelection && fy === data.currentFY) opt.selected = true;
       else if (currentSelection === fy) opt.selected = true;
@@ -1156,11 +1188,82 @@
     });
     if (currentSelection === 'ALL') allOpt.selected = true;
 
-    // NEW: Catch the historical fruits from the backend and populate the global array
     if (data.fruits && data.fruits.length > 0) {
       window.allFruits = data.fruits;
       localStorage.setItem('allFruits', JSON.stringify(data.fruits));
     }
+  }
+
+  function applyRolePermissions(perms) {
+    if (!perms) return;
+
+    // 1. Update Profile Popup Role Badge
+    const roleBadge = document.getElementById('profileRoleBadge');
+    if (roleBadge) roleBadge.innerText = `Role: ${perms.role}`;
+
+    // 2. Dashboard Access (Hidden for Employees & Viewers)
+    const navDash = document.getElementById('nav-dashboard');
+    if (navDash) {
+      navDash.style.display = (perms.dashboardAccess === 'Yes') ? 'flex' : 'none';
+    }
+    // If user is currently on Dashboard but lost access, redirect to View Ledger
+    if (perms.dashboardAccess !== 'Yes' && document.getElementById('screen-dashboard').classList.contains('active')) {
+      switchScreen('view');
+    }
+
+    // 3. Customers Tab Access
+    const navCust = document.getElementById('nav-customers');
+    if (navCust) {
+      navCust.style.display = (perms.customersAccess !== 'No') ? 'flex' : 'none';
+    }
+
+    // 4. Add Entry & Ledger Write Access
+    const navEnter = document.getElementById('nav-enter');
+    if (navEnter) {
+      navEnter.style.display = (perms.ledgerAccess === 'Full') ? 'flex' : 'none';
+    }
+
+    // 5. Smart Settle Access
+    const navSettle = document.getElementById('nav-settle');
+    if (navSettle) {
+      navSettle.style.display = (perms.settleAccess === 'Full' || perms.settleAccess === 'View') ? 'flex' : 'none';
+    }
+    const archiveBtn = document.getElementById('manualArchiveBtn');
+    if (archiveBtn) {
+      archiveBtn.style.display = (perms.settleAccess === 'Full') ? 'flex' : 'none';
+    }
+
+    // 6. Inject Dynamic CSS for View-Only Restrictions (Viewer Role)
+    let styleEl = document.getElementById('rbac-dynamic-styles');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'rbac-dynamic-styles';
+      document.head.appendChild(styleEl);
+    }
+
+    let cssRules = '';
+    if (perms.ledgerAccess !== 'Full') {
+      // Hide Edit/Delete icons in ledger, Add/Bulk buttons, and Purchase/Payment footer buttons
+      cssRules += `
+        .action-icons .icon-btn { display: none !important; }
+        #screen-view .btn-blue[onclick="navToAddEntry()"],
+        #screen-view button[onclick="openBulkModal()"],
+        #ledgerCard .btn-group { display: none !important; }
+      `;
+    }
+    if (perms.settleAccess !== 'Full') {
+      // Hide settlement checkboxes and Mark Paid buttons
+      cssRules += `
+        .settle-checkbox, .smart-settle-checkbox, #saveSettledBtnContainer { display: none !important; }
+      `;
+    }
+    if (perms.customersAccess !== 'Full') {
+      // Hide Edit Customer Name pencil icon
+      cssRules += `
+        div[onclick="openEditCustomerModal()"] { display: none !important; }
+      `;
+    }
+    styleEl.innerHTML = cssRules;
   }
 
   function toggleClearSearch(inputId, btnId) {
@@ -1773,6 +1876,10 @@
   }
 
   async function navToDashboard() {
+    if (currentUserPermissions && currentUserPermissions.dashboardAccess !== 'Yes') {
+      showToast("Access Denied: Admin permission required for Dashboard.", "error");
+      return;
+    }
     switchScreen('dashboard');
     await loadDashboardData();
   }
