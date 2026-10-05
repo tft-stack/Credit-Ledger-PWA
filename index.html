@@ -319,31 +319,30 @@
   <div id="screen-dashboard" class="screen">
     <div style="padding: 12px 4px 0 4px;">
       
-      <!-- Dashboard Header with Manual Sync Button -->
+      <!-- Dashboard Header with Compact Circular Sync Icon -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px;">
         <div>
           <h2 style="margin: 0;">Dashboard</h2>
           <div id="analyticsTimestamp" style="font-size: 10px; color: var(--text-light); margin-top: 2px;">Batch synced</div>
         </div>
         
-        <button id="syncYesterdayBtn" onclick="forceYesterdaySync()" style="background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 20px; padding: 6px 12px; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: background 0.2s;" title="Refresh Yesterday & Analytics Data">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#007bff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <button id="syncYesterdayBtn" onclick="forceYesterdaySync()" style="background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 50%; width: 34px; height: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: background 0.2s;" title="Sync Yesterday & Analytics Data">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"></polyline>
             <polyline points="1 20 1 14 7 14"></polyline>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
           </svg>
-          Sync Batch
         </button>
       </div>
 
-      <!-- COMPACT 3-TAB SWITCHER (Keeps scrolling to a minimum) -->
+      <!-- COMPACT 3-TAB SWITCHER -->
       <div style="display: flex; gap: 6px; background: var(--pill-bg); padding: 4px; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--border-light);">
         <button id="dashTabBtn-daily" onclick="switchDashboardTab('daily')" style="flex: 1; padding: 8px 4px; border: none; border-radius: 7px; font-size: 12px; font-weight: bold; cursor: pointer; background: #007bff; color: #fff; transition: 0.2s;">📊 Daily</button>
         <button id="dashTabBtn-overdue" onclick="switchDashboardTab('overdue')" style="flex: 1; padding: 8px 4px; border: none; border-radius: 7px; font-size: 12px; font-weight: bold; cursor: pointer; background: transparent; color: var(--pill-text); transition: 0.2s;">⏳ Overdue</button>
         <button id="dashTabBtn-amount" onclick="switchDashboardTab('amount')" style="flex: 1; padding: 8px 4px; border: none; border-radius: 7px; font-size: 12px; font-weight: bold; cursor: pointer; background: transparent; color: var(--pill-text); transition: 0.2s;">💰 By Amount</button>
       </div>
 
-      <!-- TAB 1: DAILY ACTIVITY (Existing 4 Cards) -->
+      <!-- TAB 1: DAILY ACTIVITY -->
       <div id="dashGroup-daily" style="display: flex; flex-direction: column; gap: 10px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div id="card-yestCredit" class="dash-metric-card" onclick="toggleDashboardCard('yestCredit')" style="background: #fcf1f1; padding: 12px; border-radius: 8px; border: 1px solid #f2d7d7; text-align: left; cursor: pointer; transition: all 0.2s;">
@@ -372,7 +371,7 @@
         </div>
       </div>
 
-      <!-- TAB 2: OVERDUE / NO RECENT PAYMENT (4 Compact Cards in 2x2 Grid) -->
+      <!-- TAB 2: OVERDUE / NO RECENT PAYMENT (Updated for >30d, 22-30d, 15-21d, 8-14d) -->
       <div id="dashGroup-overdue" style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
         <div id="card-noPayGt30" class="dash-metric-card" onclick="toggleDashboardCard('noPayGt30')" style="background: #ffebee; padding: 12px; border-radius: 8px; border: 1px solid #ffcdd2; cursor: pointer; transition: all 0.2s;">
           <div style="color: #b71c1c; font-size: 10px; font-weight: bold; text-transform: uppercase;">No Pay &gt; 30 Days</div>
@@ -382,21 +381,21 @@
         <div id="card-noPay30" class="dash-metric-card" onclick="toggleDashboardCard('noPay30')" style="background: #fbe9e7; padding: 12px; border-radius: 8px; border: 1px solid #ffccbc; cursor: pointer; transition: all 0.2s;">
           <div style="color: #d84315; font-size: 10px; font-weight: bold; text-transform: uppercase;">No Pay in 30 Days</div>
           <div id="count-noPay30" style="font-size: 20px; font-weight: bold; color: #d84315; margin-top: 4px;">0</div>
-          <div style="font-size: 10px; color: #e64a19; margin-top: 2px;">30+ days with pending</div>
+          <div style="font-size: 10px; color: #e64a19; margin-top: 2px;">22–30 days with pending</div>
         </div>
         <div id="card-noPay21" class="dash-metric-card" onclick="toggleDashboardCard('noPay21')" style="background: #fff3e0; padding: 12px; border-radius: 8px; border: 1px solid #ffe0b2; cursor: pointer; transition: all 0.2s;">
           <div style="color: #e65100; font-size: 10px; font-weight: bold; text-transform: uppercase;">No Pay in 21 Days</div>
           <div id="count-noPay21" style="font-size: 20px; font-weight: bold; color: #e65100; margin-top: 4px;">0</div>
-          <div style="font-size: 10px; color: #ef6c00; margin-top: 2px;">21+ days with pending</div>
+          <div style="font-size: 10px; color: #ef6c00; margin-top: 2px;">15–21 days with pending</div>
         </div>
-        <div id="card-noPay15" class="dash-metric-card" onclick="toggleDashboardCard('noPay15')" style="background: #fff8e1; padding: 12px; border-radius: 8px; border: 1px solid #ffecb3; cursor: pointer; transition: all 0.2s;">
-          <div style="color: #f57f17; font-size: 10px; font-weight: bold; text-transform: uppercase;">No Pay in 15 Days</div>
-          <div id="count-noPay15" style="font-size: 20px; font-weight: bold; color: #f57f17; margin-top: 4px;">0</div>
-          <div style="font-size: 10px; color: #f9a825; margin-top: 2px;">15+ days with pending</div>
+        <div id="card-noPay14" class="dash-metric-card" onclick="toggleDashboardCard('noPay14')" style="background: #fff8e1; padding: 12px; border-radius: 8px; border: 1px solid #ffecb3; cursor: pointer; transition: all 0.2s;">
+          <div style="color: #f57f17; font-size: 10px; font-weight: bold; text-transform: uppercase;">No Pay in 14 Days</div>
+          <div id="count-noPay14" style="font-size: 20px; font-weight: bold; color: #f57f17; margin-top: 4px;">0</div>
+          <div style="font-size: 10px; color: #f9a825; margin-top: 2px;">8–14 days with pending</div>
         </div>
       </div>
 
-      <!-- TAB 3: PENDING AMOUNT SLABS (6 Compact Cards in 3x2 Grid) -->
+      <!-- TAB 3: PENDING AMOUNT SLABS (Updated 10k-25k label) -->
       <div id="dashGroup-amount" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 8px;">
         <div id="card-amtGt2L" class="dash-metric-card" onclick="toggleDashboardCard('amtGt2L')" style="background: #ffebee; padding: 10px 8px; border-radius: 8px; border: 1px solid #ffcdd2; text-align: center; cursor: pointer; transition: all 0.2s;">
           <div style="color: #b71c1c; font-size: 10px; font-weight: bold;">&gt; ₹2 Lakh</div>
@@ -419,7 +418,7 @@
           <div style="font-size: 9px; color: #1976d2;">Customers</div>
         </div>
         <div id="card-amt10kto15k" class="dash-metric-card" onclick="toggleDashboardCard('amt10kto15k')" style="background: #e8f5e9; padding: 10px 8px; border-radius: 8px; border: 1px solid #c8e6c9; text-align: center; cursor: pointer; transition: all 0.2s;">
-          <div style="color: #2e7d32; font-size: 10px; font-weight: bold;">₹10k – ₹15k</div>
+          <div style="color: #2e7d32; font-size: 10px; font-weight: bold;">₹10k – ₹25k</div>
           <div id="count-amt10kto15k" style="font-size: 18px; font-weight: bold; color: #2e7d32; margin-top: 4px;">0</div>
           <div style="font-size: 9px; color: #388e3c;">Customers</div>
         </div>
@@ -430,7 +429,7 @@
         </div>
       </div>
 
-      <!-- SHARED DRILL-DOWN TABLE (Appears right below whichever tab is active) -->
+      <!-- SHARED DRILL-DOWN TABLE -->
       <div id="dashboardDetailsSection" style="display: none; margin-top: 14px;">
         <div id="dashboardDetailsHeader" style="font-size: 13px; font-weight: bold; color: var(--text-main); margin-bottom: 8px; padding: 0 4px;">Details</div>
         <div class="card" style="padding: 0; overflow: hidden;" id="dashboardDetailsContainer"></div>
@@ -2056,7 +2055,7 @@
       if (tsEl) tsEl.innerText = `Batch synced: ${payload.analyticsUpdatedAt}`;
     }
     const aCounts = payload.analyticsCounts || {};
-    ['noPayGt30', 'noPay30', 'noPay21', 'noPay15', 'amtGt2L', 'amt1Lto2L', 'amt50kto1L', 'amt25kto50k', 'amt10kto15k', 'amtLt10k'].forEach(key => {
+    ['noPayGt30', 'noPay30', 'noPay21', 'noPay14', 'amtGt2L', 'amt1Lto2L', 'amt50kto1L', 'amt25kto50k', 'amt10kto15k', 'amtLt10k'].forEach(key => {
       const el = document.getElementById('count-' + key);
       if (el) el.innerText = aCounts[key] || 0;
     });
