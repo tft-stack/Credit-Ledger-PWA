@@ -317,61 +317,125 @@
 
   <!-- ==================== SCREEN 0: DASHBOARD ==================== -->
   <div id="screen-dashboard" class="screen">
-    <div class="sticky-header" style="margin-bottom: 0; padding: 16px 0 0 0; border-bottom: none; top: 0;">
+    <div style="padding: 12px 4px 0 4px;">
       
-    <!-- Dashboard Header with Yesterday Sync Button -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 16px;">
-      <h2 style="margin: 0;">Dashboard</h2>
-      
-      <button id="syncYesterdayBtn" onclick="forceYesterdaySync()" style="background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 50%; width: 34px; height: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: background 0.2s;" title="Sync Yesterday's Data">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 4 23 10 17 10"></polyline>
-          <polyline points="1 20 1 14 7 14"></polyline>
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-        </svg>
-      </button>
-    </div>
-      
-      <!-- Dashboard Summary Cards -->
-      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px; padding: 0 16px;">
+      <!-- Dashboard Header with Manual Sync Button -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px;">
+        <div>
+          <h2 style="margin: 0;">Dashboard</h2>
+          <div id="analyticsTimestamp" style="font-size: 10px; color: var(--text-light); margin-top: 2px;">Batch synced</div>
+        </div>
+        
+        <button id="syncYesterdayBtn" onclick="forceYesterdaySync()" style="background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 20px; padding: 6px 12px; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: background 0.2s;" title="Refresh Yesterday & Analytics Data">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#007bff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          Sync Batch
+        </button>
+      </div>
 
-      <!-- ROW 2: Yesterday & Today's Credit (Wine Red) -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div id="card-yestCredit" onclick="toggleDashboardCard('yestCredit')" style="background: #fcf1f1; padding: 12px; border-radius: 8px; border: 1px solid #f2d7d7; text-align: left; cursor: pointer; transition: all 0.2s;">
+      <!-- COMPACT 3-TAB SWITCHER (Keeps scrolling to a minimum) -->
+      <div style="display: flex; gap: 6px; background: var(--pill-bg); padding: 4px; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--border-light);">
+        <button id="dashTabBtn-daily" onclick="switchDashboardTab('daily')" style="flex: 1; padding: 8px 4px; border: none; border-radius: 7px; font-size: 12px; font-weight: bold; cursor: pointer; background: #007bff; color: #fff; transition: 0.2s;">📊 Daily</button>
+        <button id="dashTabBtn-overdue" onclick="switchDashboardTab('overdue')" style="flex: 1; padding: 8px 4px; border: none; border-radius: 7px; font-size: 12px; font-weight: bold; cursor: pointer; background: transparent; color: var(--pill-text); transition: 0.2s;">⏳ Overdue</button>
+        <button id="dashTabBtn-amount" onclick="switchDashboardTab('amount')" style="flex: 1; padding: 8px 4px; border: none; border-radius: 7px; font-size: 12px; font-weight: bold; cursor: pointer; background: transparent; color: var(--pill-text); transition: 0.2s;">💰 By Amount</button>
+      </div>
+
+      <!-- TAB 1: DAILY ACTIVITY (Existing 4 Cards) -->
+      <div id="dashGroup-daily" style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div id="card-yestCredit" class="dash-metric-card" onclick="toggleDashboardCard('yestCredit')" style="background: #fcf1f1; padding: 12px; border-radius: 8px; border: 1px solid #f2d7d7; text-align: left; cursor: pointer; transition: all 0.2s;">
             <div style="color: #721c24; font-size: 10px; font-weight: bold; text-transform: uppercase;">Yest. Credit</div>
             <div id="dashboardYesterdaySale" style="font-size: 18px; font-weight: bold; color: #721c24; margin-top: 4px;"><span class="privacy-blur">₹0</span></div>
             <div style="font-size: 11px; color: #721c24; margin-top: 2px;">Purchases yesterday</div>
           </div>
-          <div id="card-todayCredit" onclick="toggleDashboardCard('todayCredit')" style="background: #fcf1f1; padding: 12px; border-radius: 8px; border: 1px solid #f2d7d7; text-align: left; cursor: pointer; transition: all 0.2s;">
+          <div id="card-todayCredit" class="dash-metric-card" onclick="toggleDashboardCard('todayCredit')" style="background: #fcf1f1; padding: 12px; border-radius: 8px; border: 1px solid #f2d7d7; text-align: left; cursor: pointer; transition: all 0.2s;">
             <div style="color: #721c24; font-size: 10px; font-weight: bold; text-transform: uppercase;">Today's Credit</div>
             <div id="dashboardTodaySale" style="font-size: 18px; font-weight: bold; color: #721c24; margin-top: 4px;"><span class="privacy-blur">₹0</span></div>
             <div style="font-size: 11px; color: #721c24; margin-top: 2px;">Purchases today</div>
           </div>
         </div>
 
-        <!-- ROW 3: Yesterday & Today's Received (Green) -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div id="card-yestReceived" onclick="toggleDashboardCard('yestReceived')" style="background: #e8f5e9; padding: 12px; border-radius: 8px; border: 1px solid #c8e6c9; text-align: left; cursor: pointer; transition: all 0.2s;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div id="card-yestReceived" class="dash-metric-card" onclick="toggleDashboardCard('yestReceived')" style="background: #e8f5e9; padding: 12px; border-radius: 8px; border: 1px solid #c8e6c9; text-align: left; cursor: pointer; transition: all 0.2s;">
             <div style="color: #2e7d32; font-size: 10px; font-weight: bold; text-transform: uppercase;">Yest. Received</div>
             <div id="dashboardYesterdayCollection" style="font-size: 18px; font-weight: bold; color: #1b5e20; margin-top: 4px;"><span class="privacy-blur">₹0</span></div>
             <div style="font-size: 11px; color: #2e7d32; margin-top: 2px;">Payments yesterday</div>
           </div>
-          <div id="card-todayReceived" onclick="toggleDashboardCard('todayReceived')" style="background: #e8f5e9; padding: 12px; border-radius: 8px; border: 1px solid #c8e6c9; text-align: left; cursor: pointer; transition: all 0.2s;">
+          <div id="card-todayReceived" class="dash-metric-card" onclick="toggleDashboardCard('todayReceived')" style="background: #e8f5e9; padding: 12px; border-radius: 8px; border: 1px solid #c8e6c9; text-align: left; cursor: pointer; transition: all 0.2s;">
             <div style="color: #2e7d32; font-size: 10px; font-weight: bold; text-transform: uppercase;">Today's Received</div>
             <div id="dashboardTodayCollection" style="font-size: 18px; font-weight: bold; color: #1b5e20; margin-top: 4px;"><span class="privacy-blur">₹0</span></div>
             <div style="font-size: 11px; color: #2e7d32; margin-top: 2px;">Payments today</div>
           </div>
         </div>
-
-        <!-- DASHBOARD DETAILS TABLE (Hidden by default) -->
-        <div id="dashboardDetailsSection" style="display: none; margin-top: 8px;">
-           <div id="dashboardDetailsHeader" style="font-size: 13px; font-weight: bold; color: var(--text-color); margin-bottom: 8px; padding: 0 4px;">Details</div>
-           <div class="card" style="padding: 0; overflow: hidden;" id="dashboardDetailsContainer">
-              <!-- Table injected here -->
-           </div>
-        </div>
-
       </div>
+
+      <!-- TAB 2: OVERDUE / NO RECENT PAYMENT (4 Compact Cards in 2x2 Grid) -->
+      <div id="dashGroup-overdue" style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div id="card-noPayGt30" class="dash-metric-card" onclick="toggleDashboardCard('noPayGt30')" style="background: #ffebee; padding: 12px; border-radius: 8px; border: 1px solid #ffcdd2; cursor: pointer; transition: all 0.2s;">
+          <div style="color: #b71c1c; font-size: 10px; font-weight: bold; text-transform: uppercase;">No Pay &gt; 30 Days</div>
+          <div id="count-noPayGt30" style="font-size: 20px; font-weight: bold; color: #b71c1c; margin-top: 4px;">0</div>
+          <div style="font-size: 10px; color: #c62828; margin-top: 2px;">31+ days with pending</div>
+        </div>
+        <div id="card-noPay30" class="dash-metric-card" onclick="toggleDashboardCard('noPay30')" style="background: #fbe9e7; padding: 12px; border-radius: 8px; border: 1px solid #ffccbc; cursor: pointer; transition: all 0.2s;">
+          <div style="color: #d84315; font-size: 10px; font-weight: bold; text-transform: uppercase;">No Pay in 30 Days</div>
+          <div id="count-noPay30" style="font-size: 20px; font-weight: bold; color: #d84315; margin-top: 4px;">0</div>
+          <div style="font-size: 10px; color: #e64a19; margin-top: 2px;">30+ days with pending</div>
+        </div>
+        <div id="card-noPay21" class="dash-metric-card" onclick="toggleDashboardCard('noPay21')" style="background: #fff3e0; padding: 12px; border-radius: 8px; border: 1px solid #ffe0b2; cursor: pointer; transition: all 0.2s;">
+          <div style="color: #e65100; font-size: 10px; font-weight: bold; text-transform: uppercase;">No Pay in 21 Days</div>
+          <div id="count-noPay21" style="font-size: 20px; font-weight: bold; color: #e65100; margin-top: 4px;">0</div>
+          <div style="font-size: 10px; color: #ef6c00; margin-top: 2px;">21+ days with pending</div>
+        </div>
+        <div id="card-noPay15" class="dash-metric-card" onclick="toggleDashboardCard('noPay15')" style="background: #fff8e1; padding: 12px; border-radius: 8px; border: 1px solid #ffecb3; cursor: pointer; transition: all 0.2s;">
+          <div style="color: #f57f17; font-size: 10px; font-weight: bold; text-transform: uppercase;">No Pay in 15 Days</div>
+          <div id="count-noPay15" style="font-size: 20px; font-weight: bold; color: #f57f17; margin-top: 4px;">0</div>
+          <div style="font-size: 10px; color: #f9a825; margin-top: 2px;">15+ days with pending</div>
+        </div>
+      </div>
+
+      <!-- TAB 3: PENDING AMOUNT SLABS (6 Compact Cards in 3x2 Grid) -->
+      <div id="dashGroup-amount" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+        <div id="card-amtGt2L" class="dash-metric-card" onclick="toggleDashboardCard('amtGt2L')" style="background: #ffebee; padding: 10px 8px; border-radius: 8px; border: 1px solid #ffcdd2; text-align: center; cursor: pointer; transition: all 0.2s;">
+          <div style="color: #b71c1c; font-size: 10px; font-weight: bold;">&gt; ₹2 Lakh</div>
+          <div id="count-amtGt2L" style="font-size: 18px; font-weight: bold; color: #b71c1c; margin-top: 4px;">0</div>
+          <div style="font-size: 9px; color: #c62828;">Customers</div>
+        </div>
+        <div id="card-amt1Lto2L" class="dash-metric-card" onclick="toggleDashboardCard('amt1Lto2L')" style="background: #fbe9e7; padding: 10px 8px; border-radius: 8px; border: 1px solid #ffccbc; text-align: center; cursor: pointer; transition: all 0.2s;">
+          <div style="color: #d84315; font-size: 10px; font-weight: bold;">₹1L – ₹2L</div>
+          <div id="count-amt1Lto2L" style="font-size: 18px; font-weight: bold; color: #d84315; margin-top: 4px;">0</div>
+          <div style="font-size: 9px; color: #e64a19;">Customers</div>
+        </div>
+        <div id="card-amt50kto1L" class="dash-metric-card" onclick="toggleDashboardCard('amt50kto1L')" style="background: #fff3e0; padding: 10px 8px; border-radius: 8px; border: 1px solid #ffe0b2; text-align: center; cursor: pointer; transition: all 0.2s;">
+          <div style="color: #e65100; font-size: 10px; font-weight: bold;">₹50k – ₹1L</div>
+          <div id="count-amt50kto1L" style="font-size: 18px; font-weight: bold; color: #e65100; margin-top: 4px;">0</div>
+          <div style="font-size: 9px; color: #ef6c00;">Customers</div>
+        </div>
+        <div id="card-amt25kto50k" class="dash-metric-card" onclick="toggleDashboardCard('amt25kto50k')" style="background: #e3f2fd; padding: 10px 8px; border-radius: 8px; border: 1px solid #bbdefb; text-align: center; cursor: pointer; transition: all 0.2s;">
+          <div style="color: #1565c0; font-size: 10px; font-weight: bold;">₹25k – ₹50k</div>
+          <div id="count-amt25kto50k" style="font-size: 18px; font-weight: bold; color: #1565c0; margin-top: 4px;">0</div>
+          <div style="font-size: 9px; color: #1976d2;">Customers</div>
+        </div>
+        <div id="card-amt10kto15k" class="dash-metric-card" onclick="toggleDashboardCard('amt10kto15k')" style="background: #e8f5e9; padding: 10px 8px; border-radius: 8px; border: 1px solid #c8e6c9; text-align: center; cursor: pointer; transition: all 0.2s;">
+          <div style="color: #2e7d32; font-size: 10px; font-weight: bold;">₹10k – ₹15k</div>
+          <div id="count-amt10kto15k" style="font-size: 18px; font-weight: bold; color: #2e7d32; margin-top: 4px;">0</div>
+          <div style="font-size: 9px; color: #388e3c;">Customers</div>
+        </div>
+        <div id="card-amtLt10k" class="dash-metric-card" onclick="toggleDashboardCard('amtLt10k')" style="background: #f3e5f5; padding: 10px 8px; border-radius: 8px; border: 1px solid #e1bee7; text-align: center; cursor: pointer; transition: all 0.2s;">
+          <div style="color: #6a1b9a; font-size: 10px; font-weight: bold;">&lt; ₹10k</div>
+          <div id="count-amtLt10k" style="font-size: 18px; font-weight: bold; color: #6a1b9a; margin-top: 4px;">0</div>
+          <div style="font-size: 9px; color: #7b1fa2;">Customers</div>
+        </div>
+      </div>
+
+      <!-- SHARED DRILL-DOWN TABLE (Appears right below whichever tab is active) -->
+      <div id="dashboardDetailsSection" style="display: none; margin-top: 14px;">
+        <div id="dashboardDetailsHeader" style="font-size: 13px; font-weight: bold; color: var(--text-main); margin-bottom: 8px; padding: 0 4px;">Details</div>
+        <div class="card" style="padding: 0; overflow: hidden;" id="dashboardDetailsContainer"></div>
+      </div>
+
     </div>
 
     <!-- Privacy Toggle Button -->
@@ -1986,6 +2050,17 @@
     if (todaySaleElem) todaySaleElem.innerHTML = `<span class="${blurClass}">₹${(todaySale).toLocaleString('en-IN')}</span>`;
     if (yesterdaySaleElem) yesterdaySaleElem.innerHTML = `<span class="${blurClass}">₹${(yestSale).toLocaleString('en-IN')}</span>`;
 
+    // Populate 10 Analytics Card Counts & Timestamp
+    if (payload.analyticsUpdatedAt) {
+      const tsEl = document.getElementById('analyticsTimestamp');
+      if (tsEl) tsEl.innerText = `Batch synced: ${payload.analyticsUpdatedAt}`;
+    }
+    const aCounts = payload.analyticsCounts || {};
+    ['noPayGt30', 'noPay30', 'noPay21', 'noPay15', 'amtGt2L', 'amt1Lto2L', 'amt50kto1L', 'amt25kto50k', 'amt10kto15k', 'amtLt10k'].forEach(key => {
+      const el = document.getElementById('count-' + key);
+      if (el) el.innerText = aCounts[key] || 0;
+    });
+
     if (!currentDashboardData || !Array.isArray(currentDashboardData)) {
       if (container) container.innerHTML = '<div style="text-align:center; padding: 40px 16px; color: var(--text-light); font-size: 14px;">Error loading data.</div>';
       return;
@@ -3298,6 +3373,29 @@
 
   let activeDashboardCard = null;
 
+  function switchDashboardTab(tabName) {
+    ['daily', 'overdue', 'amount'].forEach(t => {
+      const group = document.getElementById('dashGroup-' + t);
+      const btn = document.getElementById('dashTabBtn-' + t);
+      if (group) {
+        if (t === tabName) {
+          group.style.display = (t === 'daily') ? 'flex' : 'grid';
+        } else {
+          group.style.display = 'none';
+        }
+      }
+      if (btn) {
+        btn.style.background = (t === tabName) ? '#007bff' : 'transparent';
+        btn.style.color = (t === tabName) ? '#fff' : 'var(--pill-text)';
+      }
+    });
+
+    // Close any open drill-down table when switching tabs
+    document.getElementById('dashboardDetailsSection').style.display = 'none';
+    activeDashboardCard = null;
+    resetCardStyles();
+  }
+
   async function toggleDashboardCard(cardType) {
     const detailsSection = document.getElementById('dashboardDetailsSection');
     
@@ -3341,69 +3439,100 @@
       activeEl.style.transform = 'scale(1.03)';
       activeEl.style.boxShadow = '0 4px 10px rgba(0,0,0,0.15)';
       activeEl.style.opacity = '1';
-      activeEl.style.border = cardType.includes('Credit') ? '1px solid #d32f2f' : '1px solid #2e7d32';
+      activeEl.style.outline = '2px solid #007bff';
     }
 
     renderDetailsTable(cardType, window.dashboardBreakdowns[cardType] || []);
   }
 
   function resetCardStyles() {
-      ['yestCredit', 'todayCredit', 'yestReceived', 'todayReceived'].forEach(c => {
-          const el = document.getElementById('card-' + c);
-          if (el) {
-              el.style.transform = 'scale(1)';
-              el.style.boxShadow = 'none';
-              el.style.opacity = '0.6'; 
-              el.style.border = c.includes('Credit') ? '1px solid #f2d7d7' : '1px solid #c8e6c9';
-          }
-      });
-      
-      if (!activeDashboardCard) {
-          ['yestCredit', 'todayCredit', 'yestReceived', 'todayReceived'].forEach(c => {
-              const el = document.getElementById('card-' + c);
-              if (el) el.style.opacity = '1';
-          });
-      }
+    const allCards = document.querySelectorAll('.dash-metric-card');
+    allCards.forEach(el => {
+      el.style.transform = 'scale(1)';
+      el.style.boxShadow = 'none';
+      el.style.outline = 'none';
+      el.style.opacity = activeDashboardCard ? '0.6' : '1';
+    });
   }
 
   function renderDetailsTable(cardType, data) {
-      const container = document.getElementById('dashboardDetailsContainer');
-      const section = document.getElementById('dashboardDetailsSection');
-      const header = document.getElementById('dashboardDetailsHeader');
-      
-      let title = "";
-      if (cardType === 'yestCredit') title = "Yesterday's Credit Breakdown";
-      if (cardType === 'todayCredit') title = "Today's Credit Breakdown";
-      if (cardType === 'yestReceived') title = "Yesterday's Received Breakdown";
-      if (cardType === 'todayReceived') title = "Today's Received Breakdown";
-      
-      header.innerText = title;
+    const container = document.getElementById('dashboardDetailsContainer');
+    const section = document.getElementById('dashboardDetailsSection');
+    const header = document.getElementById('dashboardDetailsHeader');
+    
+    const titles = {
+      yestCredit: "Yesterday's Credit Breakdown",
+      todayCredit: "Today's Credit Breakdown",
+      yestReceived: "Yesterday's Received Breakdown",
+      todayReceived: "Today's Received Breakdown",
+      noPayGt30: "No Payment in > 30 Days",
+      noPay30: "No Payment in Last 30 Days",
+      noPay21: "No Payment in Last 21 Days",
+      noPay15: "No Payment in Last 15 Days",
+      amtGt2L: "Pending Amount > ₹2 Lakh",
+      amt1Lto2L: "Pending Amount: ₹1 Lakh – ₹2 Lakh",
+      amt50kto1L: "Pending Amount: ₹50k – ₹1 Lakh",
+      amt25kto50k: "Pending Amount: ₹25k – ₹50k",
+      amt10kto15k: "Pending Amount: ₹10k – ₹15k",
+      amtLt10k: "Pending Amount < ₹10k"
+    };
+    
+    header.innerText = `${titles[cardType] || "Details"} (${data.length})`;
+    const isDailyCard = ['yestCredit', 'todayCredit', 'yestReceived', 'todayReceived'].includes(cardType);
 
-      if (data.length === 0) {
-          container.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;">No transactions recorded.</div>';
-      } else {
-          let html = `<table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                         <tr style="background: var(--pill-bg); border-bottom: 1px solid var(--border-light); text-transform: uppercase; font-size: 11px; color: var(--text-muted);">
-                            <th style="padding: 10px 16px; text-align: left; width: 45px;">S No.</th>
-                            <th style="padding: 10px 16px; text-align: left;">Customer Name</th>
-                            <th style="padding: 10px 16px; text-align: right;">Amount</th>
-                         </tr>`;
-          data.forEach((item, index) => {
-              let privacyClass = (typeof isPrivacyEnabled !== 'undefined' && !isPrivacyEnabled) ? "privacy-blur revealed" : "privacy-blur";
-              let amountColor = cardType.includes('Credit') ? '#d32f2f' : '#2e7d32'; 
-              
-              html += `<tr style="border-bottom: 1px solid var(--border-light);">
-                          <td style="padding: 12px 16px; text-align: left;">${index + 1}</td>
-                          <td style="padding: 12px 16px; text-align: left; font-weight: bold;">${item.name}</td>
-                          <td style="padding: 12px 16px; text-align: right; color: ${amountColor}; font-weight: bold;">
-                              <span class="${privacyClass}">₹${item.amount.toLocaleString('en-IN')}</span>
-                          </td>
-                       </tr>`;
-          });
-          html += `</table>`;
-          container.innerHTML = html;
-      }
-      section.style.display = 'block';
+    if (data.length === 0) {
+      container.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;">No matching customers found.</div>';
+    } else if (isDailyCard) {
+      let html = `<table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                     <tr style="background: var(--pill-bg); border-bottom: 1px solid var(--border-light); text-transform: uppercase; font-size: 11px; color: var(--text-muted);">
+                        <th style="padding: 10px 16px; text-align: left; width: 45px;">S No.</th>
+                        <th style="padding: 10px 16px; text-align: left;">Customer Name</th>
+                        <th style="padding: 10px 16px; text-align: right;">Amount</th>
+                     </tr>`;
+      data.forEach((item, index) => {
+        let privacyClass = (typeof isPrivacyEnabled !== 'undefined' && !isPrivacyEnabled) ? "privacy-blur revealed" : "privacy-blur";
+        let amountColor = cardType.includes('Credit') ? '#d32f2f' : '#2e7d32'; 
+        let escapedName = (item.name || "").replace(/'/g, "\\'");
+        html += `<tr onclick="jumpToCustomer('${escapedName}')" style="border-bottom: 1px solid var(--border-light); cursor: pointer;">
+                    <td style="padding: 12px 16px; text-align: left;">${index + 1}</td>
+                    <td style="padding: 12px 16px; text-align: left; font-weight: bold;">${item.name}</td>
+                    <td style="padding: 12px 16px; text-align: right; color: ${amountColor}; font-weight: bold;">
+                        <span class="${privacyClass}">₹${item.amount.toLocaleString('en-IN')}</span>
+                    </td>
+                 </tr>`;
+      });
+      html += `</table>`;
+      container.innerHTML = html;
+    } else {
+      // Analytics Cards Table: Shows S No., Customer Name, Last Paid Date, and Pending Amount
+      let html = `<table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                     <tr style="background: var(--pill-bg); border-bottom: 1px solid var(--border-light); text-transform: uppercase; font-size: 10px; color: var(--text-muted);">
+                        <th style="padding: 10px 10px; text-align: left; width: 36px;">#</th>
+                        <th style="padding: 10px 8px; text-align: left;">Customer</th>
+                        <th style="padding: 10px 8px; text-align: center;">Last Paid</th>
+                        <th style="padding: 10px 12px; text-align: right;">Pending</th>
+                     </tr>`;
+      data.forEach((item, index) => {
+        let privacyClass = (typeof isPrivacyEnabled !== 'undefined' && !isPrivacyEnabled) ? "privacy-blur revealed" : "privacy-blur";
+        let escapedName = (item.name || "").replace(/'/g, "\\'");
+        let daysBadge = (item.daysSincePay && item.daysSincePay < 9000) ? `<div style="font-size: 9px; color: var(--text-light);">${item.daysSincePay}d ago</div>` : '';
+        
+        html += `<tr onclick="jumpToCustomer('${escapedName}')" style="border-bottom: 1px solid var(--border-light); cursor: pointer;">
+                    <td style="padding: 10px 10px; text-align: left; color: var(--text-muted); font-size: 12px;">${index + 1}</td>
+                    <td style="padding: 10px 8px; text-align: left; font-weight: bold; color: var(--text-main);">${item.name}</td>
+                    <td style="padding: 10px 8px; text-align: center; font-size: 11px; color: var(--text-muted);">
+                      ${item.lastPaymentDate || 'No Record'}
+                      ${daysBadge}
+                    </td>
+                    <td style="padding: 10px 12px; text-align: right; color: #d32f2f; font-weight: bold;">
+                        <span class="${privacyClass}">₹${item.amount.toLocaleString('en-IN')}</span>
+                    </td>
+                 </tr>`;
+      });
+      html += `</table>`;
+      container.innerHTML = html;
+    }
+    section.style.display = 'block';
   }
 
   const BULK_DRAFT_KEY = 'ledger_bulk_draft';
