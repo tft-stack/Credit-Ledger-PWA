@@ -1939,29 +1939,31 @@
 
   async function forceYesterdaySync() {
     const btn = document.getElementById('syncYesterdayBtn');
+    if (btn) {
+      btn.style.opacity = '0.4';
+      btn.disabled = true;
+    }
     
-    btn.style.opacity = '0.4';
-    btn.disabled = true;
-    
-    showToast("Syncing yesterday's data...", "info");
+    showToast("Syncing data...", "info");
     showLoading();
 
     try {
       const res = await apiGet('syncYesterdayData');
       
       if (res && res.status === 'success') {
-        showToast("Yesterday's data synced!", "success");
+        showToast("Dashboard batch synced!", "success");
         
         isDashboardStale = true;
         window.dashboardBreakdowns = {}; 
         
         if (activeDashboardCard) {
-            document.getElementById('dashboardDetailsSection').style.display = 'none';
-            activeDashboardCard = null;
-            resetCardStyles();
+          document.getElementById('dashboardDetailsSection').style.display = 'none';
+          activeDashboardCard = null;
+          resetCardStyles();
         }
         
-        await loadDashboardData();
+        // Force live fetch bypassing cache
+        await loadDashboardData(true);
       } else {
         throw new Error(res.error || "Unknown error");
       }
@@ -1969,60 +1971,109 @@
       console.error("Manual sync failed:", e);
       showToast("Failed to sync data.", "error");
     } finally {
-      btn.style.opacity = '1';
-      btn.disabled = false;
+      if (btn) {
+        btn.style.opacity = '1';
+        btn.disabled = false;
+      }
       hideLoading();
     }
   }
 
-  async function loadDashboardData() {
-    if (typeof currentDashboardData !== 'undefined' && currentDashboardData && currentDashboardData.length > 0) {
+  // --- HIGH-SPEED PERSISTENT DASHBOARD CACHE ---
+  const DASHBOARD_CACHE_KEY = 'dashboard_cached_payload';
+  const DASHBOARD_TTL_MS = 5 * 60 * 1000; // 5 Minutes TTL for auto-refresh
+
+  async function loadDashboardData(forceNetwork = false) {
+    const now = Date.now();
+    let cachedPayload = window.currentDashboardDataPayload;
+
+    // 1. If RAM is empty, hydrate from localStorage immediately (0ms render)
+    if (!cachedPayload) {
+      try {
+        const stored = localStorage.getItem(DASHBOARD_CACHE_KEY);
+        if (stored) {
+          cachedPayload = JSON.parse(stored);
+          window.currentDashboardDataPayload = cachedPayload;
+          currentDashboardData = cachedPayload.customers || [];
+          currentTodaysCollection = cachedPayload.todaysCollection || 0;
+        }
+      } catch (e) {
+        cachedPayload = null;
+      }
+    }
+
+    // 2. Render whatever we have in cache immediately (Zero lag)
+    if (currentDashboardData && currentDashboardData.length > 0) {
       applyDashboardFilters();
     }
 
-    if (isDashboardStale || !currentDashboardData || currentDashboardData.length === 0) {
-      if (!currentDashboardData || currentDashboardData.length === 0) {
-        showLoading(); 
-      }
-      
-      try {
-        const data = await apiGet('getDashboardData');
+    // Check if cache is expired or marked stale by a write action
+    const cacheAge = cachedPayload && cachedPayload._cachedAt ? (now - cachedPayload._cachedAt) : Infinity;
+    const needsRefresh = forceNetwork || isDashboardStale || !cachedPayload || (cacheAge > DASHBOARD_TTL_MS);
 
-        if (data && data.customers) {
-          window.currentDashboardDataPayload = data; 
-          window.dashboardBreakdowns = {}; 
-          
-          currentDashboardData = data.customers;
-          currentTodaysCollection = data.todaysCollection || 0;
-          isDashboardStale = false; 
-          
-          if (activeDashboardCard) { 
-            toggleDashboardCard(activeDashboardCard); 
-          }
-          
-          applyDashboardFilters(); 
+    // If cache is fresh and no write has happened, STOP HERE — no network call!
+    if (!needsRefresh) {
+      return;
+    }
+  
+    // 3. Only show spinner if there is NO data on screen at all
+    const hasVisibleData = currentDashboardData && currentDashboardData.length > 0;
+    if (!hasVisibleData) {
+      showLoading();
+    }
+
+    try {
+      const data = await apiGet('getDashboardData');
+
+      if (data && data.customers) {
+        data._cachedAt = Date.now(); // Stamp cache time
+        window.currentDashboardDataPayload = data;
+        window.dashboardBreakdowns = {}; // Reset drill-down breakdown memory
+      
+        currentDashboardData = data.customers;
+        currentTodaysCollection = data.todaysCollection || 0;
+        isDashboardStale = false; // Mark clean
+
+        // Save to device storage for instant startup next time
+        try {
+          localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(data));
+        } catch (err) {
+          console.warn("Local storage full, using RAM cache only.");
         }
-      } catch(e) {
-        console.error("Dashboard Sync Error: ", e);
+
+        if (activeDashboardCard) { 
+          toggleDashboardCard(activeDashboardCard); 
+        }
+      
+        applyDashboardFilters(); 
+      }
+    } catch (e) {
+      console.error("Dashboard Sync Error:", e);
+      if (!hasVisibleData) {
         showToast("Failed to sync latest dashboard.", "error");
-      } finally {
+      }
+    } finally {
+      if (!hasVisibleData) {
         hideLoading();
       }
     }
   }
 
+  // Seamless, instantaneous tab switches:
   async function navToDashboard() {
     if (currentUserPermissions && currentUserPermissions.dashboardAccess !== 'Yes') {
       showToast("Access Denied: Admin permission required for Dashboard.", "error");
       return;
     }
     switchScreen('dashboard');
-    await loadDashboardData();
+    // Runs with zero latency if cache is present; fetches in background if stale
+    await loadDashboardData(false);
   }
 
   async function navToCustomers() {
     switchScreen('customers');
-    await loadDashboardData();
+    // Runs with zero latency if cache is present; fetches in background if stale
+    await loadDashboardData(false);
   }
   
   function applyDashboardFilters() {
