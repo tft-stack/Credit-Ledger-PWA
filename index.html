@@ -2613,6 +2613,21 @@
     });
   }
 
+  // HELPER FOR 2A: Updates ledgerInitData in localStorage in 0ms without a network round-trip
+  function syncLocalInitDataCache() {
+    try {
+      const raw = localStorage.getItem('ledgerInitData');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        parsed.customers = [...allCustomers].sort();
+        if (window.allFruits) parsed.fruits = [...window.allFruits].sort();
+        localStorage.setItem('ledgerInitData', JSON.stringify(parsed));
+      }
+    } catch (e) {
+      console.warn("Could not sync local init cache:", e);
+    }
+  }
+
   async function submitEntry(forceDuplicate = false) {
     let name = document.getElementById('entryCustomerInput').value.trim();
     const amount = document.getElementById('entryAmount').value;
@@ -2695,6 +2710,7 @@
         
          showToast("Entry Saved Successfully!", "success");
          isDashboardStale = true;
+         syncLocalInitDataCache(); // 0ms local update instead of blocking network call!
         
          document.getElementById('entryAmount').value = '';
          document.getElementById('entryNotes').value = '';
@@ -2709,11 +2725,8 @@
          
          document.getElementById('searchCustomerInput').value = name;
          toggleClearSearch('searchCustomerInput', 'clearSearchBtn');
-         await handleSearchChange(); 
          switchScreen('view');
-
-         const freshData = await apiGet('getInitialData');
-         localStorage.setItem('ledgerInitData', JSON.stringify(freshData));
+         await handleSearchChange(); 
       } else {
          showToast("Failed to save: " + result.error, "error");
       }
@@ -3059,8 +3072,11 @@
         toggleClearSearch('searchCustomerInput', 'clearSearchBtn');
         await loadLedger();
 
-        const freshData = await apiGet('getInitialData');
-        localStorage.setItem('ledgerInitData', JSON.stringify(freshData));
+        document.getElementById('searchCustomerInput').value = newName;
+        toggleClearSearch('searchCustomerInput', 'clearSearchBtn');
+        syncLocalInitDataCache(); // 0ms local update instead of blocking network call!
+        await loadLedger();
+        
       } else {
         showToast("Failed to update name: " + (res.error || "Unknown error"), "error");
       }
