@@ -2938,7 +2938,7 @@
         }).length;
 
         const dupBadgeHtml = dupCount > 1 
-          ? `<span style="background: #ffebee; color: #d32f2f; border: 1px solid #ffcdd2; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 6px; margin-left: 4px;" title="Same date & amount logged more than once">⚠️ DUP</span>` 
+          ? `<span style="background: #d32f2f; color: #fff; font-size: 8px; font-weight: bold; padding: 1px 4px; border-radius: 4px; line-height: 1.1; letter-spacing: 0.3px; white-space: nowrap;" title="Same date & amount logged more than once">DUP</span>` 
           : '';
 
         const noteHtml = item.notes ? `<div style="font-size:10px; color: var(--text-light); margin-top:-6px; margin-bottom:8px; text-align:left; word-wrap: anywhere;">${item.notes}</div>` : '';
@@ -2973,7 +2973,7 @@
           <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
               <div>
-                <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px;">${shortDate}${dupBadgeHtml}</div>
+                <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px; display: flex; align-items: center; gap: 4px; white-space: nowrap;">${shortDate}${dupBadgeHtml}</div>
                 ${amountDisplayHtml}
               </div>
               <div class="action-icons no-print" style="display: flex; align-items: center; gap: 4px;">
