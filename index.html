@@ -982,6 +982,19 @@
     </div>
   </div>
 
+  <!-- ==================== DUPLICATE WARNING MODAL (LAYER 1) ==================== -->
+  <div id="duplicateWarningModal" class="modal-overlay" style="z-index: 3600;">
+    <div class="card" style="width: 100%; max-width: 340px; text-align: center; padding: 22px 18px;">
+      <div style="font-size: 38px; margin-bottom: 8px;">⚠️</div>
+      <h3 style="margin-bottom: 8px; color: #d32f2f;">Possible Duplicate!</h3>
+      <div id="duplicateWarningText" style="font-size: 13px; color: var(--text-main); margin-bottom: 18px; line-height: 1.5; text-align: left; background: #fff8e1; border: 1px solid #ffe082; padding: 10px 12px; border-radius: 8px; max-height: 160px; overflow-y: auto;"></div>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn btn-outline" style="flex: 1; border-radius: 8px;" onclick="closeDuplicateModal()">Cancel</button>
+        <button class="btn btn-red" style="flex: 1; border-radius: 8px;" onclick="confirmForceDuplicate()">Save Anyway</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== ITEM DETAIL MODAL ==================== -->
   <div id="itemModalOverlay" class="modal-overlay no-print" style="z-index: 100;">
     <div class="card modal" style="width: 90%; max-width: 350px; background: var(--card-bg); padding: 20px; border-radius: 10px;">
@@ -1668,7 +1681,7 @@
     try {
       const res = await apiGet('getReadyToSettleData');
       if (res && res.data) {
-        renderSmartSettle(res.data, res.rule4Data);
+        renderSmartSettle(res.data, res.rule4Data, res.duplicateData);
       } else {
         showToast("Failed to load smart settle data", "error");
       }
@@ -1679,13 +1692,40 @@
     }
   }
 
-  function renderSmartSettle(data, rule4Data) {
+  function renderSmartSettle(data, rule4Data, duplicateData) {
     const container = document.getElementById('smartSettleContainer');
     const emptyState = document.getElementById('smartSettleEmptyState');
 
     container.innerHTML = '';
 
-    if ((!data || data.length === 0) && (!rule4Data || rule4Data.length === 0)) {
+    // LAYER 2B: Render Suspected Duplicates Banner at the very top of Smart Settle
+    if (duplicateData && duplicateData.length > 0) {
+      html += `<h4 style="margin-top: 8px; margin-bottom: 10px; color: #d32f2f; border-bottom: 1px solid var(--border-light); padding-bottom: 6px;">🚨 Suspected Duplicate Entries (${duplicateData.length})</h4>`;
+      duplicateData.forEach(dup => {
+        let escapedDupName = dup.customerName.replace(/'/g, "\\'");
+        let badgeColor = dup.type === 'Purchase' ? '#d32f2f' : '#2e7d32';
+        html += `
+          <div class="card" style="border-left: 5px solid #ff9800; background: #fffdf7; margin-bottom: 12px; padding: 12px 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 15px; font-weight: bold; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${dup.customerName}</div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">
+                  <strong style="color: ${badgeColor};">${dup.type}</strong> of <strong>₹${dup.amount.toLocaleString('en-IN')}</strong> on <strong>${dup.date}</strong>
+                </div>
+                <div style="font-size: 11px; color: #e65100; font-weight: bold; margin-top: 2px;">
+                  ⚠️ Logged ${dup.count} times on the same date
+                </div>
+              </div>
+              <button onclick="jumpToCustomer('${escapedDupName}')" class="btn btn-outline-red btn-sm" style="flex: none; width: auto; padding: 8px 14px; border-radius: 6px; margin: 0;">
+                Review
+              </button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    if ((!data || data.length === 0) && (!rule4Data || rule4Data.length === 0) && (!duplicateData || duplicateData.length === 0)) {
       emptyState.style.display = 'block';
       return;
     }
@@ -2521,7 +2561,47 @@
     updateRowButtons('detailsContainer');
   }
   
-  async function submitEntry() {
+  let pendingDuplicateAction = null;
+
+  function showDuplicateModal(duplicates, onConfirmCallback) {
+    const textEl = document.getElementById('duplicateWarningText');
+    let listHtml = duplicates.map(d => 
+      `<div style="margin-bottom: 6px; color: #333;">• <strong>${d.customerName}</strong> — ${d.type} of <strong>₹${parseFloat(d.amount).toLocaleString('en-IN')}</strong> on <strong>${d.date}</strong></div>`
+    ).join('');
+    textEl.innerHTML = `<div style="margin-bottom: 6px; color: #856404; font-weight: bold;">The following identical entry already exists for the same day:</div>${listHtml}`;
+    pendingDuplicateAction = onConfirmCallback;
+    document.getElementById('duplicateWarningModal').style.display = 'flex';
+  }
+
+  function closeDuplicateModal() {
+    document.getElementById('duplicateWarningModal').style.display = 'none';
+    pendingDuplicateAction = null;
+  }
+
+  function confirmForceDuplicate() {
+    const callback = pendingDuplicateAction;
+    closeDuplicateModal();
+    if (typeof callback === 'function') callback();
+  }
+
+  // Client-side 0ms check against currently loaded ledger history
+  function checkLocalLedgerDuplicate(custName, dateYMD, type, amount) {
+    if (!currentLedgerHistory || currentLedgerHistory.length === 0) return false;
+    const dispCust = document.getElementById('dispCustomerName') ? document.getElementById('dispCustomerName').innerText.trim() : '';
+    if (dispCust.toLowerCase() !== custName.toLowerCase()) return false;
+
+    const parts = dateYMD.split('-');
+    const dateDMY = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateYMD;
+    const normNewType = (type === 'Purchase' || type === 'Goods Purchased') ? 'Purchase' : 'Payment';
+    const targetAmt = parseFloat(amount) || 0;
+
+    return currentLedgerHistory.some(item => {
+      const itemNormType = (item.type === 'Purchase' || item.type === 'Goods Purchased') ? 'Purchase' : 'Payment';
+      return item.date === dateDMY && itemNormType === normNewType && Math.abs((parseFloat(item.amount) || 0) - targetAmt) < 0.01;
+    });
+  }
+
+  async function submitEntry(forceDuplicate = false) {
     let name = document.getElementById('entryCustomerInput').value.trim();
     const amount = document.getElementById('entryAmount').value;
     const isBF = document.getElementById('broughtForward').checked;
@@ -2540,12 +2620,18 @@
     
     if (existingExact) {
       name = existingExact; 
-    } else {
+    } else if (!forceDuplicate) {
       const warningBox = document.getElementById('similarityWarning');
       if (warningBox.style.display === 'block') {
         const proceed = confirm(`"${name}" is very similar to an existing customer. Are you sure you want to create a brand new account?`);
         if (!proceed) return; 
       }
+    }
+
+    // LAYER 1A: 0ms Client-Side Duplicate Check (if this customer's ledger is already loaded)
+    if (!forceDuplicate && !isBF && checkLocalLedgerDuplicate(name, date, type, amount)) {
+      showDuplicateModal([{ customerName: name, date: date, type: type, amount: amount }], () => submitEntry(true));
+      return;
     }
 
     let detailsArray = [];
@@ -2580,10 +2666,18 @@
         amount: amount, 
         date: date, 
         notes: notes,
-        details: detailsArray
+        details: detailsArray,
+        forceDuplicate: forceDuplicate
       });
       
-      if(result.status === 'success' || !result.error) {
+      // LAYER 1B: Backend 2ms Cache Duplicate Warning
+      if (result && result.status === 'duplicate_warning') {
+        hideLoading();
+        showDuplicateModal(result.duplicates, () => submitEntry(true));
+        return;
+      }
+
+      if (result.status === 'success' || !result.error) {
          localStorage.removeItem(ENTRY_DRAFT_KEY);
          document.getElementById('draftIndicator').style.display = 'none';
         
@@ -2713,8 +2807,7 @@
     }
   }
 
-  function renderLedger(data) {
-
+    function renderLedger(data) {
     try {
       const lastPaidContainer = document.getElementById('viewEntryLastPaid');
       const lastPaidAmountEl = document.getElementById('viewLastPaidAmount');
@@ -2776,6 +2869,15 @@
       container.innerHTML = '<div style="color: var(--text-light); font-size:13px; text-align:center; padding: 20px;">No pending transactions found.</div>';
       return;
     }
+
+    // LAYER 2A: Identify duplicate (Date + Type + Amount) entries in this customer's ledger (0ms)
+    const ledgerDupCounts = {};
+    data.history.forEach(r => {
+      if (r.date === 'B/F') return;
+      const normT = (r.type === 'Purchase' || r.type === 'Goods Purchased') ? 'Purchase' : 'Payment';
+      const sig = `${r.date}|${normT}|${(parseFloat(r.amount) || 0).toFixed(2)}`;
+      ledgerDupCounts[sig] = (ledgerDupCounts[sig] || 0) + 1;
+    });
 
     let purchases = data.history.filter(r => r.type === 'Purchase' || r.type === 'Goods Purchased');
     let payments = data.history.filter(r => r.type === 'Payment' || r.type === 'Amount Received');
@@ -3907,11 +4009,13 @@
     updateBulkTotal();
   }
   
-  async function submitBulkEntries() {
+  async function submitBulkEntries(forceDuplicate = false) {
     const dateVal = document.getElementById('bulkDate').value;
     const rowEls = document.querySelectorAll('.bulk-row');
     const validRows = [];
     const newCustomers = []; 
+    const seenInBatch = new Set();
+    const internalBatchDups = [];
 
     for (let row of rowEls) {
       let cust = row.querySelector('.bulk-cust').value.trim();
@@ -3925,6 +4029,13 @@
           if (!newCustomers.includes(cust)) newCustomers.push(cust);
         }
         
+        // Check if user entered the exact same Customer + Amount twice inside this Bulk Modal!
+        const batchSig = `${cust.toLowerCase()}|${amt.toFixed(2)}`;
+        if (seenInBatch.has(batchSig)) {
+          internalBatchDups.push({ customerName: cust, date: dateVal, type: currentBulkType, amount: amt });
+        }
+        seenInBatch.add(batchSig);
+
         validRows.push({ customerName: cust, amount: amt, notes: "" });
       } else if (cust || amt > 0) {
         showToast("Error: A row has missing customer or amount.", "error");
@@ -3937,9 +4048,15 @@
       return;
     }
 
-    if (newCustomers.length > 0) {
+    if (!forceDuplicate && newCustomers.length > 0) {
        const proceed = confirm("⚠️ You are about to create NEW ledger accounts for:\n\n• " + newCustomers.join("\n• ") + "\n\nIs this correct? (Check for spelling mistakes)");
        if (!proceed) return;
+    }
+
+    // LAYER 1A: Catch duplicates within the same Bulk Entry form (0ms)
+    if (!forceDuplicate && internalBatchDups.length > 0) {
+      showDuplicateModal(internalBatchDups, () => submitBulkEntries(true));
+      return;
     }
 
     showLoading();
@@ -3947,11 +4064,19 @@
       const payload = {
         type: currentBulkType,
         date: dateVal,
-        entries: validRows
+        entries: validRows,
+        forceDuplicate: forceDuplicate
       };
 
       const res = await apiPost('addBulkEntries', payload);
       
+      // LAYER 1B: Catch duplicates against already-saved entries today (~2ms)
+      if (res && res.status === 'duplicate_warning') {
+        hideLoading();
+        showDuplicateModal(res.duplicates, () => submitBulkEntries(true));
+        return;
+      }
+
       if (res && res.status === 'success') {
         localStorage.removeItem(BULK_DRAFT_KEY); 
         showToast(`Saved ${validRows.length} entries successfully!`, "success");
