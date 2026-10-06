@@ -3446,9 +3446,10 @@
     resetCardStyles();
   }
 
-  async function toggleDashboardCard(cardType) {
+  function toggleDashboardCard(cardType) {
     const detailsSection = document.getElementById('dashboardDetailsSection');
     
+    // If tapping the already-open card, close it
     if (activeDashboardCard === cardType) {
       detailsSection.style.display = 'none';
       activeDashboardCard = null;
@@ -3460,27 +3461,77 @@
       window.dashboardBreakdowns = {};
     }
 
+    // 1. If not in memory yet, compute or pull instantly without network/loading spinner
     if (!window.dashboardBreakdowns[cardType]) {
-      showLoading();
-      try {
-        const res = await apiGet('getDashboardBreakdowns', { cardType: cardType });
-        if (res && res.status === 'success') {
-          window.dashboardBreakdowns[cardType] = res.data;
-        } else if (res && Array.isArray(res)) {
-          window.dashboardBreakdowns[cardType] = res;
-        } else {
-          throw new Error(res.error || "Failed to fetch details");
-        }
-      } catch (e) {
-        console.error("Drill-down fetch error:", e);
-        showToast("Failed to load details.", "error");
-        hideLoading();
-        return;
-      } finally {
-        hideLoading();
+      const payload = window.currentDashboardDataPayload || {};
+      const customers = currentDashboardData || payload.customers || [];
+      const now = new Date();
+      const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const msPerDay = 1000 * 60 * 60 * 24;
+
+      // Check if it's one of the 10 Analytics / Overdue / Amount cards
+      const isAnalyticsCard = ['noPayGt30', 'noPay30', 'noPay21', 'noPay14', 'amtGt2L', 'amt1Lto2L', 'amt50kto1L', 'amt25kto50k', 'amt10kto15k', 'amtLt10k'].includes(cardType);
+
+      if (isAnalyticsCard) {
+        // Build bucket on the fly from already-loaded customers in 0ms
+        let filtered = [];
+
+        customers.forEach(c => {
+          const balance = parseFloat(c.balance) || 0;
+          if (balance <= 0) return; // Only positive balances
+
+          let daysSincePay = 9999;
+          if (c.lastPaymentDate && c.lastPaymentDate !== 'No Record') {
+            const parts = c.lastPaymentDate.split('/');
+            if (parts.length === 3) {
+              const d = new Date(parts[2], parts[1] - 1, parts[0]);
+              if (!isNaN(d.getTime())) {
+                const payMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+                daysSincePay = Math.floor((todayMidnight - payMidnight) / msPerDay);
+              }
+            }
+          }
+
+          const item = {
+            name: c.name,
+            amount: balance,
+            lastPaymentDate: c.lastPaymentDate || 'No Record',
+            daysSincePay: daysSincePay
+          };
+
+          // Overdue Buckets (Matching your exact Code.gs rules)
+          if (cardType === 'noPayGt30' && daysSincePay > 30) filtered.push(item);
+          else if (cardType === 'noPay30' && daysSincePay >= 22 && daysSincePay <= 30) filtered.push(item);
+          else if (cardType === 'noPay21' && daysSincePay >= 15 && daysSincePay <= 21) filtered.push(item);
+          else if (cardType === 'noPay14' && daysSincePay >= 8 && daysSincePay <= 14) filtered.push(item);
+
+          // Amount Slabs
+          else if (cardType === 'amtGt2L' && balance > 200000) filtered.push(item);
+          else if (cardType === 'amt1Lto2L' && balance >= 100000 && balance <= 200000) filtered.push(item);
+          else if (cardType === 'amt50kto1L' && balance >= 50000 && balance < 100000) filtered.push(item);
+          else if (cardType === 'amt25kto50k' && balance >= 25000 && balance < 50000) filtered.push(item);
+          else if (cardType === 'amt10kto15k' && balance >= 10000 && balance <= 25000) filtered.push(item);
+          else if (cardType === 'amtLt10k' && balance < 10000) filtered.push(item);
+        });
+
+        filtered.sort((a, b) => b.amount - a.amount);
+        window.dashboardBreakdowns[cardType] = filtered;
+
+      } else {
+        // Daily Activity cards (yestCredit, todayCredit, yestReceived, todayReceived)
+        // If daily breakdowns are not pre-cached, fetch asynchronously without a full-screen block
+        apiGet('getDashboardBreakdowns', { cardType: cardType }).then(res => {
+          if (res && res.data) {
+            window.dashboardBreakdowns[cardType] = res.data;
+            if (activeDashboardCard === cardType) {
+              renderDetailsTable(cardType, res.data);
+            }
+          }
+        }).catch(err => console.error("Drill-down fetch failed", err));
       }
     }
 
+    // 2. Set Active Card & Render Immediately (Zero latency)
     activeDashboardCard = cardType;
     resetCardStyles();
     
