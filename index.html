@@ -2100,15 +2100,65 @@
     if (todaySaleElem) todaySaleElem.innerHTML = `<span class="${blurClass}">₹${(todaySale).toLocaleString('en-IN')}</span>`;
     if (yesterdaySaleElem) yesterdaySaleElem.innerHTML = `<span class="${blurClass}">₹${(yestSale).toLocaleString('en-IN')}</span>`;
 
-    // Populate 10 Analytics Card Counts & Timestamp
+    // Timestamp display
     if (payload.analyticsUpdatedAt) {
       const tsEl = document.getElementById('analyticsTimestamp');
       if (tsEl) tsEl.innerText = `Batch synced: ${payload.analyticsUpdatedAt}`;
     }
-    const aCounts = payload.analyticsCounts || {};
+
+    // --- REAL-TIME LIVE ANALYTICS COUNTERS (Guarantees card counts match drill-down lists) ---
+    const allCusts = currentDashboardData || payload.customers || [];
+    const now = new Date();
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const msPerDay = 1000 * 60 * 60 * 24;
+
+    const liveCounts = {
+      noPayGt30: 0,
+      noPay30: 0,
+      noPay21: 0,
+      noPay14: 0,
+      amtGt2L: 0,
+      amt1Lto2L: 0,
+      amt50kto1L: 0,
+      amt25kto50k: 0,
+      amt10kto15k: 0,
+      amtLt10k: 0
+    };
+
+    allCusts.forEach(c => {
+      const balance = parseFloat(c.balance) || 0;
+      if (balance <= 0) return;
+
+      let daysSincePay = 9999;
+      if (c.lastPaymentDate && c.lastPaymentDate !== 'No Record') {
+        const parts = c.lastPaymentDate.split('/');
+        if (parts.length === 3) {
+          const d = new Date(parts[2], parts[1] - 1, parts[0]);
+          if (!isNaN(d.getTime())) {
+            const payMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+            daysSincePay = Math.floor((todayMidnight - payMidnight) / msPerDay);
+          }
+        }
+      }
+
+      // Overdue Buckets (Mutually Exclusive)
+      if (daysSincePay > 30) liveCounts.noPayGt30++;
+      else if (daysSincePay >= 22 && daysSincePay <= 30) liveCounts.noPay30++;
+      else if (daysSincePay >= 15 && daysSincePay <= 21) liveCounts.noPay21++;
+      else if (daysSincePay >= 8 && daysSincePay <= 14) liveCounts.noPay14++;
+
+      // Pending Amount Slabs
+      if (balance > 200000) liveCounts.amtGt2L++;
+      else if (balance >= 100000 && balance <= 200000) liveCounts.amt1Lto2L++;
+      else if (balance >= 50000 && balance < 100000) liveCounts.amt50kto1L++;
+      else if (balance >= 25000 && balance < 50000) liveCounts.amt25kto50k++;
+      else if (balance >= 10000 && balance <= 25000) liveCounts.amt10kto15k++;
+      else if (balance < 10000) liveCounts.amtLt10k++;
+    });
+
     ['noPayGt30', 'noPay30', 'noPay21', 'noPay14', 'amtGt2L', 'amt1Lto2L', 'amt50kto1L', 'amt25kto50k', 'amt10kto15k', 'amtLt10k'].forEach(key => {
       const el = document.getElementById('count-' + key);
-      if (el) el.innerText = aCounts[key] || 0;
+      if (el) el.innerText = liveCounts[key];
     });
 
     if (!currentDashboardData || !Array.isArray(currentDashboardData)) {
@@ -3329,7 +3379,7 @@
     switchScreen('view');
   }
 
-    let isPrivacyEnabled = true; 
+  let isPrivacyEnabled = true; 
 
     function togglePrivacy() {
       isPrivacyEnabled = !isPrivacyEnabled;
@@ -3567,9 +3617,9 @@
       yestReceived: "Yesterday's Received Breakdown",
       todayReceived: "Today's Received Breakdown",
       noPayGt30: "No Payment in > 30 Days",
-      noPay30: "No Payment in 22-30 Days",
-      noPay21: "No Payment in 15-21 Days",
-      noPay15: "No Payment in 8-14 Days",
+      noPay30: "No Payment in 22–30 Days",
+      noPay21: "No Payment in 15–21 Days",
+      noPay14: "No Payment in 8–14 Days",
       amtGt2L: "Pending Amount > ₹2 Lakh",
       amt1Lto2L: "Pending Amount: ₹1 Lakh – ₹2 Lakh",
       amt50kto1L: "Pending Amount: ₹50k – ₹1 Lakh",
@@ -3580,6 +3630,9 @@
     
     header.innerText = `${titles[cardType] || "Details"} (${data.length})`;
     const isDailyCard = ['yestCredit', 'todayCredit', 'yestReceived', 'todayReceived'].includes(cardType);
+    
+    // Check global privacy state at render time
+    const privacyClass = (typeof isPrivacyEnabled !== 'undefined' && !isPrivacyEnabled) ? "privacy-blur revealed" : "privacy-blur";
 
     if (data.length === 0) {
       container.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;">No matching customers found.</div>';
@@ -3591,7 +3644,6 @@
                         <th style="padding: 10px 16px; text-align: right;">Amount</th>
                      </tr>`;
       data.forEach((item, index) => {
-        let privacyClass = (typeof isPrivacyEnabled !== 'undefined' && !isPrivacyEnabled) ? "privacy-blur revealed" : "privacy-blur";
         let amountColor = cardType.includes('Credit') ? '#d32f2f' : '#2e7d32'; 
         let escapedName = (item.name || "").replace(/'/g, "\\'");
         html += `<tr onclick="jumpToCustomer('${escapedName}')" style="border-bottom: 1px solid var(--border-light); cursor: pointer;">
@@ -3605,7 +3657,7 @@
       html += `</table>`;
       container.innerHTML = html;
     } else {
-      // Analytics Cards Table: Shows S No., Customer Name, Last Paid Date, and Pending Amount
+      // Overdue & Amount Slabs Table with privacy-blur wrapped amount
       let html = `<table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                      <tr style="background: var(--pill-bg); border-bottom: 1px solid var(--border-light); text-transform: uppercase; font-size: 10px; color: var(--text-muted);">
                         <th style="padding: 10px 10px; text-align: left; width: 36px;">#</th>
@@ -3614,7 +3666,6 @@
                         <th style="padding: 10px 12px; text-align: right;">Pending</th>
                      </tr>`;
       data.forEach((item, index) => {
-        let privacyClass = (typeof isPrivacyEnabled !== 'undefined' && !isPrivacyEnabled) ? "privacy-blur revealed" : "privacy-blur";
         let escapedName = (item.name || "").replace(/'/g, "\\'");
         let daysBadge = (item.daysSincePay && item.daysSincePay < 9000) ? `<div style="font-size: 9px; color: var(--text-light);">${item.daysSincePay}d ago</div>` : '';
         
