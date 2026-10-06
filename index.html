@@ -1680,13 +1680,14 @@
     showLoading();
     try {
       const res = await apiGet('getReadyToSettleData');
-      if (res && res.data) {
-        renderSmartSettle(res.data, res.rule4Data, res.duplicateData);
+      if (res && (res.status === 'success' || res.data)) {
+        renderSmartSettle(res.data || [], res.rule4Data || [], res.duplicateData || []);
       } else {
-        showToast("Failed to load smart settle data", "error");
+        showToast("Failed to load smart settle data: " + (res && res.error ? res.error : "Unknown"), "error");
       }
     } catch (e) {
-      showToast("Network Error: Could not load data.", "error");
+      console.error("Smart Settle Error:", e);
+      showToast("Error loading Smart Settle: " + e.message, "error");
     } finally {
       hideLoading();
     }
@@ -1698,22 +1699,40 @@
 
     container.innerHTML = '';
 
-    // LAYER 2B: Render Suspected Duplicates Banner at the very top of Smart Settle
-    if (duplicateData && duplicateData.length > 0) {
-      html += `<h4 style="margin-top: 8px; margin-bottom: 10px; color: #d32f2f; border-bottom: 1px solid var(--border-light); padding-bottom: 6px;">🚨 Suspected Duplicate Entries (${duplicateData.length})</h4>`;
+    const hasMatches = Array.isArray(data) && data.length > 0;
+    const hasRule4 = Array.isArray(rule4Data) && rule4Data.length > 0;
+    const hasDups = Array.isArray(duplicateData) && duplicateData.length > 0;
+
+    if (!hasMatches && !hasRule4 && !hasDups) {
+      emptyState.style.display = 'block';
+      return;
+    }
+
+    emptyState.style.display = 'none';
+    let html = '';
+
+    // 1. LAYER 2B: Suspected Duplicates Alert Section
+    if (hasDups) {
+      html += `<h4 style="margin-top: 8px; margin-bottom: 10px; color: #ff9800; border-bottom: 1px solid var(--border-light); padding-bottom: 6px;">🚨 Suspected Duplicate Entries (${duplicateData.length})</h4>`;
       duplicateData.forEach(dup => {
-        let escapedDupName = dup.customerName.replace(/'/g, "\\'");
-        let badgeColor = dup.type === 'Purchase' ? '#d32f2f' : '#2e7d32';
+        let custName = (dup && dup.customerName) ? dup.customerName.toString() : "Unknown";
+        let escapedDupName = custName.replace(/'/g, "\\'");
+        let dupType = (dup && dup.type) ? dup.type : "Entry";
+        let badgeColor = dupType === 'Purchase' ? '#d32f2f' : '#2e7d32';
+        let dupAmt = (parseFloat(dup && dup.amount) || 0).toLocaleString('en-IN');
+        let dupDate = (dup && dup.date) ? dup.date : "--/--";
+        let dupCount = (dup && dup.count) ? dup.count : 2;
+
         html += `
-          <div class="card" style="border-left: 5px solid #ff9800; background: #fffdf7; margin-bottom: 12px; padding: 12px 14px;">
+          <div class="card" style="border-left: 5px solid #ff9800; margin-bottom: 12px; padding: 12px 14px;">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
               <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 15px; font-weight: bold; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${dup.customerName}</div>
+                <div style="font-size: 15px; font-weight: bold; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${custName}</div>
                 <div style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">
-                  <strong style="color: ${badgeColor};">${dup.type}</strong> of <strong>₹${dup.amount.toLocaleString('en-IN')}</strong> on <strong>${dup.date}</strong>
+                  <strong style="color: ${badgeColor};">${dupType}</strong> of <strong>₹${dupAmt}</strong> on <strong>${dupDate}</strong>
                 </div>
-                <div style="font-size: 11px; color: #e65100; font-weight: bold; margin-top: 2px;">
-                  ⚠️ Logged ${dup.count} times on the same date
+                <div style="font-size: 11px; color: #ff9800; font-weight: bold; margin-top: 2px;">
+                  ⚠️ Logged ${dupCount} times on the same date
                 </div>
               </div>
               <button onclick="jumpToCustomer('${escapedDupName}')" class="btn btn-outline-red btn-sm" style="flex: none; width: auto; padding: 8px 14px; border-radius: 6px; margin: 0;">
@@ -1725,15 +1744,8 @@
       });
     }
 
-    if ((!data || data.length === 0) && (!rule4Data || rule4Data.length === 0) && (!duplicateData || duplicateData.length === 0)) {
-      emptyState.style.display = 'block';
-      return;
-    }
-
-    emptyState.style.display = 'none';
-    let html = '';
-
-    if (data && data.length > 0) {
+    // 2. Standard Smart Settle Cards (Rules 1 through 6)
+    if (hasMatches) {
       data.forEach((custMatch) => {
         let safeCustName = custMatch.customerName.replace(/[^a-zA-Z0-9]/g, '');
 
@@ -1744,7 +1756,7 @@
 
         let ruleTotalDisplay = '';
         if (custMatch.totalAmount) {
-             ruleTotalDisplay = `<div style="color: #2e7d32; font-weight: bold; margin-top: 8px; font-size: 14px;">Matching Total: ₹${custMatch.totalAmount.toLocaleString('en-IN')}</div>`;
+          ruleTotalDisplay = `<div style="color: #2e7d32; font-weight: bold; margin-top: 8px; font-size: 14px;">Matching Total: ₹${custMatch.totalAmount.toLocaleString('en-IN')}</div>`;
         }
 
         let escapedName = custMatch.customerName.replace(/'/g, "\\'");
@@ -1776,7 +1788,7 @@
         let payments = custMatch.items.filter(i => i.type === 'Payment' || i.type === 'Amount Received');
         let maxLen = Math.max(purchases.length, payments.length);
 
-        for(let i=0; i<maxLen; i++) {
+        for (let i = 0; i < maxLen; i++) {
           let pur = purchases[i];
           let pay = payments[i];
 
@@ -1785,10 +1797,9 @@
             
             let siblingAttr = '';
             if (custMatch.matchRule.includes("Rule 2") && pur && pay) {
-                siblingAttr = `data-sibling-id="${isLeft ? pay.id : pur.id}"`;
+              siblingAttr = `data-sibling-id="${isLeft ? pay.id : pur.id}"`;
             }
 
-            // --- NEW: Inject Details Accordion matching View Entry ---
             let detailsHtml = '';
             let amountDisplayHtml = `<div style="font-weight: bold; font-size: 14px; color: var(--text-main);">₹${item.amount.toLocaleString('en-IN')}</div>`;
             
@@ -1801,7 +1812,7 @@
               `).join('');
               
               detailsHtml = `
-                <div id="smart_desc_${item.id}" class="details-dropdown" style="background: #f8f9fa; border: none; border-radius: 8px; padding: 8px 12px; margin-top: 8px;">
+                <div id="smart_desc_${item.id}" class="details-dropdown" style="background: var(--bg-color); border: 1px solid var(--border-light); border-radius: 8px; padding: 8px 12px; margin-top: 8px;">
                   ${rowsHtml}
                 </div>
               `;
@@ -1844,7 +1855,8 @@
       });
     }
 
-    if (rule4Data && rule4Data.length > 0) {
+    // 3. High Volume Action Required Section
+    if (hasRule4) {
       rule4Data.sort((a, b) => b.purchaseCount - a.purchaseCount);
       html += `<h4 style="margin-top: 24px; margin-bottom: 12px; color: #d32f2f; border-bottom: 1px solid var(--border-light); padding-bottom: 8px;">⚠️ High Volume Action Required</h4>`;
       
@@ -2870,12 +2882,13 @@
       return;
     }
 
-    // LAYER 2A: Identify duplicate (Date + Type + Amount) entries in this customer's ledger (0ms)
+    // LAYER 2A: Identify duplicate (ShortDate + Side + Amount) entries in this customer's ledger
     const ledgerDupCounts = {};
     data.history.forEach(r => {
-      if (r.date === 'B/F') return;
-      const normT = (r.type === 'Purchase' || r.type === 'Goods Purchased') ? 'Purchase' : 'Payment';
-      const sig = `${r.date}|${normT}|${(parseFloat(r.amount) || 0).toFixed(2)}`;
+      if (!r.date || r.date === 'B/F') return;
+      const sDate = r.date.toString().substring(0, 5);
+      const isPur = (r.type === 'Purchase' || r.type === 'Goods Purchased');
+      const sig = `${sDate}|${isPur ? 'L' : 'R'}|${Math.round((parseFloat(r.amount) || 0) * 100)}`;
       ledgerDupCounts[sig] = (ledgerDupCounts[sig] || 0) + 1;
     });
 
@@ -2913,7 +2926,21 @@
     const buildCell = (item, isLeft) => {
         if (!item) return `<div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''}"></div>`;
         
-        const shortDate = item.date === 'B/F' ? 'B/F' : item.date.substring(0, 5); 
+        const shortDate = item.date === 'B/F' ? 'B/F' : item.date.toString().substring(0, 5); 
+        
+        // Check if another entry on the same side has the exact same shortDate and amount
+        const sideArray = isLeft ? purchases : payments;
+        const itemAmt = Math.round((parseFloat(item.amount) || 0) * 100);
+        const dupCount = shortDate === 'B/F' ? 1 : sideArray.filter(x => {
+          const xDate = (!x.date || x.date === 'B/F') ? 'B/F' : x.date.toString().substring(0, 5);
+          const xAmt = Math.round((parseFloat(x.amount) || 0) * 100);
+          return xDate === shortDate && xAmt === itemAmt;
+        }).length;
+
+        const dupBadgeHtml = dupCount > 1 
+          ? `<span style="background: #ffebee; color: #d32f2f; border: 1px solid #ffcdd2; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 6px; margin-left: 4px;" title="Same date & amount logged more than once">⚠️ DUP</span>` 
+          : '';
+
         const noteHtml = item.notes ? `<div style="font-size:10px; color: var(--text-light); margin-top:-6px; margin-bottom:8px; text-align:left; word-wrap: anywhere;">${item.notes}</div>` : '';
         
         let siblingAttr = '';
@@ -2946,7 +2973,7 @@
           <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
               <div>
-                <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px;">${shortDate}</div>
+                <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px;">${shortDate}${dupBadgeHtml}</div>
                 ${amountDisplayHtml}
               </div>
               <div class="action-icons no-print" style="display: flex; align-items: center; gap: 4px;">
