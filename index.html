@@ -2882,7 +2882,7 @@
     document.getElementById('ledgerCard').style.display = 'block';
     document.getElementById('emptyState').style.display = 'none';
     
-    document.getElementById('dispCustomerName').innerText = data.customerName;
+    document.getElementById('dispCustomerName').innerText = data.customerName || "Unknown";
     
     const balElem = document.getElementById('dispOverallBalance');
     if (data.overallBalance >= 0) {
@@ -2895,7 +2895,7 @@
 
     const container = document.getElementById('ledgerRowsContainer');
 
-    if (data.history.length === 0) {
+    if (!data.history || data.history.length === 0) {
       container.innerHTML = '<div style="color: var(--text-light); font-size:13px; text-align:center; padding: 20px;">No pending transactions found.</div>';
       return;
     }
@@ -2936,68 +2936,66 @@
       pairedRows.push({ left: null, right: remainingPayments.shift() });
     }
 
-    // OPTIMIZATION 2C: Build HTML string in memory to eliminate layout reflows
-        const buildCell = (item, isLeft) => {
-        if (!item) return `<div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''}"></div>`;
-        
-        const shortDate = item.date === 'B/F' ? 'B/F' : item.date.toString().substring(0, 5); 
-        
-        // O(1) Instant Duplicate Check using pre-computed ledgerDupCounts
-        const itemAmt = Math.round((parseFloat(item.amount) || 0) * 100);
-        const itemSig = `${shortDate}|${isLeft ? 'L' : 'R'}|${itemAmt}`;
-        const isDuplicateItem = shortDate !== 'B/F' && ledgerDupCounts[itemSig] > 1;
+    // Define exactly ONCE in memory outside the loop
+    const buildCell = (item, isLeft, isExactMatch, leftId, rightId) => {
+      if (!item) return `<div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''}"></div>`;
+      
+      const shortDate = item.date === 'B/F' ? 'B/F' : item.date.toString().substring(0, 5); 
+      
+      const itemAmt = Math.round((parseFloat(item.amount) || 0) * 100);
+      const itemSig = `${shortDate}|${isLeft ? 'L' : 'R'}|${itemAmt}`;
+      const isDuplicateItem = shortDate !== 'B/F' && ledgerDupCounts[itemSig] > 1;
 
-        const dupBadgeHtml = isDuplicateItem 
-          ? `<span style="background: #d32f2f; color: #fff; font-size: 8px; font-weight: bold; padding: 1px 4px; border-radius: 4px; line-height: 1.1; letter-spacing: 0.3px; white-space: nowrap;" title="Same date & amount logged more than once">DUP</span>` 
-          : '';
+      const dupBadgeHtml = isDuplicateItem 
+        ? `<span style="background: #d32f2f; color: #fff; font-size: 8px; font-weight: bold; padding: 1px 4px; border-radius: 4px; line-height: 1.1; letter-spacing: 0.3px; white-space: nowrap; margin-left: 4px;" title="Same date & amount logged more than once">DUP</span>` 
+        : '';
 
-        const noteHtml = item.notes ? `<div style="font-size:10px; color: var(--text-light); margin-top:-6px; margin-bottom:8px; text-align:left; word-wrap: anywhere;">${item.notes}</div>` : '';
+      const noteHtml = item.notes ? `<div style="font-size:10px; color: var(--text-light); margin-top:-6px; margin-bottom:8px; text-align:left; word-wrap: anywhere;">${item.notes}</div>` : '';
+      
+      let siblingAttr = '';
+      if (isExactMatch) {
+          siblingAttr = `data-sibling-id="${isLeft ? rightId : leftId}"`;
+      }
+
+      let detailsHtml = '';
+      let amountDisplayHtml = `<div style="font-weight: bold; font-size: 14px; color: var(--text-main);">₹${item.amount.toLocaleString('en-IN')}</div>`;
+      
+      if ((item.type === 'Purchase' || item.type === 'Goods Purchased') && item.details && item.details.length > 0) {
+        let rowsHtml = item.details.map(d => `
+          <div class="details-dropdown-row" style="align-items: center; font-size: 11px; padding: 4px 0;">
+            <div style="flex: 2; font-weight: 600; color: var(--text-main);">${d.fruit} <span style="font-weight: normal; color: var(--text-muted); font-size: 10px;">(${d.qty} x ₹${d.price})</span></div>
+            <div style="flex: 1; text-align: right; color: #007bff; font-weight: bold;">₹${d.total.toLocaleString('en-IN')}</div>
+          </div>
+        `).join('');
         
-        let siblingAttr = '';
-        if (isExactMatch) {
-            siblingAttr = `data-sibling-id="${isLeft ? rightId : leftId}"`;
-        }
-
-        let detailsHtml = '';
-        let amountDisplayHtml = `<div style="font-weight: bold; font-size: 14px; color: var(--text-main);">₹${item.amount.toLocaleString('en-IN')}</div>`;
-        
-        if ((item.type === 'Purchase' || item.type === 'Goods Purchased') && item.details && item.details.length > 0) {
-          
-          let rowsHtml = item.details.map(d => `
-            <div class="details-dropdown-row" style="align-items: center; font-size: 11px; padding: 4px 0;">
-              <div style="flex: 2; font-weight: 600; color: var(--text-main);">${d.fruit} <span style="font-weight: normal; color: var(--text-muted); font-size: 10px;">(${d.qty} x ₹${d.price})</span></div>
-              <div style="flex: 1; text-align: right; color: #007bff; font-weight: bold;">₹${d.total.toLocaleString('en-IN')}</div>
-            </div>
-          `).join('');
-          
-          detailsHtml = `
-            <div id="desc_${item.id}" class="details-dropdown" style="background: #f8f9fa; border: none; border-radius: 8px; padding: 8px 12px; margin-top: 8px;">
-              ${rowsHtml}
-            </div>
-          `;
-          
-          amountDisplayHtml = `<div onclick="toggleDetails('desc_${item.id}')" style="font-weight: bold; font-size: 14px; color: #007bff; cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 4px;" title="View Items">₹${item.amount.toLocaleString('en-IN')} <span style="font-size: 10px;">▼</span></div>`;
-        }
-
-        return `
-          <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-              <div>
-                <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px; display: flex; align-items: center; gap: 4px; white-space: nowrap;">${shortDate}${dupBadgeHtml}</div>
-                ${amountDisplayHtml}
-              </div>
-              <div class="action-icons no-print" style="display: flex; align-items: center; gap: 4px;">
-                <button class="icon-btn" onclick="openModal(${item.id})" style="background: none; border: none; padding: 2px; cursor: pointer; color: #007bff; font-size: 14px;">✏️</button>
-                <button class="icon-btn" onclick="promptDelete(${item.id})" style="background: none; border: none; padding: 2px; cursor: pointer; color: #d32f2f; font-size: 14px;">🗑️</button>
-                <input type="checkbox" id="check_${item.id}" class="settle-checkbox" value="${item.id}" data-type="${item.type}" data-amount="${item.amount}" ${siblingAttr} onchange="handleSettleCheck(this)" style="width:18px; height:18px; margin-left: 8px; cursor: pointer; accent-color: #2e7d32;">
-              </div>
-            </div>
-            ${detailsHtml}
-            ${noteHtml}
+        detailsHtml = `
+          <div id="desc_${item.id}" class="details-dropdown" style="background: #f8f9fa; border: none; border-radius: 8px; padding: 8px 12px; margin-top: 8px;">
+            ${rowsHtml}
           </div>
         `;
-      };
-    
+        
+        amountDisplayHtml = `<div onclick="toggleDetails('desc_${item.id}')" style="font-weight: bold; font-size: 14px; color: #007bff; cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 4px;" title="View Items">₹${item.amount.toLocaleString('en-IN')} <span style="font-size: 10px;">▼</span></div>`;
+      }
+
+      return `
+        <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div>
+              <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px; display: flex; align-items: center; white-space: nowrap;">${shortDate}${dupBadgeHtml}</div>
+              ${amountDisplayHtml}
+            </div>
+            <div class="action-icons no-print" style="display: flex; align-items: center; gap: 4px;">
+              <button class="icon-btn" onclick="openModal(${item.id})" style="background: none; border: none; padding: 2px; cursor: pointer; color: #007bff; font-size: 14px;">✏️</button>
+              <button class="icon-btn" onclick="promptDelete(${item.id})" style="background: none; border: none; padding: 2px; cursor: pointer; color: #d32f2f; font-size: 14px;">🗑️</button>
+              <input type="checkbox" id="check_${item.id}" class="settle-checkbox" value="${item.id}" data-type="${item.type}" data-amount="${item.amount}" ${siblingAttr} onchange="handleSettleCheck(this)" style="width:18px; height:18px; margin-left: 8px; cursor: pointer; accent-color: #2e7d32;">
+            </div>
+          </div>
+          ${detailsHtml}
+          ${noteHtml}
+        </div>
+      `;
+    };
+
     let allRowsHtml = '';
 
     pairedRows.forEach(row => {
@@ -3007,13 +3005,12 @@
 
       allRowsHtml += `
         <div style="display: flex; margin-bottom: 8px;">
-          ${buildCell(row.left, true)}
-          ${buildCell(row.right, false)}
+          ${buildCell(row.left, true, isExactMatch, leftId, rightId)}
+          ${buildCell(row.right, false, isExactMatch, leftId, rightId)}
         </div>
       `;
     });
 
-    // Single DOM write!
     container.innerHTML = allRowsHtml;
 
     if (data.dataSource) {
