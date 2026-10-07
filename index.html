@@ -4132,8 +4132,23 @@
         localStorage.removeItem(BULK_DRAFT_KEY); 
         showToast(`Saved ${validRows.length} entries successfully!`, "success");
         closeBulkModal();
-        isDashboardStale = true;
-        loadDashboardData();
+        
+        isDashboardStale = true; // Flags that the dashboard needs an update
+        // OPTIMIZATION 2E: Removed loadDashboardData() to eliminate the blocking background network call.
+        
+        // Ensure new customers from bulk entry are immediately available in local autocomplete
+        if (newCustomers.length > 0) {
+          newCustomers.forEach(nc => {
+            if (!allCustomers.includes(nc)) {
+              allCustomers.push(nc);
+              let opt = document.createElement('option'); 
+              opt.value = nc; 
+              document.getElementById('customerList').appendChild(opt);
+            }
+          });
+          if (typeof syncLocalInitDataCache === 'function') syncLocalInitDataCache();
+        }
+
       } else {
         throw new Error(res.error || 'Unknown error');
       }
