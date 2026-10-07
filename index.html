@@ -2838,7 +2838,7 @@
     }
   }
 
-    function renderLedger(data) {
+  function renderLedger(data) {
     try {
       const lastPaidContainer = document.getElementById('viewEntryLastPaid');
       const lastPaidAmountEl = document.getElementById('viewLastPaidAmount');
@@ -2894,14 +2894,13 @@
     }
 
     const container = document.getElementById('ledgerRowsContainer');
-    container.innerHTML = ''; 
 
     if (data.history.length === 0) {
       container.innerHTML = '<div style="color: var(--text-light); font-size:13px; text-align:center; padding: 20px;">No pending transactions found.</div>';
       return;
     }
 
-    // LAYER 2A: Identify duplicate (ShortDate + Side + Amount) entries in this customer's ledger
+    // LAYER 2A: Identify duplicate (ShortDate + Side + Amount) entries in O(N) time
     const ledgerDupCounts = {};
     data.history.forEach(r => {
       if (!r.date || r.date === 'B/F') return;
@@ -2937,26 +2936,25 @@
       pairedRows.push({ left: null, right: remainingPayments.shift() });
     }
 
+    // OPTIMIZATION 2C: Build HTML string in memory to eliminate layout reflows
+    let allRowsHtml = '';
+
     pairedRows.forEach(row => {
       const isExactMatch = (row.left && row.right && row.left.amount === row.right.amount);
       const leftId = row.left ? row.left.id : null;
       const rightId = row.right ? row.right.id : null;
 
-    const buildCell = (item, isLeft) => {
+      const buildCell = (item, isLeft) => {
         if (!item) return `<div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''}"></div>`;
         
         const shortDate = item.date === 'B/F' ? 'B/F' : item.date.toString().substring(0, 5); 
         
-        // Check if another entry on the same side has the exact same shortDate and amount
-        const sideArray = isLeft ? purchases : payments;
+        // O(1) Instant Duplicate Check using pre-computed ledgerDupCounts
         const itemAmt = Math.round((parseFloat(item.amount) || 0) * 100);
-        const dupCount = shortDate === 'B/F' ? 1 : sideArray.filter(x => {
-          const xDate = (!x.date || x.date === 'B/F') ? 'B/F' : x.date.toString().substring(0, 5);
-          const xAmt = Math.round((parseFloat(x.amount) || 0) * 100);
-          return xDate === shortDate && xAmt === itemAmt;
-        }).length;
+        const itemSig = `${shortDate}|${isLeft ? 'L' : 'R'}|${itemAmt}`;
+        const isDuplicateItem = shortDate !== 'B/F' && ledgerDupCounts[itemSig] > 1;
 
-        const dupBadgeHtml = dupCount > 1 
+        const dupBadgeHtml = isDuplicateItem 
           ? `<span style="background: #d32f2f; color: #fff; font-size: 8px; font-weight: bold; padding: 1px 4px; border-radius: 4px; line-height: 1.1; letter-spacing: 0.3px; white-space: nowrap;" title="Same date & amount logged more than once">DUP</span>` 
           : '';
 
@@ -3007,12 +3005,16 @@
         `;
       };
 
-      const rowDiv = document.createElement('div');
-      rowDiv.style.display = 'flex';
-      rowDiv.style.marginBottom = '8px';
-      rowDiv.innerHTML = buildCell(row.left, true) + buildCell(row.right, false);
-      container.appendChild(rowDiv);
+      allRowsHtml += `
+        <div style="display: flex; margin-bottom: 8px;">
+          ${buildCell(row.left, true)}
+          ${buildCell(row.right, false)}
+        </div>
+      `;
     });
+
+    // Single DOM write!
+    container.innerHTML = allRowsHtml;
 
     if (data.dataSource) {
       const indicatorHTML = `
