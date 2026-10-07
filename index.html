@@ -2937,14 +2937,7 @@
     }
 
     // OPTIMIZATION 2C: Build HTML string in memory to eliminate layout reflows
-    let allRowsHtml = '';
-
-    pairedRows.forEach(row => {
-      const isExactMatch = (row.left && row.right && row.left.amount === row.right.amount);
-      const leftId = row.left ? row.left.id : null;
-      const rightId = row.right ? row.right.id : null;
-
-      const buildCell = (item, isLeft) => {
+        const buildCell = (item, isLeft) => {
         if (!item) return `<div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''}"></div>`;
         
         const shortDate = item.date === 'B/F' ? 'B/F' : item.date.toString().substring(0, 5); 
@@ -3004,6 +2997,13 @@
           </div>
         `;
       };
+    
+    let allRowsHtml = '';
+
+    pairedRows.forEach(row => {
+      const isExactMatch = (row.left && row.right && row.left.amount === row.right.amount);
+      const leftId = row.left ? row.left.id : null;
+      const rightId = row.right ? row.right.id : null;
 
       allRowsHtml += `
         <div style="display: flex; margin-bottom: 8px;">
@@ -3078,11 +3078,7 @@
 
         document.getElementById('searchCustomerInput').value = newName;
         toggleClearSearch('searchCustomerInput', 'clearSearchBtn');
-        await loadLedger();
-
-        document.getElementById('searchCustomerInput').value = newName;
-        toggleClearSearch('searchCustomerInput', 'clearSearchBtn');
-        syncLocalInitDataCache(); // 0ms local update instead of blocking network call!
+        syncLocalInitDataCache(); 
         await loadLedger();
         
       } else {
