@@ -2455,6 +2455,20 @@
     }
 
     addDisplayRow(containerId, '', '', '', defaultDate, true);
+
+    // UX UPDATE 1 & 2: Instantly focus the Fruit field of the newly added row
+    setTimeout(() => {
+      const updatedRows = container.querySelectorAll('.detail-row');
+      if (updatedRows.length > 0) {
+        const lastRow = updatedRows[updatedRows.length - 1];
+        const fruitInput = lastRow.querySelector('.inline-edit-fruit');
+        if (fruitInput) {
+          fruitInput.focus();
+          // Scroll slightly to ensure the keyboard doesn't cover it
+          fruitInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+        }
+      }
+    }, 50);
   }
 
   function closeItemModal() {
@@ -4239,6 +4253,12 @@
     input.value = fruitName;
     row.querySelector('.fruit-warning-container').style.display = 'none';
     syncInlineData(input); // Trigger recalculation and save to draft
+
+    // UX UPDATE 3: Instantly move focus to the Qty field after selecting a fruit
+    const qtyInput = row.querySelector('.inline-edit-qty');
+    if (qtyInput) {
+      qtyInput.focus();
+    }
   }
 
   // Helper to "learn" new fruits when entries are saved
