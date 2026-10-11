@@ -2730,7 +2730,7 @@
         
          showToast("Entry Saved Successfully!", "success");
          isDashboardStale = true;
-         syncLocalInitDataCache(); // 0ms local update instead of blocking network call!
+         syncLocalInitDataCache(); // 0ms local update
         
          document.getElementById('entryAmount').value = '';
          document.getElementById('entryNotes').value = '';
@@ -2746,7 +2746,41 @@
          document.getElementById('searchCustomerInput').value = name;
          toggleClearSearch('searchCustomerInput', 'clearSearchBtn');
          switchScreen('view');
-         await handleSearchChange(); 
+
+         // PHASE 2 OPTIMIZATION: Render updated ledger in 0ms without a 2nd network call!
+         const activeFY = document.getElementById('fySelect') ? document.getElementById('fySelect').value : '';
+         const noMonthFilter = !selectedMonths || selectedMonths.length === 0;
+         const dispCustEl = document.getElementById('dispCustomerName');
+         const isSameLoadedCust = dispCustEl && dispCustEl.innerText.trim().toLowerCase() === name.toLowerCase();
+
+         if (result.updatedLedger && noMonthFilter) {
+           // 1. Server returned the complete Write-Through cached ledger: render in 0ms!
+           updateRecentCustomers(name);
+           document.getElementById('filtersPanel').style.display = 'none';
+           document.getElementById('filterArrow').innerText = '▼';
+           document.getElementById('emptyState').style.display = 'none';
+           document.getElementById('saveSettledBtnContainer').style.display = 'none';
+           renderLedger(result.updatedLedger);
+         } else if (isSameLoadedCust && result.newEntry && result.balanceInfo && noMonthFilter) {
+           // 2. Customer ledger was already on screen: append newEntry in memory & render in 0ms!
+           updateRecentCustomers(name);
+           document.getElementById('filtersPanel').style.display = 'none';
+           document.getElementById('filterArrow').innerText = '▼';
+           document.getElementById('emptyState').style.display = 'none';
+           document.getElementById('saveSettledBtnContainer').style.display = 'none';
+           const updatedHistory = [...currentLedgerHistory, result.newEntry];
+           renderLedger({
+             customerName: name,
+             overallBalance: result.balanceInfo.overallBalance,
+             lastPaymentDate: result.balanceInfo.lastPaymentDate,
+             lastPaymentAmount: result.balanceInfo.lastPaymentAmount,
+             history: updatedHistory,
+             dataSource: "⚡ INSTANT WRITE-THROUGH"
+           });
+         } else {
+           // 3. Fallback (e.g., cold cache or custom month filter active): standard network fetch
+           await handleSearchChange(); 
+         }
       } else {
          showToast("Failed to save: " + result.error, "error");
       }
@@ -2755,7 +2789,7 @@
     } finally {
       hideLoading();
     }
-  }
+  }2    2
 
   function toggleMonth(el) {
     const monthVal = parseInt(el.getAttribute('data-month'));
