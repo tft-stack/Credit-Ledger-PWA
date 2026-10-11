@@ -2648,7 +2648,7 @@
     }
   }
 
-  async function submitEntry(forceDuplicate = false) {
+async function submitEntry(forceDuplicate = false) {
     let name = document.getElementById('entryCustomerInput').value.trim();
     const amount = document.getElementById('entryAmount').value;
     const isBF = document.getElementById('broughtForward').checked;
@@ -2748,7 +2748,6 @@
          switchScreen('view');
 
          // PHASE 2 OPTIMIZATION: Render updated ledger in 0ms without a 2nd network call!
-         const activeFY = document.getElementById('fySelect') ? document.getElementById('fySelect').value : '';
          const noMonthFilter = !selectedMonths || selectedMonths.length === 0;
          const dispCustEl = document.getElementById('dispCustomerName');
          const isSameLoadedCust = dispCustEl && dispCustEl.innerText.trim().toLowerCase() === name.toLowerCase();
@@ -2789,7 +2788,7 @@
     } finally {
       hideLoading();
     }
-  }2    2
+  }
 
   function toggleMonth(el) {
     const monthVal = parseInt(el.getAttribute('data-month'));
