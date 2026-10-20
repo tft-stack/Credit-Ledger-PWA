@@ -247,24 +247,6 @@
       .details-dropdown { display: block !important; border: 1px solid #ccc !important; background: #fafafa !important; }
       .details-toggle-btn { display: none !important; }
     }
-
-    /* Custom Rich Autocomplete Dropdown */
-    .rich-dropdown {
-      display: none; position: absolute; background: var(--card-bg); 
-      border: 1px solid var(--border-color); border-radius: 6px; 
-      max-height: 200px; overflow-y: auto; z-index: 2000; 
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-top: 4px;
-    }
-    .rich-dropdown-item {
-      padding: 10px 12px; cursor: pointer; border-bottom: 1px solid var(--border-light);
-      display: flex; flex-direction: column; gap: 4px;
-    }
-    .rich-dropdown-item:last-child { border-bottom: none; }
-    .rich-dropdown-item:active { background: var(--pill-bg); }
-    .upi-badge {
-      background: #e3f2fd; color: #007bff; padding: 2px 6px; border-radius: 4px; 
-      font-size: 10px; font-weight: bold; align-self: flex-start;
-    }
     
   </style>
 
@@ -526,7 +508,7 @@
     <div class="card no-print" style="margin-bottom: 12px;">
       <label>Customer Name</label>
       <div style="position: relative; margin-bottom: 8px;">
-        <input type="text" id="searchCustomerInput" placeholder="🔍 Search Name or UPI..." oninput="showRichAutocomplete(this, () => { toggleClearSearch('searchCustomerInput', 'clearSearchBtn'); handleSearchChange(); })" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
+        <input type="text" id="searchCustomerInput" list="customerList" placeholder="🔍 Search Name or UPI..." oninput="handleNativeAutocomplete(this); this.value = this.value.replace(/[^a-zA-Z0-9 @.-_]/g, ''); toggleClearSearch('searchCustomerInput', 'clearSearchBtn');" onchange="handleSearchChange()" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
         <div id="clearSearchBtn" onclick="clearSearch('searchCustomerInput', 'clearSearchBtn'); handleSearchChange();" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--border-color); color: var(--btn-text); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer; transition: background 0.3s, color 0.3s;">✕</div>
       </div>
       
@@ -662,7 +644,7 @@
       <h3>Add Entry</h3>
       <label>Customer Name</label>
       <div style="position: relative; margin-bottom: 8px;">
-        <input type="text" id="entryCustomerInput" placeholder="🔍 Search Name or UPI..." oninput="showRichAutocomplete(this, () => { checkSimilarity(this.value); toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn'); saveEntryDraft(); })" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
+        <input type="text" id="entryCustomerInput" list="customerList" placeholder="🔍 Search Name or UPI..." oninput="handleNativeAutocomplete(this); this.value = this.value.replace(/[^a-zA-Z0-9 @.-_]/g, ''); checkSimilarity(this.value); toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn'); saveEntryDraft();" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
         <div id="clearAddSearchBtn" onclick="clearSearch('entryCustomerInput', 'clearAddSearchBtn')" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--border-color); color: var(--btn-text); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer; transition: background 0.3s, color 0.3s;">✕</div>
       </div>
       
@@ -862,6 +844,8 @@
     <div id="smartSettleContainer" style="padding: 0 12px; padding-bottom: 80px;">
       <!-- Dynamic Customer Cards will be injected here -->
     </div>
+
+    <datalist id="customerList"></datalist>
 
   </div>
   
@@ -3921,7 +3905,7 @@ async function submitEntry(forceDuplicate = false) {
         <div style="display: flex; gap: 6px; align-items: center;">
           <div class="bulk-sno" style="font-weight: bold; font-size: 13px; color: var(--text-muted); width: 22px; text-align: center; flex-shrink: 0;"></div>
           
-          <input type="text" class="input-field bulk-cust" placeholder="Name or UPI" value="${cust}" style="flex: 2; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="showRichAutocomplete(this, (el) => { checkBulkSimilarity(el); saveBulkDraft(); handleBulkCustChange(el); })">
+          <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name or UPI" value="${cust}" style="flex: 2; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); saveBulkDraft()" onchange="handleBulkCustChange(this)">
           
           <input type="number" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="flex: 1.2; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="updateBulkTotal(); saveBulkDraft()">
           
@@ -4293,87 +4277,48 @@ async function submitEntry(forceDuplicate = false) {
 
   window.upiMap = {}; // Global store for fast UPI lookup
 
-  // Intercept the data object to extract upiMap
+  // 1. Interceptor: Snaps the UPI alias back to the clean Customer Name instantly
+  function handleNativeAutocomplete(inputEl) {
+    const val = inputEl.value;
+    if (val.includes(' ➔ ')) {
+      // The user tapped a UPI alias! Extract the actual name.
+      const actualName = val.split(' ➔ ')[1].trim();
+      inputEl.value = actualName;
+    }
+  }
+
+  // 2. Injector: Populates the native datalist with Names AND Formatted UPI Aliases
   const originalPopulate = populateInitialUI;
   populateInitialUI = function(data) {
     if (data && data.upiMap) window.upiMap = data.upiMap;
+    
+    // Run original populate (which handles FY tabs, fruits, etc.)
     originalPopulate(data);
+
+    // Now, override the datalist to include our UPI Aliases
+    const datalist = document.getElementById('customerList');
+    if (datalist && data.customers) {
+      datalist.innerHTML = ''; 
+      
+      data.customers.forEach(c => {
+        // A. Add standard customer name
+        let opt = document.createElement('option'); 
+        opt.value = c; 
+        datalist.appendChild(opt);
+
+        // B. Add UPI aliases if they exist
+        const lowerC = c.toLowerCase();
+        if (window.upiMap && window.upiMap[lowerC]) {
+          window.upiMap[lowerC].forEach(upiAlias => {
+            // Creates a distinct option: "xyz@okaxis ➔ Raju Kalka"
+            let upiOpt = document.createElement('option');
+            upiOpt.value = `${upiAlias} ➔ ${c}`;
+            datalist.appendChild(upiOpt);
+          });
+        }
+      });
+    }
   };
-
-  function showRichAutocomplete(inputEl, onSelectCallback) {
-    let val = inputEl.value.trim().toLowerCase();
-    closeRichAutocomplete(); // Clear existing
-    if (val.length < 1) return;
-
-    let matches = [];
-    
-    // 1. Search Names First
-    allCustomers.forEach(c => {
-      if (c.toLowerCase().includes(val)) matches.push({ name: c, matchType: 'name' });
-    });
-    
-    // 2. Search UPI Aliases
-    for (let custName in window.upiMap) {
-      let aliases = window.upiMap[custName];
-      let matchedAlias = aliases.find(alias => alias.toLowerCase().includes(val));
-      
-      if (matchedAlias && !matches.find(m => m.name.toLowerCase() === custName)) {
-        let properName = allCustomers.find(c => c.toLowerCase() === custName) || custName;
-        matches.push({ name: properName, matchType: 'upi', matchedAlias: matchedAlias });
-      }
-    }
-    
-    if (matches.length === 0) return;
-    
-    let dropdown = document.createElement('div');
-    dropdown.id = 'active-rich-dropdown';
-    dropdown.className = 'rich-dropdown';
-    dropdown.style.display = 'block';
-    
-    matches.forEach(m => {
-      let item = document.createElement('div');
-      item.className = 'rich-dropdown-item';
-      
-      let nameDiv = document.createElement('div');
-      nameDiv.style.fontWeight = 'bold';
-      nameDiv.style.fontSize = '14px';
-      nameDiv.style.color = 'var(--text-main)';
-      nameDiv.innerText = m.name;
-      item.appendChild(nameDiv);
-      
-      if (m.matchType === 'upi') {
-        let upiDiv = document.createElement('div');
-        upiDiv.className = 'upi-badge';
-        upiDiv.innerText = `UPI MATCH: ${m.matchedAlias}`;
-        item.appendChild(upiDiv);
-      }
-      
-      item.onclick = function() {
-        inputEl.value = m.name;
-        closeRichAutocomplete();
-        if (onSelectCallback) onSelectCallback(inputEl);
-      };
-      dropdown.appendChild(item);
-    });
-    
-    inputEl.parentNode.style.position = 'relative';
-    dropdown.style.top = (inputEl.offsetTop + inputEl.offsetHeight + 4) + 'px';
-    dropdown.style.left = inputEl.offsetLeft + 'px';
-    dropdown.style.width = inputEl.offsetWidth + 'px';
-    inputEl.parentNode.appendChild(dropdown);
-  }
-
-  function closeRichAutocomplete() {
-    let existing = document.getElementById('active-rich-dropdown');
-    if (existing) existing.remove();
-  }
-
-  // Close dropdown if tapped outside
-  document.addEventListener('click', function(e) {
-    if (!e.target.classList.contains('input-field') && e.target.id !== 'searchCustomerInput' && e.target.id !== 'entryCustomerInput') {
-      closeRichAutocomplete();
-    }
-  });
 
   // Modal Upgrades
   function openEditCustomerModal() {
