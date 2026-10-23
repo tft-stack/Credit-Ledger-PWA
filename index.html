@@ -848,6 +848,48 @@
     <datalist id="customerList"></datalist>
 
   </div>
+
+  <!-- ==================== SCREEN 4: ARCHIVE VIEWER ==================== -->
+  <div id="screen-archive" class="screen">
+    <div class="sticky-header" style="margin-bottom: 0; padding: 16px 0 12px 0; border-bottom: none; top: 0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px;">
+        <h2 style="margin:0;">Archive Vault</h2>
+      </div>
+      <p style="color: var(--text-muted); font-size: 13px; margin: 4px 16px 12px 16px; text-align: left;">
+        View past, settled, and cleared transactions securely.
+      </p>
+
+      <!-- Customer Search -->
+      <div style="padding: 0 16px; position: relative;">
+        <input type="text" id="archiveSearchInput" list="customerList" placeholder="🔍 Search Customer Name or UPI..." oninput="handleNativeAutocomplete(this); this.value = this.value.replace(/[^a-zA-Z0-9 @.-_]/g, ''); toggleClearSearch('archiveSearchInput', 'clearArchiveBtn');" onchange="loadArchiveLedger()" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
+        <div id="clearArchiveBtn" onclick="clearSearch('archiveSearchInput', 'clearArchiveBtn'); document.getElementById('archiveResults').innerHTML='';" style="display: none; position: absolute; right: 28px; top: 50%; transform: translateY(-50%); background: var(--border-color); color: var(--btn-text); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer;">✕</div>
+      </div>
+    </div>
+
+    <!-- Smart Filters (Only shown when data is loaded) -->
+    <div id="archiveFilters" style="display: none; padding: 12px 16px; background: var(--pill-bg); border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light);">
+      <div style="font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Filter History</div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+        <button class="alpha-pill active" id="arcFilt-all" onclick="applyArchiveFilter('all', this)">All</button>
+        <button class="alpha-pill" id="arcFilt-last5" onclick="applyArchiveFilter('last5', this)">Last 5 Each</button>
+        <button class="alpha-pill" id="arcFilt-15d" onclick="applyArchiveFilter('15d', this)">Last 15 Days</button>
+        <button class="alpha-pill" id="arcFilt-30d" onclick="applyArchiveFilter('30d', this)">Last 30 Days</button>
+        <button class="alpha-pill" id="arcFilt-custom" onclick="document.getElementById('archiveDateRangeContainer').style.display='block';">Custom Date</button>
+      </div>
+
+      <div id="archiveDateRangeContainer" style="display: none; position: relative;">
+        <input type="text" id="archiveDateRange" placeholder="Select Date Range..." readonly style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-size: 13px; margin-top: 4px; margin-bottom: 0;">
+      </div>
+    </div>
+
+    <div class="card" id="archiveCard" style="display:none; padding-top: 0; margin-top: 12px; overflow: hidden;">
+      <div style="display: flex; border-bottom: 2px dashed var(--border-color); margin-bottom: 12px; padding-bottom: 4px; padding-top: 12px;">
+        <div style="flex: 1; text-align: center; font-size: 11px; font-weight: bold; color: var(--text-muted); border-right: 1px dashed var(--border-color);">PURCHASE</div>
+        <div style="flex: 1; text-align: center; font-size: 11px; font-weight: bold; color: var(--text-muted);">PAYMENT</div>
+      </div>
+      <div id="archiveResults"></div>
+    </div>
+  </div>
   
   <!-- ==================== EDIT CUSTOMER PROFILE MODAL ==================== -->
   <div id="editCustomerModal" class="modal-overlay">
@@ -1064,6 +1106,11 @@
   <div id="nav-settle" class="nav-item" onclick="navToSmartSettle()">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
     <span>Settle</span>
+  </div>
+
+  <div id="nav-archive" class="nav-item" onclick="switchScreen('archive')">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+    <span>Archive</span>
   </div>
   
 </div>
@@ -1469,6 +1516,7 @@
     document.getElementById('screen-view').classList.remove('active');
     document.getElementById('screen-enter').classList.remove('active');
     if (document.getElementById('screen-settle')) document.getElementById('screen-settle').classList.remove('active');
+    if (document.getElementById('screen-archive')) document.getElementById('screen-archive').classList.remove('active'); // NEW
     
     document.getElementById('screen-' + screen).classList.add('active');
     
@@ -1477,6 +1525,7 @@
     document.getElementById('nav-view').classList.remove('active');
     document.getElementById('nav-enter').classList.remove('active');
     if (document.getElementById('nav-settle')) document.getElementById('nav-settle').classList.remove('active');
+    if (document.getElementById('nav-archive')) document.getElementById('nav-archive').classList.remove('active'); // NEW
     
     document.getElementById('nav-' + screen).classList.add('active');
   }
@@ -4382,6 +4431,155 @@ async function submitEntry(forceDuplicate = false) {
     } finally {
       hideLoading();
     }
+  }
+
+  let currentArchiveData = []; // RAM Cache
+  let archiveRangePicker = null;
+
+  async function loadArchiveLedger() {
+    const name = document.getElementById('archiveSearchInput').value.trim();
+    if (!name) {
+      document.getElementById('archiveCard').style.display = 'none';
+      document.getElementById('archiveFilters').style.display = 'none';
+      return;
+    }
+
+    showLoading();
+    try {
+      const data = await apiGet('getArchivedLedger', { customerName: name });
+      if (data.status === 'success') {
+        currentArchiveData = data.history || [];
+        document.getElementById('archiveCard').style.display = 'block';
+        document.getElementById('archiveFilters').style.display = 'block';
+        
+        // Initialize Range Picker if not done
+        if (!archiveRangePicker) {
+          archiveRangePicker = flatpickr("#archiveDateRange", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            onClose: function(selectedDates) {
+              if (selectedDates.length === 2) applyArchiveFilter('custom', null, selectedDates);
+            }
+          });
+        }
+        
+        // Default to All
+        document.getElementById('arcFilt-all').click(); 
+      } else {
+        showToast("Error loading archive.", "error");
+      }
+    } catch (e) {
+      showToast("Network Error.", "error");
+    } finally {
+      hideLoading();
+    }
+  }
+
+  function applyArchiveFilter(type, btnElement, dates = null) {
+    if (btnElement) {
+      document.querySelectorAll('#archiveFilters .alpha-pill').forEach(el => el.classList.remove('active'));
+      btnElement.classList.add('active');
+      if (type !== 'custom') {
+        document.getElementById('archiveDateRangeContainer').style.display = 'none';
+        if (archiveRangePicker) archiveRangePicker.clear();
+      }
+    }
+
+    if (!currentArchiveData || currentArchiveData.length === 0) {
+      renderArchiveList([]); return;
+    }
+
+    let filtered = [];
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+
+    if (type === 'all') {
+      filtered = [...currentArchiveData];
+    } else if (type === 'last5') {
+      let purs = currentArchiveData.filter(i => i.type === 'Purchase' || i.type === 'Goods Purchased').slice(0, 5);
+      let pays = currentArchiveData.filter(i => i.type === 'Payment' || i.type === 'Amount Received').slice(0, 5);
+      filtered = [...purs, ...pays].sort((a, b) => b.rawDate - a.rawDate);
+    } else if (type === '15d') {
+      filtered = currentArchiveData.filter(i => i.rawDate > 0 && (now - i.rawDate <= 15 * dayMs));
+    } else if (type === '30d') {
+      filtered = currentArchiveData.filter(i => i.rawDate > 0 && (now - i.rawDate <= 30 * dayMs));
+    } else if (type === 'custom' && dates && dates.length === 2) {
+      const start = dates[0].getTime();
+      const end = dates[1].getTime() + dayMs; // Include full end day
+      filtered = currentArchiveData.filter(i => i.rawDate >= start && i.rawDate <= end);
+    }
+
+    renderArchiveList(filtered);
+  }
+
+  function renderArchiveList(history) {
+    const container = document.getElementById('archiveResults');
+    if (history.length === 0) {
+      container.innerHTML = '<div style="color: var(--text-light); font-size:13px; text-align:center; padding: 20px;">No records found for this filter.</div>';
+      return;
+    }
+
+    let purchases = history.filter(r => r.type === 'Purchase' || r.type === 'Goods Purchased');
+    let payments = history.filter(r => r.type === 'Payment' || r.type === 'Amount Received');
+    let pairedRows = purchases.map(pur => ({ left: pur, right: null }));
+    let remainingPayments = [...payments];
+
+    // Read-only Pairing logic
+    pairedRows.forEach(row => {
+      let matchIndex = remainingPayments.findIndex(pay => pay.amount === row.left.amount && pay.rawDate >= row.left.rawDate);
+      if (matchIndex !== -1) row.right = remainingPayments.splice(matchIndex, 1)[0];
+    });
+    pairedRows.forEach(row => {
+      if (!row.right && remainingPayments.length > 0) row.right = remainingPayments.shift();
+    });
+    while (remainingPayments.length > 0) {
+      pairedRows.push({ left: null, right: remainingPayments.shift() });
+    }
+
+    let allRowsHtml = '';
+
+    const buildArcCell = (item, isLeft) => {
+      if (!item) return `<div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''}"></div>`;
+      
+      const shortDate = item.date === 'B/F' ? 'B/F' : item.date.substring(0, 5); 
+      let detailsHtml = '';
+      let amountDisplayHtml = `<div style="font-weight: bold; font-size: 14px; color: var(--text-muted); opacity: 0.8;">₹${item.amount.toLocaleString('en-IN')}</div>`;
+      
+      if ((item.type === 'Purchase' || item.type === 'Goods Purchased') && item.details && item.details.length > 0) {
+        let rowsHtml = item.details.map(d => `
+          <div class="details-dropdown-row" style="align-items: center; font-size: 11px; padding: 4px 0;">
+            <div style="flex: 2; font-weight: 600; color: var(--text-main); opacity: 0.8;">${d.fruit} <span style="font-weight: normal; color: var(--text-muted); font-size: 10px;">(${d.qty} x ₹${d.price})</span></div>
+            <div style="flex: 1; text-align: right; color: var(--text-muted); font-weight: bold;">₹${d.total.toLocaleString('en-IN')}</div>
+          </div>
+        `).join('');
+        
+        detailsHtml = `<div id="arc_desc_${item.id}" class="details-dropdown" style="background: transparent; border: 1px dashed var(--border-light); border-radius: 8px; padding: 8px; margin-top: 8px;">${rowsHtml}</div>`;
+        amountDisplayHtml = `<div onclick="toggleDetails('arc_desc_${item.id}')" style="font-weight: bold; font-size: 14px; color: #555; cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 4px;">₹${item.amount.toLocaleString('en-IN')} <span style="font-size: 10px;">▼</span></div>`;
+      }
+
+      // Add Archived Date Stamp
+      let stampHtml = item.archivedAt ? `<div style="font-size: 8px; color: var(--text-light); text-transform: uppercase; margin-top: 4px;">Cleared: ${item.archivedAt}</div>` : '';
+
+      return `
+        <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+            <div>
+              <div style="color: var(--text-light); font-size: 11px; margin-bottom: 2px; white-space: nowrap;">${shortDate}</div>
+              ${amountDisplayHtml}
+            </div>
+            <div style="font-size: 14px; color: #aaa;">🔒</div>
+          </div>
+          ${stampHtml}
+          ${detailsHtml}
+        </div>
+      `;
+    };
+
+    pairedRows.forEach(row => {
+      allRowsHtml += `<div style="display: flex; margin-bottom: 12px;">${buildArcCell(row.left, true)}${buildArcCell(row.right, false)}</div>`;
+    });
+
+    container.innerHTML = allRowsHtml;
   }
   
   
