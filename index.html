@@ -811,8 +811,6 @@
     </div>
   </div>
 
-  <datalist id="customerList"></datalist>
-
   <!-- ==================== SCREEN 3: SMART SETTLE ==================== -->
   <div id="screen-settle" class="screen">
     <div class="sticky-header" style="margin-bottom: 0; padding: 16px 0 12px 0; border-bottom: none; top: 0;">
@@ -1997,26 +1995,20 @@
   async function submitSmartSettled(safeCustName) {
     const card = document.getElementById('card_' + safeCustName);
     const checkedBoxes = card.querySelectorAll('.smart-settle-checkbox:checked');
+    const allBoxes = card.querySelectorAll('.smart-settle-checkbox');
     let idsToUpdate = [];
-    
     let totalPurchaseSelected = 0;
     let totalPaymentSelected = 0;
 
     checkedBoxes.forEach(box => {
       idsToUpdate.push(box.value.toString()); 
-      
       let type = box.getAttribute('data-type');
       let amt = parseFloat(box.getAttribute('data-amount')) || 0;
-      
-      if (type === 'Purchase' || type === 'Goods Purchased') {
-        totalPurchaseSelected += amt;
-      } else if (type === 'Payment' || type === 'Amount Received') {
-        totalPaymentSelected += amt;
-      }
+      if (type === 'Purchase' || type === 'Goods Purchased') totalPurchaseSelected += amt;
+      else if (type === 'Payment' || type === 'Amount Received') totalPaymentSelected += amt;
     });
 
     if (idsToUpdate.length === 0) return;
-
     if (Math.abs(totalPurchaseSelected - totalPaymentSelected) > 0.01) {
       showToast(`Mismatch! Purchases: ₹${totalPurchaseSelected} | Payments: ₹${totalPaymentSelected}`, "error");
       return; 
@@ -2028,7 +2020,17 @@
       if (res.status === 'success' || !res.error) {
         showToast(`${idsToUpdate.length} Items Marked as Paid!`, "success");
         isDashboardStale = true;
-        await navToSmartSettle(); 
+        
+        // ZERO-RELOAD UI UPDATE (0ms)
+        if (checkedBoxes.length === allBoxes.length) {
+          card.remove(); // Instantly remove the card!
+          const remainingCards = document.querySelectorAll('.smart-settle-card');
+          if (remainingCards.length === 0) {
+            document.getElementById('smartSettleEmptyState').style.display = 'block';
+          }
+        } else {
+          await navToSmartSettle(); // Fallback if partially settled
+        }
       } else {
         showToast("Failed to update status.", "error");
       }
@@ -2928,21 +2930,15 @@ async function submitEntry(forceDuplicate = false) {
   async function submitSettled() {
     const checkedBoxes = document.querySelectorAll('.settle-checkbox:checked');
     let idsToUpdate = [];
-    
     let totalPurchaseSelected = 0;
     let totalPaymentSelected = 0;
 
     checkedBoxes.forEach(box => {
       idsToUpdate.push(box.value.toString());
-      
       let type = box.getAttribute('data-type');
       let amt = parseFloat(box.getAttribute('data-amount')) || 0;
-      
-      if (type === 'Purchase' || type === 'Goods Purchased') {
-        totalPurchaseSelected += amt;
-      } else if (type === 'Payment' || type === 'Amount Received') {
-        totalPaymentSelected += amt;
-      }
+      if (type === 'Purchase' || type === 'Goods Purchased') totalPurchaseSelected += amt;
+      else if (type === 'Payment' || type === 'Amount Received') totalPaymentSelected += amt;
     });
 
     if (idsToUpdate.length === 0) return;
@@ -2958,7 +2954,28 @@ async function submitEntry(forceDuplicate = false) {
       if (res.status === 'success' || !res.error) {
         showToast(`${idsToUpdate.length} Items Marked as Paid!`, "success");
         isDashboardStale = true;
-        await loadLedger(); 
+        
+        // ZERO-RELOAD UI UPDATE (0ms)
+        currentLedgerHistory = currentLedgerHistory.filter(item => !idsToUpdate.includes(item.id.toString()));
+        
+        const currentCustName = document.getElementById('dispCustomerName').innerText;
+        const currentBalText = document.getElementById('dispOverallBalance').innerText;
+        let currentBal = parseFloat(currentBalText.replace(/[^0-9.-]+/g,"")) || 0;
+        if (currentBalText.includes("Advance")) currentBal = -Math.abs(currentBal);
+        
+        const lastPaidAmt = document.getElementById('viewLastPaidAmount').innerText.replace(/[^0-9.-]+/g,"");
+        const lastPaidDate = document.getElementById('viewLastPaidDate').innerText;
+
+        renderLedger({
+          customerName: currentCustName,
+          overallBalance: currentBal,
+          lastPaymentAmount: parseFloat(lastPaidAmt) || 0,
+          lastPaymentDate: lastPaidDate === '--/--/----' ? null : lastPaidDate,
+          history: currentLedgerHistory,
+          dataSource: "⚡ INSTANT UI UPDATE"
+        });
+        document.getElementById('saveSettledBtnContainer').style.display = 'none';
+
       } else {
         showToast("Failed to update status.", "error");
       }
@@ -3154,7 +3171,7 @@ async function submitEntry(forceDuplicate = false) {
     }
   }
 
-  function openEditCustomerModal() {
+   {
     const currentName = document.getElementById('dispCustomerName').innerText;
     if (!currentName) return;
     document.getElementById('editCustomerNameInput').value = currentName;
@@ -3336,15 +3353,41 @@ async function submitEntry(forceDuplicate = false) {
   async function confirmDelete() {
     const id = document.getElementById('deleteId').value;
     closeDeleteModal();
-    
     showLoading();
     try {
       const res = await apiPost('deleteEntry', { id: id });
-      
       if(res.status === 'success' || !res.error) {
         showToast("Transaction Deleted", "success");
         isDashboardStale = true;
-        await loadLedger();
+
+        // ZERO-RELOAD UI UPDATE (0ms)
+        let itemIndex = currentLedgerHistory.findIndex(i => i.id.toString() === id);
+        if (itemIndex > -1) {
+          let item = currentLedgerHistory[itemIndex];
+          let amt = parseFloat(item.amount) || 0;
+          
+          const currentBalText = document.getElementById('dispOverallBalance').innerText;
+          let currentBal = parseFloat(currentBalText.replace(/[^0-9.-]+/g,"")) || 0;
+          if (currentBalText.includes("Advance")) currentBal = -Math.abs(currentBal);
+          
+          if (item.type === 'Purchase' || item.type === 'Goods Purchased') currentBal -= amt;
+          else currentBal += amt;
+
+          currentLedgerHistory.splice(itemIndex, 1);
+
+          const currentCustName = document.getElementById('dispCustomerName').innerText;
+          const lastPaidAmt = document.getElementById('viewLastPaidAmount').innerText.replace(/[^0-9.-]+/g,"");
+          const lastPaidDate = document.getElementById('viewLastPaidDate').innerText;
+
+          renderLedger({
+            customerName: currentCustName,
+            overallBalance: currentBal,
+            lastPaymentAmount: parseFloat(lastPaidAmt) || 0,
+            lastPaymentDate: lastPaidDate === '--/--/----' ? null : lastPaidDate,
+            history: currentLedgerHistory,
+            dataSource: "⚡ INSTANT UI UPDATE"
+          });
+        }
       } else {
          alert("BACKEND ERROR: " + res.error); 
       }
@@ -3551,7 +3594,6 @@ async function submitEntry(forceDuplicate = false) {
         const price = parseFloat(row.querySelector('.detail-price').value) || 0;
         const itemDate = row.querySelector('.detail-date').value;
         const total = qty * price;
-        
         if (fruit || total > 0) {
           updatedDetails.push({ fruit: fruit, qty: qty, price: price, date: itemDate, total: total });
         }
@@ -3569,15 +3611,47 @@ async function submitEntry(forceDuplicate = false) {
       });
       if (res.status === 'success' || !res.error) {
         localStorage.removeItem(EDIT_DRAFT_KEY);
-        
         showToast("Changes Saved Successfully!", "success");
         isDashboardStale = true;
-        await loadLedger();
+
+        // ZERO-RELOAD UI UPDATE (0ms)
+        let itemIndex = currentLedgerHistory.findIndex(i => i.id.toString() === id);
+        if (itemIndex > -1) {
+          let item = currentLedgerHistory[itemIndex];
+          let diff = parseFloat(amount) - (parseFloat(oldAmount) || 0);
+          
+          const currentBalText = document.getElementById('dispOverallBalance').innerText;
+          let currentBal = parseFloat(currentBalText.replace(/[^0-9.-]+/g,"")) || 0;
+          if (currentBalText.includes("Advance")) currentBal = -Math.abs(currentBal);
+          
+          if (type === 'Purchase' || type === 'Goods Purchased') currentBal += diff;
+          else currentBal -= diff;
+
+          item.amount = parseFloat(amount);
+          item.date = isBF ? "B/F" : (date.includes('-') ? date.split('-').reverse().join('/') : date);
+          item.rawDate = isBF ? 0 : new Date(date).getTime();
+          item.notes = notes;
+          item.details = updatedDetails;
+
+          currentLedgerHistory.sort((a, b) => (a.rawDate || 0) - (b.rawDate || 0)); // Re-sort if date changed
+
+          const lastPaidAmt = document.getElementById('viewLastPaidAmount').innerText.replace(/[^0-9.-]+/g,"");
+          const lastPaidDate = document.getElementById('viewLastPaidDate').innerText;
+
+          renderLedger({
+            customerName: custName,
+            overallBalance: currentBal,
+            lastPaymentAmount: parseFloat(lastPaidAmt) || 0,
+            lastPaymentDate: lastPaidDate === '--/--/----' ? null : lastPaidDate,
+            history: currentLedgerHistory,
+            dataSource: "⚡ INSTANT UI UPDATE"
+          });
+        }
       } else {
         showToast("Failed to save changes.", "error");
       }
     } catch (e) {
-      showToast("Network Error: Could not save changes.", "error");
+      showToast("Network Error.", "error");
     } finally {
       hideLoading();
     }
