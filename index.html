@@ -1540,7 +1540,7 @@
     document.getElementById('screen-view').classList.remove('active');
     document.getElementById('screen-enter').classList.remove('active');
     if (document.getElementById('screen-settle')) document.getElementById('screen-settle').classList.remove('active');
-    if (document.getElementById('screen-archive')) document.getElementById('screen-archive').classList.remove('active'); // NEW
+    if (document.getElementById('screen-archive')) document.getElementById('screen-archive').classList.remove('active'); 
     
     document.getElementById('screen-' + screen).classList.add('active');
     
@@ -1549,9 +1549,12 @@
     document.getElementById('nav-view').classList.remove('active');
     document.getElementById('nav-enter').classList.remove('active');
     if (document.getElementById('nav-settle')) document.getElementById('nav-settle').classList.remove('active');
-    if (document.getElementById('nav-archive')) document.getElementById('nav-archive').classList.remove('active'); // NEW
+    if (document.getElementById('nav-archive')) document.getElementById('nav-archive').classList.remove('active'); 
     
     document.getElementById('nav-' + screen).classList.add('active');
+
+    // Reset scroll position instantly to the top of the screen on every navigation
+    window.scrollTo(0, 0);
   }
 
   // --- SAVE DRAFT STATE ---
