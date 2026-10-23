@@ -3171,13 +3171,6 @@ async function submitEntry(forceDuplicate = false) {
     }
   }
 
-   {
-    const currentName = document.getElementById('dispCustomerName').innerText;
-    if (!currentName) return;
-    document.getElementById('editCustomerNameInput').value = currentName;
-    document.getElementById('editCustomerModal').style.display = 'flex';
-  }
-
   function closeEditCustomerModal() {
     document.getElementById('editCustomerModal').style.display = 'none';
   }
