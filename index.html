@@ -853,25 +853,28 @@
   <div id="screen-archive" class="screen">
     <div class="sticky-header" style="margin-bottom: 0; padding: 16px 0 12px 0; border-bottom: none; top: 0;">
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px;">
-        <h2 style="margin:0;">Archive Vault</h2>
+        <h2 style="margin:0;">History</h2>
       </div>
       <p style="color: var(--text-muted); font-size: 13px; margin: 4px 16px 12px 16px; text-align: left;">
-        View past, settled, and cleared transactions securely.
+        View past transactions for customers
       </p>
 
-      <!-- Customer Search -->
-      <div style="padding: 0 16px; position: relative;">
-        <input type="text" id="archiveSearchInput" list="customerList" placeholder="🔍 Search Customer Name or UPI..." oninput="handleNativeAutocomplete(this); this.value = this.value.replace(/[^a-zA-Z0-9 @.-_]/g, ''); toggleClearSearch('archiveSearchInput', 'clearArchiveBtn');" onchange="loadArchiveLedger()" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
-        <div id="clearArchiveBtn" onclick="clearSearch('archiveSearchInput', 'clearArchiveBtn'); document.getElementById('archiveResults').innerHTML='';" style="display: none; position: absolute; right: 28px; top: 50%; transform: translateY(-50%); background: var(--border-color); color: var(--btn-text); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer;">✕</div>
+      <!-- Customer Search with Label -->
+      <div style="padding: 0 16px; text-align: left;">
+        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 6px;">Customer Name</label>
+        <div style="position: relative;">
+          <input type="text" id="archiveSearchInput" list="customerList" placeholder="🔍 Search Customer Name or UPI..." oninput="handleNativeAutocomplete(this); this.value = this.value.replace(/[^a-zA-Z0-9 @.-_]/g, ''); toggleClearSearch('archiveSearchInput', 'clearArchiveBtn');" onchange="loadArchiveLedger()" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
+          <div id="clearArchiveBtn" onclick="resetArchiveView()" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--border-color); color: var(--btn-text); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer;">✕</div>
+        </div>
       </div>
     </div>
 
-    <!-- Smart Filters (Only shown when data is loaded) -->
+    <!-- Smart Filters -->
     <div id="archiveFilters" style="display: none; padding: 12px 16px; background: var(--pill-bg); border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light);">
       <div style="font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Filter History</div>
       <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
-        <button class="alpha-pill active" id="arcFilt-all" onclick="applyArchiveFilter('all', this)">All</button>
-        <button class="alpha-pill" id="arcFilt-last5" onclick="applyArchiveFilter('last5', this)">Last 5 Each</button>
+        <button class="alpha-pill" id="arcFilt-all" onclick="applyArchiveFilter('all', this)">All</button>
+        <button class="alpha-pill active" id="arcFilt-last5" onclick="applyArchiveFilter('last5', this)">Last 5</button>
         <button class="alpha-pill" id="arcFilt-15d" onclick="applyArchiveFilter('15d', this)">Last 15 Days</button>
         <button class="alpha-pill" id="arcFilt-30d" onclick="applyArchiveFilter('30d', this)">Last 30 Days</button>
         <button class="alpha-pill" id="arcFilt-custom" onclick="document.getElementById('archiveDateRangeContainer').style.display='block';">Custom Date</button>
@@ -888,6 +891,23 @@
         <div style="flex: 1; text-align: center; font-size: 11px; font-weight: bold; color: var(--text-muted);">PAYMENT</div>
       </div>
       <div id="archiveResults"></div>
+    </div>
+
+    <!-- Floating Action Buttons (Refresh & Back) -->
+    <div class="fab-container no-print">
+      <button class="fab-action" onclick="resetArchiveView()" title="Refresh Page">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+      </button>
+      
+      <button class="fab-action" onclick="switchScreen('view')" title="Back to Ledger">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+      </button>
     </div>
   </div>
   
@@ -1109,8 +1129,12 @@
   </div>
 
   <div id="nav-archive" class="nav-item" onclick="switchScreen('archive')">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
-    <span>Archive</span>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+      <polyline points="3 3 3 8 8 8"></polyline>
+      <path d="M12 7v5l4 2"></path>
+    </svg>
+    <span>History</span>
   </div>
   
 </div>
@@ -4436,6 +4460,15 @@ async function submitEntry(forceDuplicate = false) {
   let currentArchiveData = []; // RAM Cache
   let archiveRangePicker = null;
 
+  function resetArchiveView() {
+    document.getElementById('archiveSearchInput').value = '';
+    toggleClearSearch('archiveSearchInput', 'clearArchiveBtn');
+    document.getElementById('archiveCard').style.display = 'none';
+    document.getElementById('archiveFilters').style.display = 'none';
+    document.getElementById('archiveResults').innerHTML = '';
+    currentArchiveData = [];
+  }
+
   async function loadArchiveLedger() {
     const name = document.getElementById('archiveSearchInput').value.trim();
     if (!name) {
@@ -4464,7 +4497,7 @@ async function submitEntry(forceDuplicate = false) {
         }
         
         // Default to All
-        document.getElementById('arcFilt-all').click(); 
+        document.getElementById('arcFilt-last5').click(); 
       } else {
         showToast("Error loading archive.", "error");
       }
