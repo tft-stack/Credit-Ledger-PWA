@@ -4532,9 +4532,12 @@ async function submitEntry(forceDuplicate = false) {
     if (type === 'all') {
       filtered = [...currentArchiveData];
     } else if (type === 'last5') {
-      let purs = currentArchiveData.filter(i => i.type === 'Purchase' || i.type === 'Goods Purchased').slice(0, 5);
-      let pays = currentArchiveData.filter(i => i.type === 'Payment' || i.type === 'Amount Received').slice(0, 5);
-      filtered = [...purs, ...pays].sort((a, b) => b.rawDate - a.rawDate);
+      // Use .slice(-5) to grab the 5 newest items from the end of the chronological list
+      let purs = currentArchiveData.filter(i => i.type === 'Purchase' || i.type === 'Goods Purchased').slice(-5);
+      let pays = currentArchiveData.filter(i => i.type === 'Payment' || i.type === 'Amount Received').slice(-5);
+      
+      // Sort the combined 10 items chronologically (oldest to newest)
+      filtered = [...purs, ...pays].sort((a, b) => a.rawDate - b.rawDate);
     } else if (type === '15d') {
       filtered = currentArchiveData.filter(i => i.rawDate > 0 && (now - i.rawDate <= 15 * dayMs));
     } else if (type === '30d') {
