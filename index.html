@@ -869,6 +869,12 @@
       </div>
     </div>
 
+    <!-- Archive Recent Customers -->
+    <div id="archiveRecentCustomersContainer" style="padding: 12px 16px 0 16px; display: none;">
+      <div style="font-size: 10px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Recent</div>
+      <div id="archiveRecentCustomersList" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none;"></div>
+    </div>
+
     <!-- Smart Filters -->
     <div id="archiveFilters" style="display: none; padding: 12px 16px; background: var(--pill-bg); border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light);">
       <div style="font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Filter History</div>
@@ -4469,6 +4475,9 @@ async function submitEntry(forceDuplicate = false) {
     document.getElementById('archiveCard').style.display = 'none';
     document.getElementById('archiveFilters').style.display = 'none';
     document.getElementById('archiveResults').innerHTML = '';
+    if (recentCustomers && recentCustomers.length > 0) {
+      document.getElementById('archiveRecentCustomersContainer').style.display = 'block';
+    }
     currentArchiveData = [];
   }
 
@@ -4486,6 +4495,7 @@ async function submitEntry(forceDuplicate = false) {
       if (data.status === 'success') {
         currentArchiveData = data.history || [];
         document.getElementById('archiveCard').style.display = 'block';
+        document.getElementById('archiveRecentCustomersContainer').style.display = 'none';
         document.getElementById('archiveFilters').style.display = 'block';
         
         // Initialize Range Picker if not done
@@ -4596,6 +4606,12 @@ async function submitEntry(forceDuplicate = false) {
         amountDisplayHtml = `<div onclick="toggleDetails('arc_desc_${item.id}')" style="font-weight: bold; font-size: 14px; color: #555; cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 4px;">₹${item.amount.toLocaleString('en-IN')} <span style="font-size: 10px;">▼</span></div>`;
       }
 
+      // UX UPDATE 1: Format Notes compactly
+      let notesHtml = '';
+      if (item.notes && item.notes.trim() !== '') {
+        notesHtml = `<div style="font-size: 10px; color: var(--text-muted); font-style: italic; margin-top: 3px; line-height: 1.2; word-break: break-word;">${item.notes}</div>`;
+      }
+
       // Add Archived Date Stamp
       let stampHtml = item.archivedAt ? `<div style="font-size: 8px; color: var(--text-light); text-transform: uppercase; margin-top: 4px;">Cleared: ${item.archivedAt}</div>` : '';
 
@@ -4605,6 +4621,7 @@ async function submitEntry(forceDuplicate = false) {
             <div>
               <div style="color: var(--text-light); font-size: 11px; margin-bottom: 2px; white-space: nowrap;">${shortDate}</div>
               ${amountDisplayHtml}
+              ${notesHtml}
             </div>
             <div style="font-size: 14px; color: #aaa;">🔒</div>
           </div>
@@ -4619,6 +4636,36 @@ async function submitEntry(forceDuplicate = false) {
     });
 
     container.innerHTML = allRowsHtml;
+  }
+
+  // Safely extend the existing renderRecentCustomers function to also populate the Archive screen
+  if (!window.originalRenderRecentForArchive) {
+    window.originalRenderRecentForArchive = renderRecentCustomers;
+    renderRecentCustomers = function() {
+      window.originalRenderRecentForArchive(); // Update Ledger
+      
+      const arcContainer = document.getElementById('archiveRecentCustomersContainer');
+      const arcList = document.getElementById('archiveRecentCustomersList');
+      if (!arcContainer || !arcList) return;
+      
+      if (recentCustomers && recentCustomers.length > 0) {
+        arcContainer.style.display = 'block';
+        arcList.innerHTML = '';
+        recentCustomers.forEach(c => {
+          let chip = document.createElement('div');
+          chip.style.cssText = 'background: var(--pill-bg); border: 1px solid var(--border-light); padding: 4px 10px; border-radius: 12px; font-size: 11px; white-space: nowrap; cursor: pointer; color: var(--text-main);';
+          chip.innerText = c;
+          chip.onclick = function() {
+            document.getElementById('archiveSearchInput').value = c;
+            toggleClearSearch('archiveSearchInput', 'clearArchiveBtn');
+            loadArchiveLedger();
+          };
+          arcList.appendChild(chip);
+        });
+      } else {
+        arcContainer.style.display = 'none';
+      }
+    };
   }
   
   
