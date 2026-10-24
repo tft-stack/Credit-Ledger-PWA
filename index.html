@@ -1340,6 +1340,11 @@
       localStorage.setItem('ledgerInitData', JSON.stringify(freshData));
       populateInitialUI(freshData);
       hideLoading();
+
+      // UX UPDATE: Silently load the dashboard balances into memory in the background
+      // so the Bulk Entry modal has instant access to pending amounts!
+      loadDashboardData();
+      
     }).catch(err => {
       console.error("Data fetch failed", err);
       hideLoading();
@@ -4430,19 +4435,28 @@ async function submitEntry(forceDuplicate = false) {
     }
   }
 
+  // --- MASTER MERGED FUNCTIONS (CLEANUP) ---
   // Initialize the global fruit database from cache
   window.allFruits = JSON.parse(localStorage.getItem('allFruits')) || [];
 
   function checkFruitSimilarity(inputElement) {
     const row = inputElement.closest('.detail-row');
     const warningBox = row.querySelector('.fruit-warning-container');
-    
     let inputStr = inputElement.value; 
     const lowerInput = inputStr.toLowerCase().trim();
     
-    if (lowerInput.length < 2) {
-      warningBox.style.display = 'none';
-      return;
+    if (lowerInput.length === 0) {
+       if (window.allFruits && window.allFruits.length > 0) {
+          warningBox.style.background = 'var(--pill-bg)';
+          warningBox.style.color = '#007bff';
+          warningBox.style.display = 'block';
+          let topFruits = window.allFruits.slice(0, 8); 
+          let chipsHtml = topFruits.map(f => `<span class="suggestion-chip" style="font-size: 11px; padding: 4px 8px; margin-right: 4px; margin-top: 4px; display: inline-block; background: #bbdefb; color: #0056b3; border-radius: 12px; cursor: pointer; font-weight: bold;" onclick="selectFruitSuggestion(this, '${f}')">${f}</span>`).join('');
+          warningBox.innerHTML = `<div style="margin-bottom: 2px; font-weight: bold; color: var(--text-muted);">Quick Pick:</div><div>${chipsHtml}</div>`;
+       } else {
+          warningBox.style.display = 'none';
+       }
+       return;
     }
 
     const exactMatch = window.allFruits.find(f => f.toLowerCase() === lowerInput);
@@ -4452,15 +4466,12 @@ async function submitEntry(forceDuplicate = false) {
     }
 
     const similar = window.allFruits.filter(f => f.toLowerCase().includes(lowerInput));
-    
     if (similar.length > 0) {
       warningBox.style.background = '#ffebee';
       warningBox.style.color = '#d32f2f';
       warningBox.style.display = 'block';
-      
       let chipsHtml = similar.map(f => `<span class="suggestion-chip" style="font-size: 11px; padding: 4px 8px; margin-right: 4px; margin-top: 4px; display: inline-block; background: #ffcdd2; color: #b71c1c; border-radius: 12px; cursor: pointer; font-weight: bold;" onclick="selectFruitSuggestion(this, '${f}')">${f}</span>`).join('');
-      
-      warningBox.innerHTML = `Similar names found: Did you mean to select one of these?<br><div>${chipsHtml}</div>`;
+      warningBox.innerHTML = `Similar names found:<br><div>${chipsHtml}</div>`;
     } else {
       warningBox.style.background = '#e8f5e9';
       warningBox.style.color = '#2e7d32';
@@ -4474,16 +4485,12 @@ async function submitEntry(forceDuplicate = false) {
     const input = row.querySelector('.inline-edit-fruit');
     input.value = fruitName;
     row.querySelector('.fruit-warning-container').style.display = 'none';
-    syncInlineData(input); // Trigger recalculation and save to draft
+    syncInlineData(input); 
 
-    // UX UPDATE 3: Instantly move focus to the Qty field after selecting a fruit
     const qtyInput = row.querySelector('.inline-edit-qty');
-    if (qtyInput) {
-      qtyInput.focus();
-    }
+    if (qtyInput) qtyInput.focus();
   }
 
-  // Helper to "learn" new fruits when entries are saved
   function learnNewFruits(detailsArray) {
       let changed = false;
       detailsArray.forEach(d => {
@@ -4492,47 +4499,35 @@ async function submitEntry(forceDuplicate = false) {
               changed = true;
           }
       });
-      if (changed) {
-          localStorage.setItem('allFruits', JSON.stringify(window.allFruits));
-      }
+      if (changed) localStorage.setItem('allFruits', JSON.stringify(window.allFruits));
   }
 
-  window.upiMap = {}; // Global store for fast UPI lookup
+  window.upiMap = {};
 
-  // 1. Interceptor: Snaps the UPI alias back to the clean Customer Name instantly
   function handleNativeAutocomplete(inputEl) {
     const val = inputEl.value;
     if (val.includes(' ➔ ')) {
-      // The user tapped a UPI alias! Extract the actual name.
-      const actualName = val.split(' ➔ ')[1].trim();
-      inputEl.value = actualName;
+      inputEl.value = val.split(' ➔ ')[1].trim();
     }
   }
 
-  // 2. Injector: Populates the native datalist with Names AND Formatted UPI Aliases
+  // Merged populateInitialUI (Native + UPI Maps)
   const originalPopulate = populateInitialUI;
   populateInitialUI = function(data) {
     if (data && data.upiMap) window.upiMap = data.upiMap;
-    
-    // Run original populate (which handles FY tabs, fruits, etc.)
     originalPopulate(data);
 
-    // Now, override the datalist to include our UPI Aliases
     const datalist = document.getElementById('customerList');
     if (datalist && data.customers) {
       datalist.innerHTML = ''; 
-      
       data.customers.forEach(c => {
-        // A. Add standard customer name
         let opt = document.createElement('option'); 
         opt.value = c; 
         datalist.appendChild(opt);
 
-        // B. Add UPI aliases if they exist
         const lowerC = c.toLowerCase();
         if (window.upiMap && window.upiMap[lowerC]) {
           window.upiMap[lowerC].forEach(upiAlias => {
-            // Creates a distinct option: "xyz@okaxis ➔ Raju Kalka"
             let upiOpt = document.createElement('option');
             upiOpt.value = `${upiAlias} ➔ ${c}`;
             datalist.appendChild(upiOpt);
@@ -4542,13 +4537,11 @@ async function submitEntry(forceDuplicate = false) {
     }
   };
 
-  // Modal Upgrades
   function openEditCustomerModal() {
     const currentName = document.getElementById('dispCustomerName').innerText;
     if (!currentName) return;
     document.getElementById('editCustomerNameInput').value = currentName;
     
-    // Hydrate existing UPI aliases into the modal
     const existingUpi = window.upiMap[currentName.toLowerCase()];
     document.getElementById('editCustomerUpiInput').value = existingUpi ? existingUpi.join(', ') : "";
     
@@ -4562,11 +4555,8 @@ async function submitEntry(forceDuplicate = false) {
 
     if (!newName) { alert("Customer name cannot be empty."); return; }
     
-    // Make sure we aren't creating a name collision
     const duplicateCheck = allCustomers.find(c => c.toLowerCase() === newName.toLowerCase() && c.toLowerCase() !== oldName.toLowerCase());
-    if (duplicateCheck) {
-      alert(`The name "${duplicateCheck}" already exists in your ledger!`); return;
-    }
+    if (duplicateCheck) { alert(`The name "${duplicateCheck}" already exists in your ledger!`); return; }
 
     closeEditCustomerModal();
     showLoading();
@@ -4577,15 +4567,9 @@ async function submitEntry(forceDuplicate = false) {
         showToast("Profile Updated!", "success");
         isDashboardStale = true;
 
-        // Manually update upiMap in RAM
-        if (upiAliases) {
-          window.upiMap[newName.toLowerCase()] = upiAliases.split(',').map(s => s.trim()).filter(s => s !== "");
-        } else {
-          delete window.upiMap[newName.toLowerCase()];
-        }
-        if (oldName.toLowerCase() !== newName.toLowerCase()) {
-          delete window.upiMap[oldName.toLowerCase()];
-        }
+        if (upiAliases) window.upiMap[newName.toLowerCase()] = upiAliases.split(',').map(s => s.trim()).filter(s => s !== "");
+        else delete window.upiMap[newName.toLowerCase()];
+        if (oldName.toLowerCase() !== newName.toLowerCase()) delete window.upiMap[oldName.toLowerCase()];
 
         allCustomers = allCustomers.map(c => c.toLowerCase() === oldName.toLowerCase() ? newName : c);
         recentCustomers = recentCustomers.map(c => c.toLowerCase() === oldName.toLowerCase() ? newName : c);
@@ -4597,16 +4581,16 @@ async function submitEntry(forceDuplicate = false) {
         syncLocalInitDataCache();
         await loadLedger();
       } else {
-        showToast("Failed to update profile: " + (res.error || "Unknown error"), "error");
+        showToast("Failed to update profile", "error");
       }
     } catch (e) {
-      showToast("Network Error: Could not update profile.", "error");
+      showToast("Network Error.", "error");
     } finally {
       hideLoading();
     }
   }
 
-  let currentArchiveData = []; // RAM Cache
+  let currentArchiveData = []; 
   let archiveRangePicker = null;
 
   function resetArchiveView() {
@@ -4616,8 +4600,6 @@ async function submitEntry(forceDuplicate = false) {
     document.getElementById('archiveFilters').style.display = 'none';
     document.getElementById('archiveResults').innerHTML = '';
     currentArchiveData = [];
-    
-    // UX UPDATE: Let the render function handle showing the card and placeholder
     renderArchiveRecentCustomers(); 
   }
 
@@ -4629,9 +4611,7 @@ async function submitEntry(forceDuplicate = false) {
       return;
     }
 
-    // UX UPDATE: Save the searched name to the Archive's independent memory
     updateArchiveRecentCustomers(name);
-
     showLoading();
     try {
       const data = await apiGet('getArchivedLedger', { customerName: name });
@@ -4641,18 +4621,14 @@ async function submitEntry(forceDuplicate = false) {
         document.getElementById('archiveRecentCustomersContainer').style.display = 'none';
         document.getElementById('archiveFilters').style.display = 'block';
         
-        // Initialize Range Picker if not done
         if (!archiveRangePicker) {
           archiveRangePicker = flatpickr("#archiveDateRange", {
-            mode: "range",
-            dateFormat: "Y-m-d",
+            mode: "range", dateFormat: "Y-m-d",
             onClose: function(selectedDates) {
               if (selectedDates.length === 2) applyArchiveFilter('custom', null, selectedDates);
             }
           });
         }
-        
-        // Default to All
         document.getElementById('arcFilt-last5').click(); 
       } else {
         showToast("Error loading archive.", "error");
@@ -4682,25 +4658,19 @@ async function submitEntry(forceDuplicate = false) {
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
 
-    if (type === 'all') {
-      filtered = [...currentArchiveData];
-    } else if (type === 'last5') {
-      // Use .slice(-5) to grab the 5 newest items from the end of the chronological list
+    if (type === 'all') filtered = [...currentArchiveData];
+    else if (type === 'last5') {
       let purs = currentArchiveData.filter(i => i.type === 'Purchase' || i.type === 'Goods Purchased').slice(-5);
       let pays = currentArchiveData.filter(i => i.type === 'Payment' || i.type === 'Amount Received').slice(-5);
-      
-      // Sort the combined 10 items chronologically (oldest to newest)
       filtered = [...purs, ...pays].sort((a, b) => a.rawDate - b.rawDate);
-    } else if (type === '15d') {
-      filtered = currentArchiveData.filter(i => i.rawDate > 0 && (now - i.rawDate <= 15 * dayMs));
-    } else if (type === '30d') {
-      filtered = currentArchiveData.filter(i => i.rawDate > 0 && (now - i.rawDate <= 30 * dayMs));
-    } else if (type === 'custom' && dates && dates.length === 2) {
+    } 
+    else if (type === '15d') filtered = currentArchiveData.filter(i => i.rawDate > 0 && (now - i.rawDate <= 15 * dayMs));
+    else if (type === '30d') filtered = currentArchiveData.filter(i => i.rawDate > 0 && (now - i.rawDate <= 30 * dayMs));
+    else if (type === 'custom' && dates && dates.length === 2) {
       const start = dates[0].getTime();
-      const end = dates[1].getTime() + dayMs; // Include full end day
+      const end = dates[1].getTime() + dayMs; 
       filtered = currentArchiveData.filter(i => i.rawDate >= start && i.rawDate <= end);
     }
-
     renderArchiveList(filtered);
   }
 
@@ -4797,7 +4767,6 @@ async function submitEntry(forceDuplicate = false) {
     loadArchiveLedger();
   }
 
-  // --- INDEPENDENT ARCHIVE RECENT CUSTOMERS LOGIC ---
   function updateArchiveRecentCustomers(name) {
     archiveRecentCustomers = archiveRecentCustomers.filter(c => c.toLowerCase() !== name.toLowerCase());
     archiveRecentCustomers.unshift(name);
@@ -4811,16 +4780,11 @@ async function submitEntry(forceDuplicate = false) {
     const arcList = document.getElementById('archiveRecentCustomersList');
     if (!arcContainer || !arcList) return;
     
-    // Always show the card if the search bar is empty, hide it if a search is active
-    if (!document.getElementById('archiveSearchInput').value.trim()) {
-      arcContainer.style.display = 'block';
-    } else {
-      arcContainer.style.display = 'none';
-    }
+    if (!document.getElementById('archiveSearchInput').value.trim()) arcContainer.style.display = 'block';
+    else arcContainer.style.display = 'none';
 
     arcList.innerHTML = '';
     
-    // If there are customers, show the chips. If empty, show the placeholder text!
     if (archiveRecentCustomers && archiveRecentCustomers.length > 0) {
       archiveRecentCustomers.forEach(c => {
         let chip = document.createElement('div');
@@ -4838,7 +4802,6 @@ async function submitEntry(forceDuplicate = false) {
     }
   }
 
-  // --- UX: Auto-Focus and Quick-Fill Logic ---
   function checkAndFocusAmount(inputEl) {
     const val = inputEl.value.trim().toLowerCase();
     const exactMatch = allCustomers.find(c => c.toLowerCase() === val);
@@ -4856,27 +4819,19 @@ async function submitEntry(forceDuplicate = false) {
     container.style.display = 'none';
 
     if (!custName) return;
-
     let targetBalance = 0;
 
-    // 1. Primary Source: Grab balance directly from the active Ledger screen (100% reliable)
     const activeLedgerCust = document.getElementById('dispCustomerName').innerText.trim();
     if (activeLedgerCust.toLowerCase() === custName.toLowerCase()) {
        const balText = document.getElementById('dispOverallBalance').innerText;
-       if (balText.includes('Pending:')) {
-          targetBalance = parseFloat(balText.replace(/[^0-9.-]+/g,"")) || 0;
-       }
+       if (balText.includes('Pending:')) targetBalance = parseFloat(balText.replace(/[^0-9.-]+/g,"")) || 0;
     }
 
-    // 2. Fallback Source: Dashboard Cache
     if (targetBalance === 0 && window.currentDashboardDataPayload && window.currentDashboardDataPayload.customers) {
       let targetCust = window.currentDashboardDataPayload.customers.find(c => c.name.toLowerCase() === custName.toLowerCase());
-      if (targetCust && targetCust.balance > 0) {
-         targetBalance = targetCust.balance;
-      }
+      if (targetCust && targetCust.balance > 0) targetBalance = targetCust.balance;
     }
 
-    // 3. Render the Pill if balance is positive
     if (targetBalance > 0) {
       let type = document.getElementById('entryTypeSelected').value;
       if (type === 'Payment' || type === 'Amount Received') {
@@ -4886,56 +4841,12 @@ async function submitEntry(forceDuplicate = false) {
     }
   }
 
-  // Override routeToAddData to trigger auto-focus & pills
   const originalRouteToAddData = routeToAddData;
   routeToAddData = function(targetType) {
     originalRouteToAddData(targetType);
     updateQuickFillPills();
     setTimeout(() => document.getElementById('entryAmount').focus(), 100);
   };
-
-  // --- UX: Top Fruits Quick-Pick logic ---
-  function checkFruitSimilarity(inputElement) {
-    const row = inputElement.closest('.detail-row');
-    const warningBox = row.querySelector('.fruit-warning-container');
-    let inputStr = inputElement.value; 
-    const lowerInput = inputStr.toLowerCase().trim();
-    
-    // Quick-Pick mode! Show top 8 fruits if input is empty
-    if (lowerInput.length === 0) {
-       if (window.allFruits && window.allFruits.length > 0) {
-          warningBox.style.background = 'var(--pill-bg)';
-          warningBox.style.color = '#007bff';
-          warningBox.style.display = 'block';
-          let topFruits = window.allFruits.slice(0, 8); 
-          let chipsHtml = topFruits.map(f => `<span class="suggestion-chip" style="font-size: 11px; padding: 4px 8px; margin-right: 4px; margin-top: 4px; display: inline-block; background: #bbdefb; color: #0056b3; border-radius: 12px; cursor: pointer; font-weight: bold;" onclick="selectFruitSuggestion(this, '${f}')">${f}</span>`).join('');
-          warningBox.innerHTML = `<div style="margin-bottom: 2px; font-weight: bold; color: var(--text-muted);">Quick Pick:</div><div>${chipsHtml}</div>`;
-       } else {
-          warningBox.style.display = 'none';
-       }
-       return;
-    }
-
-    const exactMatch = window.allFruits.find(f => f.toLowerCase() === lowerInput);
-    if (exactMatch) {
-       warningBox.style.display = 'none';
-       return;
-    }
-
-    const similar = window.allFruits.filter(f => f.toLowerCase().includes(lowerInput));
-    if (similar.length > 0) {
-      warningBox.style.background = '#ffebee';
-      warningBox.style.color = '#d32f2f';
-      warningBox.style.display = 'block';
-      let chipsHtml = similar.map(f => `<span class="suggestion-chip" style="font-size: 11px; padding: 4px 8px; margin-right: 4px; margin-top: 4px; display: inline-block; background: #ffcdd2; color: #b71c1c; border-radius: 12px; cursor: pointer; font-weight: bold;" onclick="selectFruitSuggestion(this, '${f}')">${f}</span>`).join('');
-      warningBox.innerHTML = `Similar names found:<br><div>${chipsHtml}</div>`;
-    } else {
-      warningBox.style.background = '#e8f5e9';
-      warningBox.style.color = '#2e7d32';
-      warningBox.style.display = 'block';
-      warningBox.innerHTML = `<strong>New Fruit:</strong> "${inputStr}" does not exist and will be added.`;
-    }
-  }
 
   function selectAllSmartSettle(safeCustName) {
     const card = document.getElementById('card_' + safeCustName);
@@ -4944,8 +4855,6 @@ async function submitEntry(forceDuplicate = false) {
     checkboxes.forEach(box => box.checked = true);
     if (checkboxes.length > 0) handleSmartSettleCheck(checkboxes[0]);
   }
-  
-  
 </script>
 </body>
 </html>
