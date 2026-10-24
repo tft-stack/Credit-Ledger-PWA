@@ -587,6 +587,8 @@
           
         </div>
         <div class="balance" id="dispOverallBalance">Outstanding: ₹0</div>
+        <!-- UX UPDATE: Tiny Data Source Indicator moved to header -->
+        <div id="ledgerDataSource" style="font-size: 8px; font-weight: bold; color: var(--text-light); opacity: 0.6; margin-top: 4px; letter-spacing: 0.5px; text-transform: uppercase;"></div>
       </div>
       
       <div style="display: flex; border-bottom: 2px dashed var(--border-color); margin-bottom: 12px; padding-bottom: 4px;">
@@ -3061,6 +3063,12 @@ async function submitEntry(forceDuplicate = false) {
       balElem.style.color = '#2e7d32';
     }
 
+    // UX UPDATE: Set the tiny header text
+    const sourceEl = document.getElementById('ledgerDataSource');
+    if (sourceEl) {
+      sourceEl.innerText = data.dataSource ? data.dataSource : '';
+    }
+
     const container = document.getElementById('ledgerRowsContainer');
 
     if (!data.history || data.history.length === 0) {
@@ -3181,14 +3189,6 @@ async function submitEntry(forceDuplicate = false) {
 
     container.innerHTML = allRowsHtml;
 
-    if (data.dataSource) {
-      const indicatorHTML = `
-        <div style="text-align: center; font-size: 10px; font-weight: bold; color: var(--text-muted); opacity: 0.5; margin-top: 24px; padding-bottom: 24px; letter-spacing: 0.5px; display: flex; justify-content: center; align-items: center;">
-          ${data.dataSource}
-        </div>
-      `;
-      container.insertAdjacentHTML('beforeend', indicatorHTML);
-    }
   }
 
   function closeEditCustomerModal() {
