@@ -1535,6 +1535,7 @@
       detailsWrapper.style.display = 'none'; 
       clearDetailsContainer(); 
     }
+    if (typeof updateQuickFillPills === 'function') updateQuickFillPills();
   }
 
   function toggleFilters() {
@@ -1763,6 +1764,12 @@
     else if (targetType === 'payment') setAddType('Payment');
     
     switchScreen('enter');
+
+    if (typeof updateQuickFillPills === 'function') updateQuickFillPills();
+    setTimeout(() => {
+       const amtField = document.getElementById('entryAmount');
+       if(amtField) amtField.focus();
+    }, 100);
   }
 
   // --- SMART SETTLE FUNCTIONS ---
@@ -4786,16 +4793,31 @@ async function submitEntry(forceDuplicate = false) {
 
     if (!custName) return;
 
-    let targetCust = null;
-    if (window.currentDashboardDataPayload && window.currentDashboardDataPayload.customers) {
-      targetCust = window.currentDashboardDataPayload.customers.find(c => c.name.toLowerCase() === custName.toLowerCase());
+    let targetBalance = 0;
+
+    // 1. Primary Source: Grab balance directly from the active Ledger screen (100% reliable)
+    const activeLedgerCust = document.getElementById('dispCustomerName').innerText.trim();
+    if (activeLedgerCust.toLowerCase() === custName.toLowerCase()) {
+       const balText = document.getElementById('dispOverallBalance').innerText;
+       if (balText.includes('Pending:')) {
+          targetBalance = parseFloat(balText.replace(/[^0-9.-]+/g,"")) || 0;
+       }
     }
 
-    if (targetCust && targetCust.balance > 0) {
+    // 2. Fallback Source: Dashboard Cache
+    if (targetBalance === 0 && window.currentDashboardDataPayload && window.currentDashboardDataPayload.customers) {
+      let targetCust = window.currentDashboardDataPayload.customers.find(c => c.name.toLowerCase() === custName.toLowerCase());
+      if (targetCust && targetCust.balance > 0) {
+         targetBalance = targetCust.balance;
+      }
+    }
+
+    // 3. Render the Pill if balance is positive
+    if (targetBalance > 0) {
       let type = document.getElementById('entryTypeSelected').value;
       if (type === 'Payment' || type === 'Amount Received') {
          container.style.display = 'flex';
-         container.innerHTML = `<span onclick="document.getElementById('entryAmount').value = ${targetCust.balance}; saveEntryDraft();" style="background: #e8f5e9; color: #2e7d32; padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; border: 1px solid #c8e6c9; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.05); user-select: none;">Fill Pending: ₹${targetCust.balance.toLocaleString('en-IN')}</span>`;
+         container.innerHTML = `<span onclick="document.getElementById('entryAmount').value = ${targetBalance}; saveEntryDraft();" style="background: #e8f5e9; color: #2e7d32; padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; border: 1px solid #c8e6c9; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.05); user-select: none;">Fill Pending: ₹${targetBalance.toLocaleString('en-IN')}</span>`;
       }
     }
   }
