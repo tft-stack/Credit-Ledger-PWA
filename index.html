@@ -4079,10 +4079,10 @@ async function submitEntry(forceDuplicate = false) {
         <div style="display: flex; gap: 6px; align-items: center;">
           <div class="bulk-sno" style="font-weight: bold; font-size: 13px; color: var(--text-muted); width: 22px; text-align: center; flex-shrink: 0;"></div>
           
-          <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name or UPI" value="${cust}" style="flex: 2; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); saveBulkDraft()" onchange="handleBulkCustChange(this)">
+          <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name or UPI" value="${cust}" style="flex: 2; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); checkBulkExactMatch(this); saveBulkDraft()" onchange="handleBulkCustChange(this)">
           
           <div style="flex: 1.2; min-width: 0; display: flex; flex-direction: column;">
-            <input type="number" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="width: 100%; padding: 8px 6px; margin-bottom: 0; font-size: 14px; box-sizing: border-box;" oninput="updateBulkTotal(); saveBulkDraft()" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow('', '', true); }">
+            <input type="number" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="width: 100%; padding: 8px 6px; margin-bottom: 0; font-size: 14px; box-sizing: border-box;" oninput="updateBulkTotal(); saveBulkDraft()" onfocus="handleBulkCustChange(this.closest('.bulk-row').querySelector('.bulk-cust'))" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow('', '', true); }">
             <div class="bulk-pending-badge" onclick="const amtInput = this.previousElementSibling; amtInput.value = this.getAttribute('data-bal'); updateBulkTotal(); saveBulkDraft();" style="display: none; font-size: 9px; font-weight: bold; color: #2e7d32; margin-top: 3px; text-align: right; padding-right: 2px; cursor: pointer; user-select: none;" title="Tap to auto-fill"></div>
           </div>
           
@@ -4117,35 +4117,60 @@ async function submitEntry(forceDuplicate = false) {
     }
   }
 
-  function handleBulkCustChange(inputElement) {
+  function checkBulkExactMatch(inputElement) {
+    if (!inputElement) return;
     const val = inputElement.value.trim().toLowerCase();
     const exactMatch = allCustomers.find(c => c.toLowerCase() === val);
     const row = inputElement.closest('.bulk-row');
     if (!row) return;
-
-    // UX UPDATE: Show Pending Balance Badge for Payments in 0ms (RAM check)
+    
     const pendingBadge = row.querySelector('.bulk-pending-badge');
-    if (pendingBadge) {
-      pendingBadge.style.display = 'none';
-      const bulkType = document.getElementById('bulkEntryTypeSelected').value;
-      
-      if (exactMatch && (bulkType === 'Payment' || bulkType === 'Amount Received')) {
-        if (window.currentDashboardDataPayload && window.currentDashboardDataPayload.customers) {
-          let targetCust = window.currentDashboardDataPayload.customers.find(c => c.name.toLowerCase() === exactMatch.toLowerCase());
-          if (targetCust && targetCust.balance > 0) {
-            pendingBadge.innerText = `Pending: ₹${targetCust.balance.toLocaleString('en-IN')}`;
-            pendingBadge.setAttribute('data-bal', targetCust.balance);
-            pendingBadge.style.display = 'block';
+    if (!pendingBadge) return;
+
+    const bulkType = document.getElementById('bulkEntryTypeSelected').value;
+    if (exactMatch && (bulkType === 'Payment' || bulkType === 'Amount Received')) {
+      if (window.currentDashboardDataPayload && window.currentDashboardDataPayload.customers) {
+        let targetCust = window.currentDashboardDataPayload.customers.find(c => c.name.toLowerCase() === exactMatch.toLowerCase());
+        if (targetCust && targetCust.balance > 0) {
+          pendingBadge.innerText = `Pending: ₹${targetCust.balance.toLocaleString('en-IN')}`;
+          pendingBadge.setAttribute('data-bal', targetCust.balance);
+          pendingBadge.style.display = 'block';
+          
+          // Auto-focus amount field if typing exactly matched!
+          const amtInput = row.querySelector('.bulk-amt');
+          if (amtInput && document.activeElement === inputElement) {
+            amtInput.focus();
           }
+          return;
+        }
+      }
+    }
+    pendingBadge.style.display = 'none';
+  }
+
+  function handleBulkCustChange(inputElement) {
+    if (!inputElement) return;
+    let val = inputElement.value.trim().toLowerCase();
+    if (!val) return;
+
+    let exactMatch = allCustomers.find(c => c.toLowerCase() === val);
+    
+    // UX UPDATE: Auto-complete partial names to speed up data entry
+    if (!exactMatch && val.length >= 2) {
+      let partials = allCustomers.filter(c => c.toLowerCase().includes(val));
+      if (partials.length === 1) {
+        exactMatch = partials[0];
+        inputElement.value = exactMatch;
+      } else if (partials.length > 1) {
+        let startsWith = partials.filter(c => c.toLowerCase().startsWith(val));
+        if (startsWith.length === 1) {
+          exactMatch = startsWith[0];
+          inputElement.value = exactMatch;
         }
       }
     }
     
-    // Jump straight to the amount field
-    if (exactMatch) {
-      const amtInput = row.querySelector('.bulk-amt');
-      if (amtInput) amtInput.focus(); 
-    }
+    checkBulkExactMatch(inputElement);
   }
 
   function updateBulkRowUI() {
@@ -4239,8 +4264,12 @@ async function submitEntry(forceDuplicate = false) {
           warningBox.style.display = 'none';
           saveBulkDraft();
           
-          // UX UPDATE: Trigger the badge calculation & auto-focus
-          handleBulkCustChange(inputElement); 
+          // UX UPDATE: Trigger the badge calculation
+          checkBulkExactMatch(inputElement); 
+          
+          // UX UPDATE: Auto-focus amount field when clicking similarity chip
+          const amtInput = row.querySelector('.bulk-amt');
+          if (amtInput) amtInput.focus();
         };
         chipContainer.appendChild(chip);
       });
