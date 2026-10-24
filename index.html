@@ -4073,7 +4073,6 @@ async function submitEntry(forceDuplicate = false) {
     document.querySelectorAll('.bulk-cust').forEach(el => handleBulkCustChange(el));
   }
 
-  // UPDATED: Added autoFocus parameter and onchange event
   function addBulkRow(cust = '', amt = '', autoFocus = false) {
     const container = document.getElementById('bulkRowsContainer');
     const rowId = 'row_' + Date.now() + Math.random().toString(36).substr(2, 5);
@@ -4107,7 +4106,6 @@ async function submitEntry(forceDuplicate = false) {
     container.insertAdjacentHTML('beforeend', html);
     updateBulkRowUI(); 
 
-    // Auto-focus and scroll to the new input field
     if (autoFocus) {
       setTimeout(() => {
         const newRow = document.getElementById(rowId);
@@ -4122,35 +4120,49 @@ async function submitEntry(forceDuplicate = false) {
     }
   }
 
-  function checkBulkExactMatch(inputElement) {
+  function checkBulkExactMatch(inputElement, forceFocus = false) {
     if (!inputElement) return;
     const val = inputElement.value.trim().toLowerCase();
+    
+    // Safety check in case the user types very fast and array isn't populated yet
+    if (!allCustomers || allCustomers.length === 0) return;
+    
     const exactMatch = allCustomers.find(c => c.toLowerCase() === val);
     const row = inputElement.closest('.bulk-row');
     if (!row) return;
     
     const pendingBadge = row.querySelector('.bulk-pending-badge');
-    if (!pendingBadge) return;
+    const amtInput = row.querySelector('.bulk-amt');
 
-    const bulkType = document.getElementById('bulkEntryTypeSelected').value;
-    if (exactMatch && (bulkType === 'Payment' || bulkType === 'Amount Received')) {
-      if (window.currentDashboardDataPayload && window.currentDashboardDataPayload.customers) {
-        let targetCust = window.currentDashboardDataPayload.customers.find(c => c.name.toLowerCase() === exactMatch.toLowerCase());
-        if (targetCust && targetCust.balance > 0) {
-          pendingBadge.innerText = `₹${bal.toLocaleString('en-IN')}`;
-          pendingBadge.setAttribute('data-bal', targetCust.balance);
-          pendingBadge.style.display = 'block';
-          
-          // Auto-focus amount field if typing exactly matched!
-          const amtInput = row.querySelector('.bulk-amt');
-          if (amtInput && document.activeElement === inputElement) {
-            amtInput.focus();
-          }
-          return;
-        }
+    // 1. Instant Badge Logic
+    if (pendingBadge) {
+      pendingBadge.style.display = 'none';
+      const bulkType = document.getElementById('bulkEntryTypeSelected').value;
+      if (exactMatch && (bulkType === 'Payment' || bulkType === 'Amount Received')) {
+         let bal = 0;
+         if (currentDashboardData && currentDashboardData.length > 0) {
+           let tc = currentDashboardData.find(c => c.name.toLowerCase() === exactMatch.toLowerCase());
+           if (tc) bal = tc.balance;
+         } else if (window.currentDashboardDataPayload && window.currentDashboardDataPayload.customers) {
+           let tc = window.currentDashboardDataPayload.customers.find(c => c.name.toLowerCase() === exactMatch.toLowerCase());
+           if (tc) bal = tc.balance;
+         }
+
+         if (bal > 0) {
+           // Set the compact pill text and ensure it is displayed
+           pendingBadge.innerText = `₹${bal.toLocaleString('en-IN')}`;
+           pendingBadge.setAttribute('data-bal', bal);
+           pendingBadge.style.display = 'inline-block';
+         }
       }
     }
-    pendingBadge.style.display = 'none';
+
+    // 2. Instant Focus Logic
+    if (exactMatch && amtInput) {
+       if (forceFocus || document.activeElement === inputElement) {
+          setTimeout(() => amtInput.focus(), 10);
+       }
+    }
   }
 
   function handleBulkCustChange(inputElement) {
