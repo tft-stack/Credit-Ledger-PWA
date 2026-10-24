@@ -668,6 +668,9 @@
             <button type="button" id="btnPayment" class="btn btn-outline-green btn-sm" onclick="setAddType('Payment'); saveEntryDraft(); updateQuickFillPills();">Payment</button>
         </div>
         <input type="hidden" id="entryTypeSelected" value="Purchase">
+
+        <!-- UX UPDATE: Quick Fill Pill Container -->
+        <div id="quickFillPills" style="display: none; gap: 6px; margin-bottom: 12px; flex-wrap: wrap;"></div>
         
         <!-- Amount and Date in a single compact row -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px;">
@@ -683,9 +686,6 @@
             </div>
           </div>
         </div>
-        
-        <!-- UX UPDATE: Quick Fill Pill Container -->
-        <div id="quickFillPills" style="display: none; gap: 6px; margin-bottom: 12px; flex-wrap: wrap;"></div>
 
         <!-- Brought Forward Checkbox moved right under Amount/Date block -->
         <div id="addBFContainer" style="display: flex; align-items: center; gap: 6px; margin-bottom: 16px;">
