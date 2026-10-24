@@ -1161,6 +1161,7 @@
   let selectedMonths = [];
   let currentLedgerHistory = []; 
   let recentCustomers = JSON.parse(localStorage.getItem('recentCustomers')) || [];
+  let archiveRecentCustomers = JSON.parse(localStorage.getItem('archiveRecentCustomers')) || [];
   
   let currentUserEmail = ""; 
   let currentUserName = "";
@@ -1307,7 +1308,8 @@
     if (!modalDatePicker) modalDatePicker = flatpickr("#modalDate", fpConfig); 
     if (!bulkDatePicker) bulkDatePicker = flatpickr("#bulkDate", { ...fpConfig, defaultDate: "today" }); 
     
-    renderRecentCustomers(); 
+    renderRecentCustomers();
+    renderArchiveRecentCustomers(); // NEW: Render Archive specific customers
     initAlphabetFilter();
     
     const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
@@ -4562,7 +4564,8 @@ async function submitEntry(forceDuplicate = false) {
     document.getElementById('archiveCard').style.display = 'none';
     document.getElementById('archiveFilters').style.display = 'none';
     document.getElementById('archiveResults').innerHTML = '';
-    if (recentCustomers && recentCustomers.length > 0) {
+    // UX UPDATE: Use the independent Archive array
+    if (archiveRecentCustomers && archiveRecentCustomers.length > 0) {
       document.getElementById('archiveRecentCustomersContainer').style.display = 'block';
     }
     currentArchiveData = [];
@@ -4575,6 +4578,9 @@ async function submitEntry(forceDuplicate = false) {
       document.getElementById('archiveFilters').style.display = 'none';
       return;
     }
+
+    // UX UPDATE: Save the searched name to the Archive's independent memory
+    updateArchiveRecentCustomers(name);
 
     showLoading();
     try {
@@ -4741,37 +4747,40 @@ async function submitEntry(forceDuplicate = false) {
     loadArchiveLedger();
   }
 
-  // Safely extend the existing renderRecentCustomers function to also populate the Archive screen
-  if (!window.originalRenderRecentForArchive) {
-    window.originalRenderRecentForArchive = renderRecentCustomers;
-    renderRecentCustomers = function() {
-      window.originalRenderRecentForArchive(); // Update Ledger
-      
-      const arcContainer = document.getElementById('archiveRecentCustomersContainer');
-      const arcList = document.getElementById('archiveRecentCustomersList');
-      if (!arcContainer || !arcList) return;
-      
-      if (recentCustomers && recentCustomers.length > 0) {
+  // --- INDEPENDENT ARCHIVE RECENT CUSTOMERS LOGIC ---
+  function updateArchiveRecentCustomers(name) {
+    archiveRecentCustomers = archiveRecentCustomers.filter(c => c.toLowerCase() !== name.toLowerCase());
+    archiveRecentCustomers.unshift(name);
+    if (archiveRecentCustomers.length > 6) archiveRecentCustomers.pop(); 
+    localStorage.setItem('archiveRecentCustomers', JSON.stringify(archiveRecentCustomers));
+    renderArchiveRecentCustomers();
+  }
+
+  function renderArchiveRecentCustomers() {
+    const arcContainer = document.getElementById('archiveRecentCustomersContainer');
+    const arcList = document.getElementById('archiveRecentCustomersList');
+    if (!arcContainer || !arcList) return;
+    
+    if (archiveRecentCustomers && archiveRecentCustomers.length > 0) {
+      // Only show the recent card if the search bar is empty
+      if (!document.getElementById('archiveSearchInput').value.trim()) {
         arcContainer.style.display = 'block';
-        arcList.innerHTML = '';
-        recentCustomers.forEach(c => {
-          let chip = document.createElement('div');
-          
-          // Apply the exact same CSS class used in the Ledger screen
-          chip.className = 'recent-chip';
-          
-          chip.innerText = c;
-          chip.onclick = function() {
-            document.getElementById('archiveSearchInput').value = c;
-            toggleClearSearch('archiveSearchInput', 'clearArchiveBtn');
-            loadArchiveLedger();
-          };
-          arcList.appendChild(chip);
-        });
-      } else {
-        arcContainer.style.display = 'none';
       }
-    };
+      arcList.innerHTML = '';
+      archiveRecentCustomers.forEach(c => {
+        let chip = document.createElement('div');
+        chip.className = 'recent-chip';
+        chip.innerText = c;
+        chip.onclick = function() {
+          document.getElementById('archiveSearchInput').value = c;
+          toggleClearSearch('archiveSearchInput', 'clearArchiveBtn');
+          loadArchiveLedger();
+        };
+        arcList.appendChild(chip);
+      });
+    } else {
+      arcContainer.style.display = 'none';
+    }
   }
 
   // --- UX: Auto-Focus and Quick-Fill Logic ---
