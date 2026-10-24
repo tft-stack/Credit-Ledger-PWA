@@ -4564,11 +4564,10 @@ async function submitEntry(forceDuplicate = false) {
     document.getElementById('archiveCard').style.display = 'none';
     document.getElementById('archiveFilters').style.display = 'none';
     document.getElementById('archiveResults').innerHTML = '';
-    // UX UPDATE: Use the independent Archive array
-    if (archiveRecentCustomers && archiveRecentCustomers.length > 0) {
-      document.getElementById('archiveRecentCustomersContainer').style.display = 'block';
-    }
     currentArchiveData = [];
+    
+    // UX UPDATE: Let the render function handle showing the card and placeholder
+    renderArchiveRecentCustomers(); 
   }
 
   async function loadArchiveLedger() {
@@ -4761,12 +4760,17 @@ async function submitEntry(forceDuplicate = false) {
     const arcList = document.getElementById('archiveRecentCustomersList');
     if (!arcContainer || !arcList) return;
     
+    // Always show the card if the search bar is empty, hide it if a search is active
+    if (!document.getElementById('archiveSearchInput').value.trim()) {
+      arcContainer.style.display = 'block';
+    } else {
+      arcContainer.style.display = 'none';
+    }
+
+    arcList.innerHTML = '';
+    
+    // If there are customers, show the chips. If empty, show the placeholder text!
     if (archiveRecentCustomers && archiveRecentCustomers.length > 0) {
-      // Only show the recent card if the search bar is empty
-      if (!document.getElementById('archiveSearchInput').value.trim()) {
-        arcContainer.style.display = 'block';
-      }
-      arcList.innerHTML = '';
       archiveRecentCustomers.forEach(c => {
         let chip = document.createElement('div');
         chip.className = 'recent-chip';
@@ -4779,7 +4783,7 @@ async function submitEntry(forceDuplicate = false) {
         arcList.appendChild(chip);
       });
     } else {
-      arcContainer.style.display = 'none';
+      arcList.innerHTML = '<span style="font-size:13px; color: var(--text-light);">Search a customer to see them here</span>';
     }
   }
 
