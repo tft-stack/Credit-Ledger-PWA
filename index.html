@@ -577,6 +577,14 @@
               <polyline points="9 15 12 18 15 15"></polyline>
             </svg>
           </div>
+
+          <!-- NEW: History Jump Button -->
+          <div class="no-print" style="position: absolute; right: 35px; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;" onclick="jumpToHistoryFromLedger()" title="View History">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          
         </div>
         <div class="balance" id="dispOverallBalance">Outstanding: ₹0</div>
       </div>
@@ -644,7 +652,7 @@
       <h3>Add Entry</h3>
       <label>Customer Name</label>
       <div style="position: relative; margin-bottom: 8px;">
-        <input type="text" id="entryCustomerInput" list="customerList" placeholder="🔍 Search Name or UPI..." oninput="handleNativeAutocomplete(this); this.value = this.value.replace(/[^a-zA-Z0-9 @.-_]/g, ''); checkSimilarity(this.value); toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn'); saveEntryDraft();" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
+        <input type="text" id="entryCustomerInput" list="customerList" placeholder="🔍 Search Name or UPI..." oninput="handleNativeAutocomplete(this); this.value = this.value.replace(/[^a-zA-Z0-9 @.-_]/g, ''); checkSimilarity(this.value); checkAndFocusAmount(this); toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn'); saveEntryDraft();" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
         <div id="clearAddSearchBtn" onclick="clearSearch('entryCustomerInput', 'clearAddSearchBtn')" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--border-color); color: var(--btn-text); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer; transition: background 0.3s, color 0.3s;">✕</div>
       </div>
       
@@ -656,27 +664,28 @@
       <div style="background: var(--bg-color); padding: 12px; border-radius: 8px; border: 1px solid var(--border-light); margin-top: 12px; transition: background 0.3s, border-color 0.3s;">
         <label>New Entry</label>
         <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-            <button type="button" id="btnPurchase" class="btn btn-red btn-sm" onclick="setAddType('Purchase'); saveEntryDraft();">Purchase</button>
-            <button type="button" id="btnPayment" class="btn btn-outline-green btn-sm" onclick="setAddType('Payment'); saveEntryDraft();">Payment</button>
+            <button type="button" id="btnPurchase" class="btn btn-red btn-sm" onclick="setAddType('Purchase'); saveEntryDraft(); updateQuickFillPills();">Purchase</button>
+            <button type="button" id="btnPayment" class="btn btn-outline-green btn-sm" onclick="setAddType('Payment'); saveEntryDraft(); updateQuickFillPills();">Payment</button>
         </div>
         <input type="hidden" id="entryTypeSelected" value="Purchase">
         
         <!-- Amount and Date in a single compact row -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px;">
           <div>
             <label>Amount (₹)</label>
-            <!-- Added saveEntryDraft to oninput -->
             <input type="number" id="entryAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); saveEntryDraft();">
           </div>
           <div>
             <label>Date</label>
             <div style="position: relative; margin-bottom: 0;">
-              <!-- Added saveEntryDraft to onchange -->
               <input type="text" id="entryDate" required style="margin-bottom: 0; padding-right: 34px; background: var(--input-bg);" placeholder="Select Date" readonly onchange="saveEntryDraft()">
               <div onclick="openDatePicker('entryDate')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px;">📅</div>
             </div>
           </div>
         </div>
+        
+        <!-- UX UPDATE: Quick Fill Pill Container -->
+        <div id="quickFillPills" style="display: none; gap: 6px; margin-bottom: 12px; flex-wrap: wrap;"></div>
 
         <!-- Brought Forward Checkbox moved right under Amount/Date block -->
         <div id="addBFContainer" style="display: flex; align-items: center; gap: 6px; margin-bottom: 16px;">
@@ -1857,6 +1866,10 @@
                 ✨ ${custMatch.matchRule}
               </div>
               ${reviewLinkHtml}
+              <!-- UX UPDATE: Select All Button -->
+              <div style="margin-top: 8px;">
+                <button onclick="event.stopPropagation(); selectAllSmartSettle('${safeCustName}');" style="background: #28a745; color: white; border: none; padding: 6px 14px; border-radius: 12px; font-size: 11px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">☑️ Select All</button>
+              </div>
             </div>
             
             <div style="padding: 12px 16px;">
@@ -3447,9 +3460,9 @@ async function submitEntry(forceDuplicate = false) {
       <!-- EDIT MODE -->
       <div class="edit-mode" style="${startInEditMode ? 'display: block;' : 'display: none;'} background: var(--pill-bg); padding: 10px; border-radius: 8px; border: 1px dashed var(--border-color); margin-top: 4px;">
         <div style="display: grid; grid-template-columns: 2fr 1fr 1.2fr; gap: 6px; margin-bottom: 6px;">
-          <input type="text" class="inline-edit-fruit" value="${fruit}" placeholder="Fruit" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)">
-          <input type="number" class="inline-edit-qty" value="${qty}" placeholder="Qty" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)">
-          <input type="number" class="inline-edit-price" value="${price}" placeholder="Price" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)">
+          <input type="text" class="inline-edit-fruit" value="${fruit}" placeholder="Fruit" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)" onfocus="checkFruitSimilarity(this)">
+          <input type="number" class="inline-edit-qty" value="${qty}" placeholder="Qty" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)" onkeydown="if(event.key==='Enter') { event.preventDefault(); this.closest('.detail-row').querySelector('.inline-edit-price').focus(); }">
+          <input type="number" class="inline-edit-price" value="${price}" placeholder="Price" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)" onkeydown="if(event.key==='Enter') { event.preventDefault(); saveAndAddNewRow(this, '${context}'); }">
         </div>
         
         <!-- NEW: Fruit Warning Container -->
@@ -4056,7 +4069,7 @@ async function submitEntry(forceDuplicate = false) {
           
           <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name or UPI" value="${cust}" style="flex: 2; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); saveBulkDraft()" onchange="handleBulkCustChange(this)">
           
-          <input type="number" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="flex: 1.2; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="updateBulkTotal(); saveBulkDraft()">
+          <input type="number" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="flex: 1.2; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="updateBulkTotal(); saveBulkDraft()" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow('', '', true); }">
           
           <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
             <button class="bulk-remove-btn" onclick="removeBulkRow('${rowId}')" style="background: none; border: none; color: #d32f2f; font-size: 18px; padding: 0 4px; cursor: pointer; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;" title="Remove">✕</button>
@@ -4702,7 +4715,23 @@ async function submitEntry(forceDuplicate = false) {
       allRowsHtml += `<div style="display: flex; margin-bottom: 12px;">${buildArcCell(row.left, true)}${buildArcCell(row.right, false)}</div>`;
     });
 
+    let searchedCust = document.getElementById('archiveSearchInput').value.trim();
+    if (searchedCust) {
+       let escapedName = searchedCust.replace(/'/g, "\\'");
+       let jumpBanner = `<div onclick="jumpToCustomer('${escapedName}')" style="background: #e3f2fd; color: #007bff; text-align: center; padding: 10px; font-size: 13px; font-weight: bold; border-radius: 6px; margin-bottom: 12px; cursor: pointer; border: 1px solid #bbdefb; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">View Active Ledger for this Customer ➔</div>`;
+       allRowsHtml = jumpBanner + allRowsHtml;
+    }
+    
     container.innerHTML = allRowsHtml;
+  }
+
+  function jumpToHistoryFromLedger() {
+    const custName = document.getElementById('dispCustomerName').innerText;
+    if(!custName || custName === "Unknown") return;
+    document.getElementById('archiveSearchInput').value = custName;
+    toggleClearSearch('archiveSearchInput', 'clearArchiveBtn');
+    switchScreen('archive');
+    loadArchiveLedger();
   }
 
   // Safely extend the existing renderRecentCustomers function to also populate the Archive screen
@@ -4736,6 +4765,98 @@ async function submitEntry(forceDuplicate = false) {
         arcContainer.style.display = 'none';
       }
     };
+  }
+
+  // --- UX: Auto-Focus and Quick-Fill Logic ---
+  function checkAndFocusAmount(inputEl) {
+    const val = inputEl.value.trim().toLowerCase();
+    const exactMatch = allCustomers.find(c => c.toLowerCase() === val);
+    if (exactMatch && inputEl.id === 'entryCustomerInput') {
+       updateQuickFillPills();
+       setTimeout(() => document.getElementById('entryAmount').focus(), 50);
+    }
+  }
+
+  function updateQuickFillPills() {
+    const container = document.getElementById('quickFillPills');
+    const custName = document.getElementById('entryCustomerInput').value.trim();
+    if (!container) return;
+    container.innerHTML = '';
+    container.style.display = 'none';
+
+    if (!custName) return;
+
+    let targetCust = null;
+    if (window.currentDashboardDataPayload && window.currentDashboardDataPayload.customers) {
+      targetCust = window.currentDashboardDataPayload.customers.find(c => c.name.toLowerCase() === custName.toLowerCase());
+    }
+
+    if (targetCust && targetCust.balance > 0) {
+      let type = document.getElementById('entryTypeSelected').value;
+      if (type === 'Payment' || type === 'Amount Received') {
+         container.style.display = 'flex';
+         container.innerHTML = `<span onclick="document.getElementById('entryAmount').value = ${targetCust.balance}; saveEntryDraft();" style="background: #e8f5e9; color: #2e7d32; padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; border: 1px solid #c8e6c9; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.05); user-select: none;">Fill Pending: ₹${targetCust.balance.toLocaleString('en-IN')}</span>`;
+      }
+    }
+  }
+
+  // Override routeToAddData to trigger auto-focus & pills
+  const originalRouteToAddData = routeToAddData;
+  routeToAddData = function(targetType) {
+    originalRouteToAddData(targetType);
+    updateQuickFillPills();
+    setTimeout(() => document.getElementById('entryAmount').focus(), 100);
+  };
+
+  // --- UX: Top Fruits Quick-Pick logic ---
+  function checkFruitSimilarity(inputElement) {
+    const row = inputElement.closest('.detail-row');
+    const warningBox = row.querySelector('.fruit-warning-container');
+    let inputStr = inputElement.value; 
+    const lowerInput = inputStr.toLowerCase().trim();
+    
+    // Quick-Pick mode! Show top 8 fruits if input is empty
+    if (lowerInput.length === 0) {
+       if (window.allFruits && window.allFruits.length > 0) {
+          warningBox.style.background = 'var(--pill-bg)';
+          warningBox.style.color = '#007bff';
+          warningBox.style.display = 'block';
+          let topFruits = window.allFruits.slice(0, 8); 
+          let chipsHtml = topFruits.map(f => `<span class="suggestion-chip" style="font-size: 11px; padding: 4px 8px; margin-right: 4px; margin-top: 4px; display: inline-block; background: #bbdefb; color: #0056b3; border-radius: 12px; cursor: pointer; font-weight: bold;" onclick="selectFruitSuggestion(this, '${f}')">${f}</span>`).join('');
+          warningBox.innerHTML = `<div style="margin-bottom: 2px; font-weight: bold; color: var(--text-muted);">Quick Pick:</div><div>${chipsHtml}</div>`;
+       } else {
+          warningBox.style.display = 'none';
+       }
+       return;
+    }
+
+    const exactMatch = window.allFruits.find(f => f.toLowerCase() === lowerInput);
+    if (exactMatch) {
+       warningBox.style.display = 'none';
+       return;
+    }
+
+    const similar = window.allFruits.filter(f => f.toLowerCase().includes(lowerInput));
+    if (similar.length > 0) {
+      warningBox.style.background = '#ffebee';
+      warningBox.style.color = '#d32f2f';
+      warningBox.style.display = 'block';
+      let chipsHtml = similar.map(f => `<span class="suggestion-chip" style="font-size: 11px; padding: 4px 8px; margin-right: 4px; margin-top: 4px; display: inline-block; background: #ffcdd2; color: #b71c1c; border-radius: 12px; cursor: pointer; font-weight: bold;" onclick="selectFruitSuggestion(this, '${f}')">${f}</span>`).join('');
+      warningBox.innerHTML = `Similar names found:<br><div>${chipsHtml}</div>`;
+    } else {
+      warningBox.style.background = '#e8f5e9';
+      warningBox.style.color = '#2e7d32';
+      warningBox.style.display = 'block';
+      warningBox.innerHTML = `<strong>New Fruit:</strong> "${inputStr}" does not exist and will be added.`;
+    }
+  }
+
+  function selectAllSmartSettle(safeCustName) {
+    const card = document.getElementById('card_' + safeCustName);
+    if (!card) return;
+    const checkboxes = card.querySelectorAll('.smart-settle-checkbox');
+    checkboxes.forEach(box => box.checked = true);
+    if (checkboxes.length > 0) handleSmartSettleCheck(checkboxes[0]);
   }
   
   
