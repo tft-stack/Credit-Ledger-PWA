@@ -59,6 +59,9 @@
     select, input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 15px; margin-bottom: 12px; background: var(--input-bg); color: var(--text-main); transition: background 0.3s, color 0.3s, border-color 0.3s; }
     input:focus, select:focus { outline: none; border-color: #007bff; }
     input::placeholder { color: var(--text-light); }
+    /* UX UPDATE: Hide the native browser datalist dropdown arrow */
+    input::-webkit-calendar-picker-indicator { display: none !important; }
+    input::-webkit-list-button { display: none !important; }
     
     .month-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 12px; }
     .month-pill { background: var(--pill-bg); border: 1px solid var(--pill-border); border-radius: 16px; padding: 8px 0; font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; user-select: none; color: var(--pill-text); transition: background 0.3s, color 0.3s, border-color 0.3s; }
@@ -4516,33 +4519,45 @@ async function submitEntry(forceDuplicate = false) {
 
   window.upiMap = {};
 
+  // 1. Interceptor: Snaps the bracketed alias back to the clean Customer Name instantly
   function handleNativeAutocomplete(inputEl) {
     const val = inputEl.value;
-    if (val.includes(' ➔ ')) {
-      inputEl.value = val.split(' ➔ ')[1].trim();
+    // UX UPDATE: If the user taps "Anil Nishan BD (Anil Koundal)", extract just "Anil Nishan BD"
+    if (val.includes(' (') && val.endsWith(')')) {
+      inputEl.value = val.split(' (')[0].trim();
     }
   }
 
-  // Merged populateInitialUI (Native + UPI Maps)
+  // 2. Injector: Populates the native datalist with Names AND Formatted Bracket Aliases
   const originalPopulate = populateInitialUI;
   populateInitialUI = function(data) {
     if (data && data.upiMap) window.upiMap = data.upiMap;
+    
+    // Run original populate (which handles FY tabs, fruits, etc.)
     originalPopulate(data);
 
+    // Now, override the datalist to include our compact bracketed aliases
     const datalist = document.getElementById('customerList');
     if (datalist && data.customers) {
       datalist.innerHTML = ''; 
+      
       data.customers.forEach(c => {
+        // A. Add standard customer name
         let opt = document.createElement('option'); 
         opt.value = c; 
         datalist.appendChild(opt);
 
+        // B. Add bracketed UPI aliases if they exist
         const lowerC = c.toLowerCase();
         if (window.upiMap && window.upiMap[lowerC]) {
           window.upiMap[lowerC].forEach(upiAlias => {
-            let upiOpt = document.createElement('option');
-            upiOpt.value = `${upiAlias} ➔ ${c}`;
-            datalist.appendChild(upiOpt);
+            let cleanAlias = upiAlias.trim();
+            if (cleanAlias) {
+              // Compact bracket format: "Anil Nishan BD (Anil Koundal)"
+              let upiOpt = document.createElement('option');
+              upiOpt.value = `${c} (${cleanAlias})`;
+              datalist.appendChild(upiOpt);
+            }
           });
         }
       });
