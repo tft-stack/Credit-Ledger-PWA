@@ -374,100 +374,90 @@
         </div>
       </div>
 
-      <!-- TAB 2: OVERDUE / NO RECENT PAYMENT (Red = Inactive, Yellow = Active Buyer) -->
+      <!-- TAB 2: OVERDUE / NO RECENT PAYMENT (Red = No Purchases, Yellow = Still Purchasing) -->
       <div id="dashGroup-overdue" style="display: none; flex-direction: column; gap: 8px;">
         
         <!-- > 30 Days -->
         <div class="card overdue-row-card" style="padding: 0; overflow: hidden; border: 1px solid #ffcdd2; margin-bottom: 0; transition: all 0.3s;">
-          <div style="background: #ffebee; padding: 6px; font-size: 11px; font-weight: bold; text-align: center; color: #b71c1c; border-bottom: 1px solid #ffcdd2; text-transform: uppercase;">
+          <div style="background: #ffebee; padding: 6px; font-size: 12px; font-weight: bold; text-align: center; color: #b71c1c; border-bottom: 1px solid #ffcdd2; text-transform: uppercase;">
             🚨 No Payment in > 30 Days
           </div>
           <div style="display: flex;">
-            <div id="card-noPayGt30_red" class="dash-metric-card" onclick="toggleDashboardCard('noPayGt30_red')" style="flex:1; padding: 12px 6px; text-align: center; background: #ffcdd2; border-right: 1px solid #fff; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-start;">
-              <div id="count-noPayGt30_red" style="color: #b71c1c; font-size: 20px; font-weight: bold;">0</div>
-              <div style="font-size: 9px; font-weight: bold; color: #b71c1c; margin-top: 4px; line-height: 1.2;">INACTIVE ACCOUNTS</div>
-              <div style="font-size: 8px; color: #c62828; margin-top: 2px; line-height: 1.2; opacity: 0.8;">No purchases or payments made in 31+ days with pending balance</div>
+            <div id="card-noPayGt30_red" class="dash-metric-card" onclick="toggleDashboardCard('noPayGt30_red')" style="flex:1; padding: 14px 6px; text-align: center; background: #ffcdd2; border-right: 1px solid #fff; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+              <div id="count-noPayGt30_red" style="color: #b71c1c; font-size: 24px; font-weight: bold; line-height: 1;">0</div>
+              <div style="font-size: 11px; font-weight: 500; color: #b71c1c; margin-top: 6px; line-height: 1.3;">No purchases<br>(31+ days)</div>
             </div>
-            <div id="card-noPayGt30_yel" class="dash-metric-card" onclick="toggleDashboardCard('noPayGt30_yel')" style="flex:1; padding: 12px 6px; text-align: center; background: #fff9c4; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-start;">
-              <div id="count-noPayGt30_yel" style="color: #f57f17; font-size: 20px; font-weight: bold;">0</div>
-              <div style="font-size: 9px; font-weight: bold; color: #f57f17; margin-top: 4px; line-height: 1.2;">ACTIVE BUYERS</div>
-              <div style="font-size: 8px; color: #f57f17; margin-top: 2px; line-height: 1.2; opacity: 0.8;">Purchasing recently (≤30d) but ignoring payments for 31+ days</div>
+            <div id="card-noPayGt30_yel" class="dash-metric-card" onclick="toggleDashboardCard('noPayGt30_yel')" style="flex:1; padding: 14px 6px; text-align: center; background: #fff9c4; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+              <div id="count-noPayGt30_yel" style="color: #f57f17; font-size: 24px; font-weight: bold; line-height: 1;">0</div>
+              <div style="font-size: 11px; font-weight: 500; color: #f57f17; margin-top: 6px; line-height: 1.3;">Recent purchases<br>(&le;30 days)</div>
             </div>
           </div>
         </div>
 
         <!-- 22-30 Days -->
         <div class="card overdue-row-card" style="padding: 0; overflow: hidden; border: 1px solid #ffccbc; margin-bottom: 0; transition: all 0.3s;">
-          <div style="background: #fbe9e7; padding: 6px; font-size: 11px; font-weight: bold; text-align: center; color: #d84315; border-bottom: 1px solid #ffccbc; text-transform: uppercase;">
+          <div style="background: #fbe9e7; padding: 6px; font-size: 12px; font-weight: bold; text-align: center; color: #d84315; border-bottom: 1px solid #ffccbc; text-transform: uppercase;">
             ⚠️ No Payment in 22–30 Days
           </div>
           <div style="display: flex;">
-            <div id="card-noPay30_red" class="dash-metric-card" onclick="toggleDashboardCard('noPay30_red')" style="flex:1; padding: 12px 6px; text-align: center; background: #ffccbc; border-right: 1px solid #fff; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-start;">
-              <div id="count-noPay30_red" style="color: #d84315; font-size: 20px; font-weight: bold;">0</div>
-              <div style="font-size: 9px; font-weight: bold; color: #d84315; margin-top: 4px; line-height: 1.2;">INACTIVE ACCOUNTS</div>
-              <div style="font-size: 8px; color: #d84315; margin-top: 2px; line-height: 1.2; opacity: 0.8;">No purchases or payments made in 22–30 days with pending balance</div>
+            <div id="card-noPay30_red" class="dash-metric-card" onclick="toggleDashboardCard('noPay30_red')" style="flex:1; padding: 14px 6px; text-align: center; background: #ffccbc; border-right: 1px solid #fff; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+              <div id="count-noPay30_red" style="color: #d84315; font-size: 24px; font-weight: bold; line-height: 1;">0</div>
+              <div style="font-size: 11px; font-weight: 500; color: #d84315; margin-top: 6px; line-height: 1.3;">No purchases<br>(22+ days)</div>
             </div>
-            <div id="card-noPay30_yel" class="dash-metric-card" onclick="toggleDashboardCard('noPay30_yel')" style="flex:1; padding: 12px 6px; text-align: center; background: #fff9c4; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-start;">
-              <div id="count-noPay30_yel" style="color: #f57f17; font-size: 20px; font-weight: bold;">0</div>
-              <div style="font-size: 9px; font-weight: bold; color: #f57f17; margin-top: 4px; line-height: 1.2;">ACTIVE BUYERS</div>
-              <div style="font-size: 8px; color: #f57f17; margin-top: 2px; line-height: 1.2; opacity: 0.8;">Purchasing recently (≤21d) but ignoring payments for 22-30 days</div>
+            <div id="card-noPay30_yel" class="dash-metric-card" onclick="toggleDashboardCard('noPay30_yel')" style="flex:1; padding: 14px 6px; text-align: center; background: #fff9c4; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+              <div id="count-noPay30_yel" style="color: #f57f17; font-size: 24px; font-weight: bold; line-height: 1;">0</div>
+              <div style="font-size: 11px; font-weight: 500; color: #f57f17; margin-top: 6px; line-height: 1.3;">Recent purchases<br>(&le;21 days)</div>
             </div>
           </div>
         </div>
 
         <!-- 15-21 Days -->
         <div class="card overdue-row-card" style="padding: 0; overflow: hidden; border: 1px solid #ffe0b2; margin-bottom: 0; transition: all 0.3s;">
-          <div style="background: #fff3e0; padding: 6px; font-size: 11px; font-weight: bold; text-align: center; color: #e65100; border-bottom: 1px solid #ffe0b2; text-transform: uppercase;">
+          <div style="background: #fff3e0; padding: 6px; font-size: 12px; font-weight: bold; text-align: center; color: #e65100; border-bottom: 1px solid #ffe0b2; text-transform: uppercase;">
             ⏳ No Payment in 15–21 Days
           </div>
           <div style="display: flex;">
-            <div id="card-noPay21_red" class="dash-metric-card" onclick="toggleDashboardCard('noPay21_red')" style="flex:1; padding: 12px 6px; text-align: center; background: #ffe0b2; border-right: 1px solid #fff; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-start;">
-              <div id="count-noPay21_red" style="color: #e65100; font-size: 20px; font-weight: bold;">0</div>
-              <div style="font-size: 9px; font-weight: bold; color: #e65100; margin-top: 4px; line-height: 1.2;">INACTIVE ACCOUNTS</div>
-              <div style="font-size: 8px; color: #e65100; margin-top: 2px; line-height: 1.2; opacity: 0.8;">No purchases or payments made in 15–21 days with pending balance</div>
+            <div id="card-noPay21_red" class="dash-metric-card" onclick="toggleDashboardCard('noPay21_red')" style="flex:1; padding: 14px 6px; text-align: center; background: #ffe0b2; border-right: 1px solid #fff; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+              <div id="count-noPay21_red" style="color: #e65100; font-size: 24px; font-weight: bold; line-height: 1;">0</div>
+              <div style="font-size: 11px; font-weight: 500; color: #e65100; margin-top: 6px; line-height: 1.3;">No purchases<br>(15+ days)</div>
             </div>
-            <div id="card-noPay21_yel" class="dash-metric-card" onclick="toggleDashboardCard('noPay21_yel')" style="flex:1; padding: 12px 6px; text-align: center; background: #fff9c4; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-start;">
-              <div id="count-noPay21_yel" style="color: #f57f17; font-size: 20px; font-weight: bold;">0</div>
-              <div style="font-size: 9px; font-weight: bold; color: #f57f17; margin-top: 4px; line-height: 1.2;">ACTIVE BUYERS</div>
-              <div style="font-size: 8px; color: #f57f17; margin-top: 2px; line-height: 1.2; opacity: 0.8;">Purchasing recently (≤14d) but ignoring payments for 15-21 days</div>
+            <div id="card-noPay21_yel" class="dash-metric-card" onclick="toggleDashboardCard('noPay21_yel')" style="flex:1; padding: 14px 6px; text-align: center; background: #fff9c4; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+              <div id="count-noPay21_yel" style="color: #f57f17; font-size: 24px; font-weight: bold; line-height: 1;">0</div>
+              <div style="font-size: 11px; font-weight: 500; color: #f57f17; margin-top: 6px; line-height: 1.3;">Recent purchases<br>(&le;14 days)</div>
             </div>
           </div>
         </div>
 
         <!-- 8-14 Days -->
         <div class="card overdue-row-card" style="padding: 0; overflow: hidden; border: 1px solid #ffecb3; margin-bottom: 0; transition: all 0.3s;">
-          <div style="background: #fff8e1; padding: 6px; font-size: 11px; font-weight: bold; text-align: center; color: #f57f17; border-bottom: 1px solid #ffecb3; text-transform: uppercase;">
+          <div style="background: #fff8e1; padding: 6px; font-size: 12px; font-weight: bold; text-align: center; color: #f57f17; border-bottom: 1px solid #ffecb3; text-transform: uppercase;">
             📅 No Payment in 8–14 Days
           </div>
           <div style="display: flex;">
-            <div id="card-noPay14_red" class="dash-metric-card" onclick="toggleDashboardCard('noPay14_red')" style="flex:1; padding: 12px 6px; text-align: center; background: #ffecb3; border-right: 1px solid #fff; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-start;">
-              <div id="count-noPay14_red" style="color: #f57f17; font-size: 20px; font-weight: bold;">0</div>
-              <div style="font-size: 9px; font-weight: bold; color: #f57f17; margin-top: 4px; line-height: 1.2;">INACTIVE ACCOUNTS</div>
-              <div style="font-size: 8px; color: #f57f17; margin-top: 2px; line-height: 1.2; opacity: 0.8;">No purchases or payments made in 8–14 days with pending balance</div>
+            <div id="card-noPay14_red" class="dash-metric-card" onclick="toggleDashboardCard('noPay14_red')" style="flex:1; padding: 14px 6px; text-align: center; background: #ffecb3; border-right: 1px solid #fff; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+              <div id="count-noPay14_red" style="color: #f57f17; font-size: 24px; font-weight: bold; line-height: 1;">0</div>
+              <div style="font-size: 11px; font-weight: 500; color: #f57f17; margin-top: 6px; line-height: 1.3;">No purchases<br>(8+ days)</div>
             </div>
-            <div id="card-noPay14_yel" class="dash-metric-card" onclick="toggleDashboardCard('noPay14_yel')" style="flex:1; padding: 12px 6px; text-align: center; background: #fff9c4; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-start;">
-              <div id="count-noPay14_yel" style="color: #f57f17; font-size: 20px; font-weight: bold;">0</div>
-              <div style="font-size: 9px; font-weight: bold; color: #f57f17; margin-top: 4px; line-height: 1.2;">ACTIVE BUYERS</div>
-              <div style="font-size: 8px; color: #f57f17; margin-top: 2px; line-height: 1.2; opacity: 0.8;">Purchasing recently (≤7d) but ignoring payments for 8-14 days</div>
+            <div id="card-noPay14_yel" class="dash-metric-card" onclick="toggleDashboardCard('noPay14_yel')" style="flex:1; padding: 14px 6px; text-align: center; background: #fff9c4; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+              <div id="count-noPay14_yel" style="color: #f57f17; font-size: 24px; font-weight: bold; line-height: 1;">0</div>
+              <div style="font-size: 11px; font-weight: 500; color: #f57f17; margin-top: 6px; line-height: 1.3;">Recent purchases<br>(&le;7 days)</div>
             </div>
           </div>
         </div>
 
         <!-- NEVER PAID -->
         <div class="card overdue-row-card" style="padding: 0; overflow: hidden; border: 1px solid #cfd8dc; margin-bottom: 0; transition: all 0.3s;">
-          <div style="background: #eceff1; padding: 6px; font-size: 11px; font-weight: bold; text-align: center; color: #455a64; border-bottom: 1px solid #cfd8dc; text-transform: uppercase;">
+          <div style="background: #eceff1; padding: 6px; font-size: 12px; font-weight: bold; text-align: center; color: #455a64; border-bottom: 1px solid #cfd8dc; text-transform: uppercase;">
             🚫 No Payment Record Ever
           </div>
           <div style="display: flex;">
-            <div id="card-noPayNever_red" class="dash-metric-card" onclick="toggleDashboardCard('noPayNever_red')" style="flex:1; padding: 12px 6px; text-align: center; background: #ffcdd2; border-right: 1px solid #fff; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-start;">
-              <div id="count-noPayNever_red" style="color: #b71c1c; font-size: 20px; font-weight: bold;">0</div>
-              <div style="font-size: 9px; font-weight: bold; color: #b71c1c; margin-top: 4px; line-height: 1.2;">INACTIVE ACCOUNTS</div>
-              <div style="font-size: 8px; color: #b71c1c; margin-top: 2px; line-height: 1.2; opacity: 0.8;">No purchases or payments made in 14+ days with pending balance</div>
+            <div id="card-noPayNever_red" class="dash-metric-card" onclick="toggleDashboardCard('noPayNever_red')" style="flex:1; padding: 14px 6px; text-align: center; background: #ffcdd2; border-right: 1px solid #fff; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+              <div id="count-noPayNever_red" style="color: #b71c1c; font-size: 24px; font-weight: bold; line-height: 1;">0</div>
+              <div style="font-size: 11px; font-weight: 500; color: #b71c1c; margin-top: 6px; line-height: 1.3;">No purchases<br>(15+ days)</div>
             </div>
-            <div id="card-noPayNever_yel" class="dash-metric-card" onclick="toggleDashboardCard('noPayNever_yel')" style="flex:1; padding: 12px 6px; text-align: center; background: #fff9c4; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-start;">
-              <div id="count-noPayNever_yel" style="color: #f57f17; font-size: 20px; font-weight: bold;">0</div>
-              <div style="font-size: 9px; font-weight: bold; color: #f57f17; margin-top: 4px; line-height: 1.2;">ACTIVE BUYERS</div>
-              <div style="font-size: 8px; color: #f57f17; margin-top: 2px; line-height: 1.2; opacity: 0.8;">Purchasing recently (7-14d) but never made a payment</div>
+            <div id="card-noPayNever_yel" class="dash-metric-card" onclick="toggleDashboardCard('noPayNever_yel')" style="flex:1; padding: 14px 6px; text-align: center; background: #fff9c4; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+              <div id="count-noPayNever_yel" style="color: #f57f17; font-size: 24px; font-weight: bold; line-height: 1;">0</div>
+              <div style="font-size: 11px; font-weight: 500; color: #f57f17; margin-top: 6px; line-height: 1.3;">Recent purchases<br>(7–14 days)</div>
             </div>
           </div>
         </div>
