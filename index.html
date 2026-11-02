@@ -374,28 +374,84 @@
         </div>
       </div>
 
-      <!-- TAB 2: OVERDUE / NO RECENT PAYMENT (Updated for >30d, 22-30d, 15-21d, 8-14d) -->
-      <div id="dashGroup-overdue" style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
-        <div id="card-noPayGt30" class="dash-metric-card" onclick="toggleDashboardCard('noPayGt30')" style="background: #ffebee; padding: 12px; border-radius: 8px; border: 1px solid #ffcdd2; cursor: pointer; transition: all 0.2s;">
-          <div style="color: #b71c1c; font-size: 10px; font-weight: bold; text-transform: uppercase;">No Pay &gt; 30 Days</div>
-          <div id="count-noPayGt30" style="font-size: 20px; font-weight: bold; color: #b71c1c; margin-top: 4px;">0</div>
-          <div style="font-size: 10px; color: #c62828; margin-top: 2px;">31+ days with pending</div>
+      <!-- TAB 2: OVERDUE / NO RECENT PAYMENT (Red = Inactive, Yellow = Active Buyer) -->
+      <div id="dashGroup-overdue" style="display: none; flex-direction: column; gap: 8px;">
+        
+        <!-- >30 Days -->
+        <div class="card" style="padding: 0; overflow: hidden; border: 1px solid #ffcdd2; margin-bottom: 0;">
+          <div style="background: #ffebee; padding: 6px; font-size: 10px; font-weight: bold; text-align: center; color: #b71c1c; border-bottom: 1px solid #ffcdd2;">No Pay &gt; 30 Days</div>
+          <div style="display: flex;">
+            <div id="card-noPayGt30_red" class="dash-metric-card" onclick="toggleDashboardCard('noPayGt30_red')" style="flex:1; padding: 10px 4px; text-align: center; background: #ffcdd2; border-right: 1px solid #fff; cursor: pointer;">
+              <div id="count-noPayGt30_red" style="color: #b71c1c; font-size: 16px; font-weight: bold;">0</div>
+              <div style="font-size: 8px; color: #b71c1c; margin-top: 2px;">INACTIVE<br>(No Pur 31+d)</div>
+            </div>
+            <div id="card-noPayGt30_yel" class="dash-metric-card" onclick="toggleDashboardCard('noPayGt30_yel')" style="flex:1; padding: 10px 4px; text-align: center; background: #fff9c4; cursor: pointer;">
+              <div id="count-noPayGt30_yel" style="color: #f57f17; font-size: 16px; font-weight: bold;">0</div>
+              <div style="font-size: 8px; color: #f57f17; margin-top: 2px;">BUYING<br>(Pur &le;30d)</div>
+            </div>
+          </div>
         </div>
-        <div id="card-noPay30" class="dash-metric-card" onclick="toggleDashboardCard('noPay30')" style="background: #fbe9e7; padding: 12px; border-radius: 8px; border: 1px solid #ffccbc; cursor: pointer; transition: all 0.2s;">
-          <div style="color: #d84315; font-size: 10px; font-weight: bold; text-transform: uppercase;">No Pay in 30 Days</div>
-          <div id="count-noPay30" style="font-size: 20px; font-weight: bold; color: #d84315; margin-top: 4px;">0</div>
-          <div style="font-size: 10px; color: #e64a19; margin-top: 2px;">22–30 days with pending</div>
+
+        <!-- 22-30 Days -->
+        <div class="card" style="padding: 0; overflow: hidden; border: 1px solid #ffccbc; margin-bottom: 0;">
+          <div style="background: #fbe9e7; padding: 6px; font-size: 10px; font-weight: bold; text-align: center; color: #d84315; border-bottom: 1px solid #ffccbc;">No Pay in 22–30 Days</div>
+          <div style="display: flex;">
+            <div id="card-noPay30_red" class="dash-metric-card" onclick="toggleDashboardCard('noPay30_red')" style="flex:1; padding: 10px 4px; text-align: center; background: #ffccbc; border-right: 1px solid #fff; cursor: pointer;">
+              <div id="count-noPay30_red" style="color: #d84315; font-size: 16px; font-weight: bold;">0</div>
+              <div style="font-size: 8px; color: #d84315; margin-top: 2px;">INACTIVE<br>(No Pur 22+d)</div>
+            </div>
+            <div id="card-noPay30_yel" class="dash-metric-card" onclick="toggleDashboardCard('noPay30_yel')" style="flex:1; padding: 10px 4px; text-align: center; background: #fff9c4; cursor: pointer;">
+              <div id="count-noPay30_yel" style="color: #f57f17; font-size: 16px; font-weight: bold;">0</div>
+              <div style="font-size: 8px; color: #f57f17; margin-top: 2px;">BUYING<br>(Pur &le;21d)</div>
+            </div>
+          </div>
         </div>
-        <div id="card-noPay21" class="dash-metric-card" onclick="toggleDashboardCard('noPay21')" style="background: #fff3e0; padding: 12px; border-radius: 8px; border: 1px solid #ffe0b2; cursor: pointer; transition: all 0.2s;">
-          <div style="color: #e65100; font-size: 10px; font-weight: bold; text-transform: uppercase;">No Pay in 21 Days</div>
-          <div id="count-noPay21" style="font-size: 20px; font-weight: bold; color: #e65100; margin-top: 4px;">0</div>
-          <div style="font-size: 10px; color: #ef6c00; margin-top: 2px;">15–21 days with pending</div>
+
+        <!-- 15-21 Days -->
+        <div class="card" style="padding: 0; overflow: hidden; border: 1px solid #ffe0b2; margin-bottom: 0;">
+          <div style="background: #fff3e0; padding: 6px; font-size: 10px; font-weight: bold; text-align: center; color: #e65100; border-bottom: 1px solid #ffe0b2;">No Pay in 15–21 Days</div>
+          <div style="display: flex;">
+            <div id="card-noPay21_red" class="dash-metric-card" onclick="toggleDashboardCard('noPay21_red')" style="flex:1; padding: 10px 4px; text-align: center; background: #ffe0b2; border-right: 1px solid #fff; cursor: pointer;">
+              <div id="count-noPay21_red" style="color: #e65100; font-size: 16px; font-weight: bold;">0</div>
+              <div style="font-size: 8px; color: #e65100; margin-top: 2px;">INACTIVE<br>(No Pur 15+d)</div>
+            </div>
+            <div id="card-noPay21_yel" class="dash-metric-card" onclick="toggleDashboardCard('noPay21_yel')" style="flex:1; padding: 10px 4px; text-align: center; background: #fff9c4; cursor: pointer;">
+              <div id="count-noPay21_yel" style="color: #f57f17; font-size: 16px; font-weight: bold;">0</div>
+              <div style="font-size: 8px; color: #f57f17; margin-top: 2px;">BUYING<br>(Pur &le;14d)</div>
+            </div>
+          </div>
         </div>
-        <div id="card-noPay14" class="dash-metric-card" onclick="toggleDashboardCard('noPay14')" style="background: #fff8e1; padding: 12px; border-radius: 8px; border: 1px solid #ffecb3; cursor: pointer; transition: all 0.2s;">
-          <div style="color: #f57f17; font-size: 10px; font-weight: bold; text-transform: uppercase;">No Pay in 14 Days</div>
-          <div id="count-noPay14" style="font-size: 20px; font-weight: bold; color: #f57f17; margin-top: 4px;">0</div>
-          <div style="font-size: 10px; color: #f9a825; margin-top: 2px;">8–14 days with pending</div>
+
+        <!-- 8-14 Days -->
+        <div class="card" style="padding: 0; overflow: hidden; border: 1px solid #ffecb3; margin-bottom: 0;">
+          <div style="background: #fff8e1; padding: 6px; font-size: 10px; font-weight: bold; text-align: center; color: #f57f17; border-bottom: 1px solid #ffecb3;">No Pay in 8–14 Days</div>
+          <div style="display: flex;">
+            <div id="card-noPay14_red" class="dash-metric-card" onclick="toggleDashboardCard('noPay14_red')" style="flex:1; padding: 10px 4px; text-align: center; background: #ffecb3; border-right: 1px solid #fff; cursor: pointer;">
+              <div id="count-noPay14_red" style="color: #f57f17; font-size: 16px; font-weight: bold;">0</div>
+              <div style="font-size: 8px; color: #f57f17; margin-top: 2px;">INACTIVE<br>(No Pur 8+d)</div>
+            </div>
+            <div id="card-noPay14_yel" class="dash-metric-card" onclick="toggleDashboardCard('noPay14_yel')" style="flex:1; padding: 10px 4px; text-align: center; background: #fff9c4; cursor: pointer;">
+              <div id="count-noPay14_yel" style="color: #f57f17; font-size: 16px; font-weight: bold;">0</div>
+              <div style="font-size: 8px; color: #f57f17; margin-top: 2px;">BUYING<br>(Pur &le;7d)</div>
+            </div>
+          </div>
         </div>
+
+        <!-- NEVER PAID -->
+        <div class="card" style="padding: 0; overflow: hidden; border: 1px solid #cfd8dc; margin-bottom: 0;">
+          <div style="background: #eceff1; padding: 6px; font-size: 10px; font-weight: bold; text-align: center; color: #455a64; border-bottom: 1px solid #cfd8dc;">No Payment Record</div>
+          <div style="display: flex;">
+            <div id="card-noPayNever_red" class="dash-metric-card" onclick="toggleDashboardCard('noPayNever_red')" style="flex:1; padding: 10px 4px; text-align: center; background: #ffcdd2; border-right: 1px solid #fff; cursor: pointer;">
+              <div id="count-noPayNever_red" style="color: #b71c1c; font-size: 16px; font-weight: bold;">0</div>
+              <div style="font-size: 8px; color: #b71c1c; margin-top: 2px;">INACTIVE<br>(No Pur 14+d)</div>
+            </div>
+            <div id="card-noPayNever_yel" class="dash-metric-card" onclick="toggleDashboardCard('noPayNever_yel')" style="flex:1; padding: 10px 4px; text-align: center; background: #fff9c4; cursor: pointer;">
+              <div id="count-noPayNever_yel" style="color: #f57f17; font-size: 16px; font-weight: bold;">0</div>
+              <div style="font-size: 8px; color: #f57f17; margin-top: 2px;">BUYING<br>(Pur 7-14d)</div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- TAB 3: PENDING AMOUNT SLABS (Updated 10k-25k label) -->
@@ -2276,23 +2332,19 @@
       if (tsEl) tsEl.innerText = `Batch synced: ${payload.analyticsUpdatedAt}`;
     }
 
-    // --- REAL-TIME LIVE ANALYTICS COUNTERS (Guarantees card counts match drill-down lists) ---
+    // --- REAL-TIME LIVE ANALYTICS COUNTERS ---
     const allCusts = currentDashboardData || payload.customers || [];
     const now = new Date();
     const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const msPerDay = 1000 * 60 * 60 * 24;
 
     const liveCounts = {
-      noPayGt30: 0,
-      noPay30: 0,
-      noPay21: 0,
-      noPay14: 0,
-      amtGt2L: 0,
-      amt1Lto2L: 0,
-      amt50kto1L: 0,
-      amt25kto50k: 0,
-      amt10kto15k: 0,
-      amtLt10k: 0
+      noPayGt30_red: 0, noPayGt30_yel: 0,
+      noPay30_red: 0, noPay30_yel: 0,
+      noPay21_red: 0, noPay21_yel: 0,
+      noPay14_red: 0, noPay14_yel: 0,
+      noPayNever_red: 0, noPayNever_yel: 0,
+      amtGt2L: 0, amt1Lto2L: 0, amt50kto1L: 0, amt25kto50k: 0, amt10kto15k: 0, amtLt10k: 0
     };
 
     allCusts.forEach(c => {
@@ -2304,18 +2356,37 @@
         const parts = c.lastPaymentDate.split('/');
         if (parts.length === 3) {
           const d = new Date(parts[2], parts[1] - 1, parts[0]);
-          if (!isNaN(d.getTime())) {
-            const payMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-            daysSincePay = Math.floor((todayMidnight - payMidnight) / msPerDay);
-          }
+          if (!isNaN(d.getTime())) daysSincePay = Math.floor((todayMidnight - d.getTime()) / msPerDay);
         }
       }
 
-      // Overdue Buckets (Mutually Exclusive)
-      if (daysSincePay > 30) liveCounts.noPayGt30++;
-      else if (daysSincePay >= 22 && daysSincePay <= 30) liveCounts.noPay30++;
-      else if (daysSincePay >= 15 && daysSincePay <= 21) liveCounts.noPay21++;
-      else if (daysSincePay >= 8 && daysSincePay <= 14) liveCounts.noPay14++;
+      let daysSincePur = 9999;
+      if (c.lastPurchaseDate && c.lastPurchaseDate !== 'No Record') {
+        const parts = c.lastPurchaseDate.split('/');
+        if (parts.length === 3) {
+          const d = new Date(parts[2], parts[1] - 1, parts[0]);
+          if (!isNaN(d.getTime())) daysSincePur = Math.floor((todayMidnight - d.getTime()) / msPerDay);
+        }
+      }
+
+      // Overdue Buckets (Red = Inactive, Yellow = Buying)
+      if (daysSincePay === 9999) { 
+         // Bucket 5: No Payment Record
+         if (daysSincePur > 14) liveCounts.noPayNever_red++;
+         else if (daysSincePur >= 7 && daysSincePur <= 14) liveCounts.noPayNever_yel++;
+      } else if (daysSincePay > 30) {
+         if (daysSincePur > 30) liveCounts.noPayGt30_red++;
+         else liveCounts.noPayGt30_yel++;
+      } else if (daysSincePay >= 22 && daysSincePay <= 30) {
+         if (daysSincePur >= 22) liveCounts.noPay30_red++;
+         else liveCounts.noPay30_yel++;
+      } else if (daysSincePay >= 15 && daysSincePay <= 21) {
+         if (daysSincePur >= 15) liveCounts.noPay21_red++;
+         else liveCounts.noPay21_yel++;
+      } else if (daysSincePay >= 8 && daysSincePay <= 14) {
+         if (daysSincePur >= 8) liveCounts.noPay14_red++;
+         else liveCounts.noPay14_yel++;
+      }
 
       // Pending Amount Slabs
       if (balance > 200000) liveCounts.amtGt2L++;
@@ -2326,7 +2397,7 @@
       else if (balance < 10000) liveCounts.amtLt10k++;
     });
 
-    ['noPayGt30', 'noPay30', 'noPay21', 'noPay14', 'amtGt2L', 'amt1Lto2L', 'amt50kto1L', 'amt25kto50k', 'amt10kto15k', 'amtLt10k'].forEach(key => {
+    Object.keys(liveCounts).forEach(key => {
       const el = document.getElementById('count-' + key);
       if (el) el.innerText = liveCounts[key];
     });
@@ -3839,26 +3910,36 @@ async function submitEntry(forceDuplicate = false) {
       const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
       const msPerDay = 1000 * 60 * 60 * 24;
 
-      // Check if it's one of the 10 Analytics / Overdue / Amount cards
-      const isAnalyticsCard = ['noPayGt30', 'noPay30', 'noPay21', 'noPay14', 'amtGt2L', 'amt1Lto2L', 'amt50kto1L', 'amt25kto50k', 'amt10kto15k', 'amtLt10k'].includes(cardType);
+      // Add the new distinct card rules
+      const isAnalyticsCard = [
+        'noPayGt30_red', 'noPayGt30_yel', 'noPay30_red', 'noPay30_yel', 
+        'noPay21_red', 'noPay21_yel', 'noPay14_red', 'noPay14_yel', 
+        'noPayNever_red', 'noPayNever_yel', 
+        'amtGt2L', 'amt1Lto2L', 'amt50kto1L', 'amt25kto50k', 'amt10kto15k', 'amtLt10k'
+      ].includes(cardType);
 
       if (isAnalyticsCard) {
-        // Build bucket on the fly from already-loaded customers in 0ms
         let filtered = [];
 
         customers.forEach(c => {
           const balance = parseFloat(c.balance) || 0;
-          if (balance <= 0) return; // Only positive balances
+          if (balance <= 0) return; 
 
           let daysSincePay = 9999;
           if (c.lastPaymentDate && c.lastPaymentDate !== 'No Record') {
             const parts = c.lastPaymentDate.split('/');
             if (parts.length === 3) {
               const d = new Date(parts[2], parts[1] - 1, parts[0]);
-              if (!isNaN(d.getTime())) {
-                const payMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-                daysSincePay = Math.floor((todayMidnight - payMidnight) / msPerDay);
-              }
+              if (!isNaN(d.getTime())) daysSincePay = Math.floor((todayMidnight - d.getTime()) / msPerDay);
+            }
+          }
+          
+          let daysSincePur = 9999;
+          if (c.lastPurchaseDate && c.lastPurchaseDate !== 'No Record') {
+            const parts = c.lastPurchaseDate.split('/');
+            if (parts.length === 3) {
+              const d = new Date(parts[2], parts[1] - 1, parts[0]);
+              if (!isNaN(d.getTime())) daysSincePur = Math.floor((todayMidnight - d.getTime()) / msPerDay);
             }
           }
 
@@ -3866,15 +3947,26 @@ async function submitEntry(forceDuplicate = false) {
             name: c.name,
             amount: balance,
             lastPaymentDate: c.lastPaymentDate || 'No Record',
-            daysSincePay: daysSincePay
+            daysSincePay: daysSincePay,
+            daysSincePur: daysSincePur
           };
 
-          // Overdue Buckets (Matching your exact Code.gs rules)
-          if (cardType === 'noPayGt30' && daysSincePay > 30) filtered.push(item);
-          else if (cardType === 'noPay30' && daysSincePay >= 22 && daysSincePay <= 30) filtered.push(item);
-          else if (cardType === 'noPay21' && daysSincePay >= 15 && daysSincePay <= 21) filtered.push(item);
-          else if (cardType === 'noPay14' && daysSincePay >= 8 && daysSincePay <= 14) filtered.push(item);
-
+          // Red/Yellow Filtering Rules
+          if (cardType === 'noPayGt30_red' && daysSincePay > 30 && daysSincePay !== 9999 && daysSincePur > 30) filtered.push(item);
+          else if (cardType === 'noPayGt30_yel' && daysSincePay > 30 && daysSincePay !== 9999 && daysSincePur <= 30) filtered.push(item);
+          
+          else if (cardType === 'noPay30_red' && daysSincePay >= 22 && daysSincePay <= 30 && daysSincePur >= 22) filtered.push(item);
+          else if (cardType === 'noPay30_yel' && daysSincePay >= 22 && daysSincePay <= 30 && daysSincePur < 22) filtered.push(item);
+          
+          else if (cardType === 'noPay21_red' && daysSincePay >= 15 && daysSincePay <= 21 && daysSincePur >= 15) filtered.push(item);
+          else if (cardType === 'noPay21_yel' && daysSincePay >= 15 && daysSincePay <= 21 && daysSincePur < 15) filtered.push(item);
+          
+          else if (cardType === 'noPay14_red' && daysSincePay >= 8 && daysSincePay <= 14 && daysSincePur >= 8) filtered.push(item);
+          else if (cardType === 'noPay14_yel' && daysSincePay >= 8 && daysSincePay <= 14 && daysSincePur < 8) filtered.push(item);
+          
+          else if (cardType === 'noPayNever_red' && daysSincePay === 9999 && daysSincePur > 14) filtered.push(item);
+          else if (cardType === 'noPayNever_yel' && daysSincePay === 9999 && daysSincePur >= 7 && daysSincePur <= 14) filtered.push(item);
+          
           // Amount Slabs
           else if (cardType === 'amtGt2L' && balance > 200000) filtered.push(item);
           else if (cardType === 'amt1Lto2L' && balance >= 100000 && balance <= 200000) filtered.push(item);
@@ -3886,7 +3978,6 @@ async function submitEntry(forceDuplicate = false) {
 
         filtered.sort((a, b) => b.amount - a.amount);
         window.dashboardBreakdowns[cardType] = filtered;
-
       } else {
         // Daily Activity cards (yestCredit, todayCredit, yestReceived, todayReceived)
         // If daily breakdowns are not pre-cached, fetch asynchronously without a full-screen block
@@ -3932,20 +4023,28 @@ async function submitEntry(forceDuplicate = false) {
     const header = document.getElementById('dashboardDetailsHeader');
     
     const titles = {
-      yestCredit: "Yesterday's Credit Breakdown",
-      todayCredit: "Today's Credit Breakdown",
-      yestReceived: "Yesterday's Received Breakdown",
-      todayReceived: "Today's Received Breakdown",
-      noPayGt30: "No Payment in > 30 Days",
-      noPay30: "No Payment in 22–30 Days",
-      noPay21: "No Payment in 15–21 Days",
-      noPay14: "No Payment in 8–14 Days",
-      amtGt2L: "Pending Amount > ₹2 Lakh",
-      amt1Lto2L: "Pending Amount: ₹1 Lakh – ₹2 Lakh",
-      amt50kto1L: "Pending Amount: ₹50k – ₹1 Lakh",
-      amt25kto50k: "Pending Amount: ₹25k – ₹50k",
-      amt10kto15k: "Pending Amount: ₹10k – ₹25k",
-      amtLt10k: "Pending Amount < ₹10k"
+      yestCredit: "Yesterday's Credit",
+      todayCredit: "Today's Credit",
+      yestReceived: "Yesterday's Received",
+      todayReceived: "Today's Received",
+      
+      noPayGt30_red: "> 30 Days (Inactive)",
+      noPayGt30_yel: "> 30 Days (Active Buyer)",
+      noPay30_red: "22–30 Days (Inactive)",
+      noPay30_yel: "22–30 Days (Active Buyer)",
+      noPay21_red: "15–21 Days (Inactive)",
+      noPay21_yel: "15–21 Days (Active Buyer)",
+      noPay14_red: "8–14 Days (Inactive)",
+      noPay14_yel: "8–14 Days (Active Buyer)",
+      noPayNever_red: "Never Paid (Inactive >14d)",
+      noPayNever_yel: "Never Paid (Active 7-14d)",
+      
+      amtGt2L: "Pending > ₹2 Lakh",
+      amt1Lto2L: "Pending: ₹1 Lakh – ₹2 Lakh",
+      amt50kto1L: "Pending: ₹50k – ₹1 Lakh",
+      amt25kto50k: "Pending: ₹25k – ₹50k",
+      amt10kto15k: "Pending: ₹10k – ₹25k",
+      amtLt10k: "Pending < ₹10k"
     };
     
     header.innerText = `${titles[cardType] || "Details"} (${data.length})`;
