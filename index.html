@@ -783,15 +783,14 @@
             </button>
           </div>
 
+          <!-- Updated Header: Qty first, then Fruit -->
           <div id="detailsHeader" style="display: none; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 10px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border-light); padding-bottom: 4px; width: 100%;">
-            <!-- Left Data Group -->
             <div style="display: flex; flex-direction: row; align-items: center; gap: 4px; flex: 1 1 0%; min-width: 170px;">
-              <div style="flex: 1 1 auto; text-align: left;">Fruit</div>
-              <div style="width: 22px; text-align: center; flex-shrink: 0;">Qty</div>
+              <div style="width: 28px; text-align: center; flex-shrink: 0;">Qty</div>
+              <div style="flex: 1 1 auto; text-align: left; padding-left: 6px;">Fruit</div>
               <div style="width: 36px; text-align: right; flex-shrink: 0;">Price</div>
               <div style="width: 46px; text-align: right; flex-shrink: 0;">Total</div>
             </div>
-            <!-- Right Button Spacer -->
             <div style="width: 80px; flex: 0 0 80px; margin-left: auto;"></div>
           </div>
 
@@ -1061,8 +1060,8 @@
         <div id="editDetailsHeader" style="display: none; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 10px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border-light); padding-bottom: 4px; width: 100%;">
           <!-- Left Data Group -->
           <div style="display: flex; flex-direction: row; align-items: center; gap: 4px; flex: 1 1 0%; min-width: 170px;">
-            <div style="flex: 1 1 auto; text-align: left;">Fruit</div>
-            <div style="width: 22px; text-align: center; flex-shrink: 0;">Qty</div>
+            <div style="width: 28px; text-align: center; flex-shrink: 0;">Qty</div>
+            <div style="flex: 1 1 auto; text-align: left; padding-left: 6px;">Fruit</div>
             <div style="width: 36px; text-align: right; flex-shrink: 0;">Price</div>
             <div style="width: 46px; text-align: right; flex-shrink: 0;">Total</div>
           </div>
@@ -3540,10 +3539,11 @@ async function submitEntry(forceDuplicate = false) {
       <input type="hidden" class="detail-price" value="${price}">
       <input type="hidden" class="detail-date" value="${date}">
       
+      <!-- VIEW MODE: Qty -> Fruit -> Price -->
       <div class="view-mode" style="${startInEditMode ? 'display: none;' : 'display: flex;'} flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px; width: 100%;">
         <div style="display: flex; flex-direction: row; align-items: center; gap: 4px; flex: 1 1 0%; min-width: 170px;">
-          <div class="disp-fruit" style="flex: 1 1 auto; font-weight: bold; font-size: 13px; color: var(--text-main); white-space: normal; word-break: break-word;">${fruit}</div>
-          <div class="disp-qty" style="width: 22px; font-size: 12px; text-align: center; color: var(--text-main); flex-shrink: 0;">${qty}</div>
+          <div class="disp-qty" style="width: 28px; font-size: 13px; font-weight: bold; text-align: center; color: var(--text-main); flex-shrink: 0;">${qty}</div>
+          <div class="disp-fruit" style="flex: 1 1 auto; font-weight: bold; font-size: 13px; color: var(--text-main); padding-left: 6px; white-space: normal; word-break: break-word;">${fruit}</div>
           <div class="disp-price" style="width: 36px; font-size: 12px; text-align: right; color: var(--text-main); flex-shrink: 0;">₹${price}</div>
           <div class="detail-total" style="width: 46px; font-size: 12px; font-weight: bold; text-align: right; color: #007bff; flex-shrink: 0;">₹${total.toLocaleString('en-IN')}</div>
         </div>
@@ -3555,20 +3555,18 @@ async function submitEntry(forceDuplicate = false) {
         </div>
       </div>
 
-      <!-- EDIT MODE -->
+      <!-- EDIT MODE: Qty -> Fruit -> Price -->
       <div class="edit-mode" style="${startInEditMode ? 'display: block;' : 'display: none;'} background: var(--pill-bg); padding: 10px; border-radius: 8px; border: 1px dashed var(--border-color); margin-top: 4px;">
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1.2fr; gap: 6px; margin-bottom: 6px;">
-          <input type="text" class="inline-edit-fruit" value="${fruit}" placeholder="Fruit" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)" onfocus="checkFruitSimilarity(this)">
-          <input type="number" class="inline-edit-qty" value="${qty}" placeholder="Qty" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)" onkeydown="if(event.key==='Enter') { event.preventDefault(); this.closest('.detail-row').querySelector('.inline-edit-price').focus(); }">
+        <div style="display: grid; grid-template-columns: 0.8fr 2fr 1.2fr; gap: 6px; margin-bottom: 6px;">
+          <input type="number" class="inline-edit-qty" value="${qty}" placeholder="Qty" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)" onkeydown="if(event.key==='Enter') { event.preventDefault(); this.closest('.detail-row').querySelector('.inline-edit-fruit').focus(); }">
+          <input type="text" class="inline-edit-fruit" value="${fruit}" placeholder="Fruit" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)" onfocus="checkFruitSimilarity(this)" onkeydown="if(event.key==='Enter') { event.preventDefault(); this.closest('.detail-row').querySelector('.inline-edit-price').focus(); }">
           <input type="number" class="inline-edit-price" value="${price}" placeholder="Price" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)" onkeydown="if(event.key==='Enter') { event.preventDefault(); saveAndAddNewRow(this, '${context}'); }">
         </div>
         
-        <!-- NEW: Fruit Warning Container -->
         <div class="fruit-warning-container" style="display: none; font-size: 11px; margin-bottom: 10px; padding: 6px; border-radius: 4px; line-height: 1.4;"></div>
         
         <div style="display: flex; justify-content: space-between; align-items: center;">
            <div class="inline-edit-total" style="font-weight: bold; font-size: 16px; color: #007bff;">₹${total.toLocaleString('en-IN')}</div>
-           
            <div style="display: flex; justify-content: flex-end; gap: 6px;">
              <button type="button" class="item-action-btn btn-remove" onclick="cancelInlineEdit(this)" title="Cancel / Remove" style="width: 32px; height: 32px; font-size: 14px; border-radius: 6px;">✕</button>
              <button type="button" class="item-action-btn" onclick="saveAndAddNewRow(this, '${context}')" title="Save & Add Next" style="width: 32px; height: 32px; font-size: 18px; border-radius: 6px; background: #28a745;">＋</button>
@@ -5026,6 +5024,125 @@ async function submitEntry(forceDuplicate = false) {
     checkboxes.forEach(box => box.checked = true);
     if (checkboxes.length > 0) handleSmartSettleCheck(checkboxes[0]);
   }
+
+  // --- PHASE 1: VOICE DICTATION ENGINE (QTY -> FRUIT -> PRICE) ---
+  function startVoiceDictation(context = 'add') {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      showToast("Voice dictation is not supported in this browser. Try Chrome.", "error");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-IN'; 
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    const btnId = context === 'add' ? 'voiceAddBtn' : 'editVoiceAddBtn';
+    const btn = document.getElementById(btnId);
+    
+    recognition.onstart = function() {
+      btn.classList.add('mic-active');
+      showToast("Listening... Speak 'Qty Fruit Price'", "info");
+    };
+
+    recognition.onresult = function(event) {
+      const transcript = event.results[0][0].transcript;
+      processDictation(transcript, context);
+    };
+
+    recognition.onerror = function(event) {
+      showToast("Microphone error: " + event.error, "error");
+      btn.classList.remove('mic-active');
+    };
+
+    recognition.onend = function() {
+      btn.classList.remove('mic-active');
+    };
+
+    recognition.start();
+  }
+
+  function processDictation(transcript, context) {
+    // 1. Clean the string
+    let cleanStr = transcript.replace(/[,\.]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+    let tokens = cleanStr.split(' ');
+    
+    let parsedItems = [];
+    let currentItem = { qty: null, fruitChunks: [], price: null };
+
+    const pushItem = () => {
+       if (currentItem.qty !== null || currentItem.fruitChunks.length > 0) {
+           let fruitName = currentItem.fruitChunks.join(' ');
+           
+           // Fuzzy Match against known fruits
+           let matched = window.allFruits.find(f => f.toLowerCase() === fruitName);
+           if (!matched) {
+               matched = window.allFruits.find(f => f.toLowerCase().includes(fruitName) || fruitName.includes(f.toLowerCase()));
+           }
+           fruitName = matched || (fruitName.charAt(0).toUpperCase() + fruitName.slice(1));
+           
+           parsedItems.push({
+               qty: currentItem.qty || 0,
+               fruit: fruitName,
+               price: currentItem.price || 0
+           });
+       }
+       // Reset for the next item in the sentence
+       currentItem = { qty: null, fruitChunks: [], price: null };
+    };
+
+    // 2. State Machine: Strictly parses [Number] -> [Words] -> [Number]
+    tokens.forEach(token => {
+        let isNum = !isNaN(parseFloat(token)) && isFinite(token);
+        
+        if (isNum) {
+            let num = parseFloat(token);
+            if (currentItem.qty === null && currentItem.fruitChunks.length === 0) {
+                // First number encountered is Qty
+                currentItem.qty = num;
+            } else if (currentItem.qty !== null && currentItem.fruitChunks.length > 0) {
+                // Number encountered after a Fruit name is Price!
+                currentItem.price = num;
+                pushItem(); // We have a complete set, push it and start fresh!
+            } else {
+                // Failsafe: User spoke numbers out of order, force assign to price and push
+                currentItem.price = num;
+                pushItem();
+            }
+        } else {
+            // It's a word! Ignore filler words, otherwise append to Fruit name
+            if(!['and', 'aur', 'at', 'for', 'rupees'].includes(token)) {
+                currentItem.fruitChunks.push(token);
+            }
+        }
+    });
+    
+    // Push whatever is left at the end of the sentence
+    if (currentItem.qty !== null || currentItem.fruitChunks.length > 0) {
+        pushItem();
+    }
+
+    if (parsedItems.length === 0) {
+        showToast("Could not understand items. Try '5 Apple 100'", "error");
+        return;
+    }
+
+    // 3. Inject the rows into the UI
+    const containerId = context === 'add' ? 'detailsContainer' : 'editDetailsContainer';
+    let dateInputId = context === 'add' ? 'entryDate' : 'editDate';
+    let defaultDate = document.getElementById(dateInputId).value || new Date().toISOString().split('T')[0];
+
+    parsedItems.forEach(item => {
+        addDisplayRow(containerId, item.fruit, item.qty, item.price, defaultDate, false);
+    });
+    
+    showToast(`Parsed ${parsedItems.length} items!`, "success");
+    
+    if (context === 'add') saveEntryDraft();
+    else saveEditDraft();
+  }
+  
 </script>
 </body>
 </html>
