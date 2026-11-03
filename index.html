@@ -3818,6 +3818,14 @@ async function submitEntry(forceDuplicate = false) {
 
   function toggleInlineEdit(btn, showEdit) {
     const row = btn.closest('.detail-row');
+
+    // UX UPDATE: If this row was voice-dictated, remember the correction forever!
+    const spoken = row.getAttribute('data-spoken-fruit') || input.value;
+    if (spoken && spoken.toLowerCase() !== fruitName.toLowerCase()) {
+      learnFruitAlias(spoken, fruitName);
+      row.removeAttribute('data-spoken-fruit');
+    }
+    
     row.querySelector('.view-mode').style.display = showEdit ? 'none' : 'flex';
     row.querySelector('.edit-mode').style.display = showEdit ? 'block' : 'none';
   }
@@ -4654,6 +4662,14 @@ async function submitEntry(forceDuplicate = false) {
   function selectFruitSuggestion(chipElement, fruitName) {
     const row = chipElement.closest('.detail-row');
     const input = row.querySelector('.inline-edit-fruit');
+
+    // UX UPDATE: If this row was voice-dictated, remember the correction forever!
+    const spoken = row.getAttribute('data-spoken-fruit') || input.value;
+    if (spoken && spoken.toLowerCase() !== fruitName.toLowerCase()) {
+      learnFruitAlias(spoken, fruitName);
+      row.removeAttribute('data-spoken-fruit');
+    }
+    
     input.value = fruitName;
     row.querySelector('.fruit-warning-container').style.display = 'none';
     syncInlineData(input); 
@@ -5108,7 +5124,93 @@ async function submitEntry(forceDuplicate = false) {
     recognition.start();
   }
 
-function processDictation(transcript, context) {
+  // --- SMART FRUIT ABBREVIATION & AUTO-LEARN ENGINE ---
+  const DEFAULT_FRUIT_ALIASES = {
+    'amrood': 'AMD', 'amrud': 'AMD', 'amarud': 'AMD', 'guava': 'AMD',
+    'tarbooz': 'TBZ', 'tarbuj': 'TBZ', 'tarbuz': 'TBZ', 'watermelon': 'TBZ',
+    'kharbooja': 'KBJ', 'kharbuja': 'KBJ', 'kharbuza': 'KBJ', 'muskmelon': 'KBJ',
+    'sharifa': 'Sharifa', 'sitafal': 'Sharifa',
+    'anar': 'Anar', 'pomegranate': 'Anar',
+    'aam': 'Mango', 'mango': 'Mango',
+    // Daab vs Coconut kept strictly separate
+    'daab': 'Daab', 'dab': 'Daab', 'nariyal paani': 'Daab', 'nariyal pani': 'Daab', 'tender coconut': 'Daab',
+    'nariyal': 'Coconut', 'narial': 'Coconut', 'coconut': 'Coconut'
+  };
+
+  // Load learned aliases from localStorage and merge with defaults
+  window.fruitAliasMap = Object.assign(
+    {}, 
+    DEFAULT_FRUIT_ALIASES, 
+    JSON.parse(localStorage.getItem('learnedFruitAliases') || '{}')
+  );
+  // Ensure the updated Daab/Coconut defaults override any old cached test values
+  Object.assign(window.fruitAliasMap, DEFAULT_FRUIT_ALIASES);
+
+  // Teaches the app a new spoken word -> abbreviation mapping automatically
+  function learnFruitAlias(spokenWord, finalCode) {
+    if (!spokenWord || !finalCode) return;
+    const cleanSpoken = spokenWord.toLowerCase().trim();
+    const cleanFinal = finalCode.trim();
+    if (cleanSpoken === cleanFinal.toLowerCase() || cleanSpoken.length < 2) return;
+
+    window.fruitAliasMap[cleanSpoken] = cleanFinal;
+    localStorage.setItem('learnedFruitAliases', JSON.stringify(window.fruitAliasMap));
+    showToast(`Learned voice shortcut: "${spokenWord}" ➔ ${cleanFinal}`, "success");
+  }
+
+  function resolveSpokenFruit(rawWordsArray) {
+    const fruitsList = window.allFruits || [];
+    
+    // 1. Collapse spoken initials: ["a", "m", "d"] or ["a.m.d."] -> "amd"
+    let joinedRaw = rawWordsArray.join(' ').replace(/\./g, '').trim().toLowerCase();
+    let collapsedLetters = rawWordsArray.map(w => w.replace(/\./g, '')).join('').toLowerCase();
+
+    // Check if user literally spoke the letters (e.g., "A M D" or "T B Z")
+    let exactAcronym = fruitsList.find(f => f.toLowerCase() === collapsedLetters);
+    if (exactAcronym) return exactAcronym;
+
+    // 2. Check full multi-word phrase first (so "nariyal paani" -> "Daab" before "nariyal" is checked)
+    if (window.fruitAliasMap[joinedRaw]) return window.fruitAliasMap[joinedRaw];
+    if (window.fruitAliasMap[collapsedLetters]) return window.fruitAliasMap[collapsedLetters];
+
+    // Then check single words inside the phrase
+    for (let w of rawWordsArray) {
+      if (window.fruitAliasMap[w]) return window.fruitAliasMap[w];
+    }
+
+    // 3. Exact or Substring Match against window.allFruits
+    let exactMatch = fruitsList.find(f => f.toLowerCase() === joinedRaw);
+    if (exactMatch) return exactMatch;
+
+    let partialMatch = fruitsList.find(f => 
+      f.toLowerCase().includes(joinedRaw) || joinedRaw.includes(f.toLowerCase())
+    );
+    if (partialMatch) return partialMatch;
+
+    // 4. Consonant-Skeleton Fallback (e.g. "k-h-a-r-b-o-o-j-a" -> consonants "krbj" matches "KBJ")
+    const getConsonants = (str) => str.toLowerCase().replace(/h/g, '').replace(/[aeiou\s]/g, '');
+    const spokenConsonants = getConsonants(joinedRaw);
+
+    if (spokenConsonants.length >= 2) {
+      let abbrevMatch = fruitsList.find(f => {
+        if (f.length < 2 || f.length > 4 || f !== f.toUpperCase()) return false;
+        let codeChars = f.toLowerCase().split('');
+        let searchIdx = 0;
+        for (let char of codeChars) {
+          searchIdx = spokenConsonants.indexOf(char, searchIdx);
+          if (searchIdx === -1) return false;
+          searchIdx++;
+        }
+        return true;
+      });
+      if (abbrevMatch) return abbrevMatch;
+    }
+
+    // 5. Fallback: Title-case whatever was spoken
+    return joinedRaw.charAt(0).toUpperCase() + joinedRaw.slice(1);
+  }
+
+  function processDictation(transcript, context) {
     // 1. Base dictionary (0-99 + Multipliers up to 99,999)
     const wordToNum = {
       'zero': 0, 'shunya': 0,
@@ -5291,20 +5393,14 @@ function processDictation(transcript, context) {
             parsedItems[parsedItems.length - 1].price = resolved[0] || 0;
           }
         }
-      } else if (seg.type === 'word') {
-        let rawFruit = seg.items.join(' ');
-        let matched = (window.allFruits || []).find(f => f.toLowerCase() === rawFruit);
-        if (!matched) {
-          matched = (window.allFruits || []).find(f =>
-            f.toLowerCase().includes(rawFruit) || rawFruit.includes(f.toLowerCase())
-          );
-        }
-        let finalFruit = matched || (rawFruit.charAt(0).toUpperCase() + rawFruit.slice(1));
+        } else if (seg.type === 'word') {
+        let finalFruit = resolveSpokenFruit(seg.items);
 
         parsedItems.push({
           qty: pendingQty || 0,
           fruit: finalFruit,
-          price: 0
+          price: 0,
+          rawSpoken: seg.items.join(' ') // Keep track of what was spoken for auto-learning
         });
         pendingQty = 0;
       }
@@ -5544,6 +5640,11 @@ function processDictation(transcript, context) {
 
     parsedItems.forEach(item => {
       addDisplayRow(containerId, item.fruit, item.qty, item.price, defaultDate, false);
+      const rows = document.getElementById(containerId).querySelectorAll('.detail-row');
+      const lastRow = rows[rows.length - 1];
+      if (lastRow && item.rawSpoken) {
+        lastRow.setAttribute('data-spoken-fruit', item.rawSpoken);
+      }
     });
 
     showToast(`🎤 "${transcript}" ➔ Added ${parsedItems.length} item(s)`, "success");
