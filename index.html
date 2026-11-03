@@ -775,12 +775,19 @@
               <span id="draftIndicator" style="display: none; background: #fff3cd; color: #856404; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; border: 1px solid #ffeeba;">Unsaved Draft</span>
             </span>
             
-            <button type="button" id="initialAddBtn" onclick="openItemModal()" style="background: #007bff; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Add Items">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-            </button>
+            <div style="display: flex; gap: 8px;">
+              <!-- NEW: Voice Dictation Button -->
+              <button type="button" id="voiceAddBtn" onclick="startVoiceDictation('add')" style="background: #28a745; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: 0.2s;" title="Voice Dictation">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+              </button>
+              
+              <button type="button" id="initialAddBtn" onclick="openItemModal()" style="background: #007bff; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Add Items">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+            </div>
           </div>
 
           <!-- Updated Header: Qty first, then Fruit -->
@@ -1049,12 +1056,19 @@
             <span id="editDraftIndicator" style="display: none; background: #fff3cd; color: #856404; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; border: 1px solid #ffeeba;">Unsaved Draft</span>
           </span>
           
-          <button type="button" id="editInitialAddBtn" onclick="openItemModal(null, 'edit')" style="background: #007bff; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Add Items">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </button>
+          <div style="display: flex; gap: 8px;">
+            <!-- NEW: Voice Dictation Button -->
+            <button type="button" id="editVoiceAddBtn" onclick="startVoiceDictation('edit')" style="background: #28a745; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: 0.2s;" title="Voice Dictation">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+            </button>
+            
+            <button type="button" id="editInitialAddBtn" onclick="openItemModal(null, 'edit')" style="background: #007bff; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Add Items">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div id="editDetailsHeader" style="display: none; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 10px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border-light); padding-bottom: 4px; width: 100%;">
