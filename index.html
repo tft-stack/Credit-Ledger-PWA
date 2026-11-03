@@ -5039,7 +5039,9 @@ async function submitEntry(forceDuplicate = false) {
     if (checkboxes.length > 0) handleSmartSettleCheck(checkboxes[0]);
   }
 
-  // --- PHASE 1: VOICE DICTATION ENGINE (QTY -> FRUIT -> PRICE) ---
+// --- PHASE 1: UPGRADED VOICE DICTATION ENGINE (QTY -> FRUIT -> PRICE) ---
+  let activeVoiceRecognition = null;
+
   function startVoiceDictation(context = 'add') {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -5047,112 +5049,243 @@ async function submitEntry(forceDuplicate = false) {
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-IN'; 
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
     const btnId = context === 'add' ? 'voiceAddBtn' : 'editVoiceAddBtn';
     const btn = document.getElementById(btnId);
-    
+
+    // If already listening, tapping again stops and processes immediately
+    if (activeVoiceRecognition) {
+      activeVoiceRecognition.stop();
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    activeVoiceRecognition = recognition;
+    recognition.lang = 'en-IN';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 3;
+
+    let finalTranscript = '';
+    let latestInterim = '';
+
     recognition.onstart = function() {
       btn.classList.add('mic-active');
-      showToast("Listening... Speak 'Qty Fruit Price'", "info");
+      showToast("🎤 Listening... Speak '10 Anar 850'", "info");
     };
 
     recognition.onresult = function(event) {
-      const transcript = event.results[0][0].transcript;
-      processDictation(transcript, context);
+      latestInterim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + ' ';
+        } else {
+          latestInterim += event.results[i][0].transcript;
+        }
+      }
+      // Live preview on screen while speaking
+      const preview = (finalTranscript + latestInterim).trim();
+      if (preview) {
+        const toast = document.getElementById("toast");
+        if (toast) toast.innerText = `🎤 "${preview}"`;
+      }
     };
 
     recognition.onerror = function(event) {
-      showToast("Microphone error: " + event.error, "error");
+      activeVoiceRecognition = null;
       btn.classList.remove('mic-active');
+      showToast("Mic error: " + event.error, "error");
     };
 
     recognition.onend = function() {
+      activeVoiceRecognition = null;
       btn.classList.remove('mic-active');
+      const fullText = (finalTranscript || latestInterim).trim();
+      if (fullText) {
+        processDictation(fullText, context);
+      }
     };
 
     recognition.start();
   }
 
   function processDictation(transcript, context) {
-    // 1. Clean the string
-    let cleanStr = transcript.replace(/[,\.]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-    let tokens = cleanStr.split(' ');
-    
-    let parsedItems = [];
-    let currentItem = { qty: null, fruitChunks: [], price: null };
-
-    const pushItem = () => {
-       if (currentItem.qty !== null || currentItem.fruitChunks.length > 0) {
-           let fruitName = currentItem.fruitChunks.join(' ');
-           
-           // Fuzzy Match against known fruits
-           let matched = window.allFruits.find(f => f.toLowerCase() === fruitName);
-           if (!matched) {
-               matched = window.allFruits.find(f => f.toLowerCase().includes(fruitName) || fruitName.includes(f.toLowerCase()));
-           }
-           fruitName = matched || (fruitName.charAt(0).toUpperCase() + fruitName.slice(1));
-           
-           parsedItems.push({
-               qty: currentItem.qty || 0,
-               fruit: fruitName,
-               price: currentItem.price || 0
-           });
-       }
-       // Reset for the next item in the sentence
-       currentItem = { qty: null, fruitChunks: [], price: null };
+    // 1. Dictionary for spoken numbers, homophones, and Hindi numbers
+    const wordToNum = {
+      'zero': 0, 'one': 1, 'won': 1, 'ek': 1,
+      'two': 2, 'to': 2, 'too': 2, 'do': 2,
+      'three': 3, 'tree': 3, 'teen': 3,
+      'four': 4, 'for': 4, 'char': 4,
+      'five': 5, 'panch': 5, 'paanch': 5,
+      'six': 6, 'che': 6, 'chhe': 6,
+      'seven': 7, 'saat': 7,
+      'eight': 8, 'ate': 8, 'aath': 8,
+      'nine': 9, 'nau': 9,
+      'ten': 10, 'das': 10, 'dus': 10,
+      'eleven': 11, 'gyarah': 11,
+      'twelve': 12, 'barah': 12,
+      'thirteen': 13, 'terah': 13,
+      'fourteen': 14, 'chaudah': 14,
+      'fifteen': 15, 'pandrah': 15,
+      'sixteen': 16, 'solah': 16,
+      'seventeen': 17, 'satrah': 17,
+      'eighteen': 18, 'atharah': 18,
+      'nineteen': 19, 'unnis': 19,
+      'twenty': 20, 'bees': 20,
+      'thirty': 30, 'tees': 30,
+      'forty': 40, 'chalis': 40,
+      'fifty': 50, 'pachas': 50,
+      'sixty': 60, 'saath': 60,
+      'seventy': 70, 'sattar': 70,
+      'eighty': 80, 'assi': 80,
+      'ninety': 90, 'nabbe': 90,
+      'hundred': 100, 'sau': 100,
+      'thousand': 1000, 'hazar': 1000, 'hazaar': 1000
     };
 
-    // 2. State Machine: Strictly parses [Number] -> [Words] -> [Number]
-    tokens.forEach(token => {
-        let isNum = !isNaN(parseFloat(token)) && isFinite(token);
-        
-        if (isNum) {
-            let num = parseFloat(token);
-            if (currentItem.qty === null && currentItem.fruitChunks.length === 0) {
-                // First number encountered is Qty
-                currentItem.qty = num;
-            } else if (currentItem.qty !== null && currentItem.fruitChunks.length > 0) {
-                // Number encountered after a Fruit name is Price!
-                currentItem.price = num;
-                pushItem(); // We have a complete set, push it and start fresh!
-            } else {
-                // Failsafe: User spoke numbers out of order, force assign to price and push
-                currentItem.price = num;
-                pushItem();
-            }
-        } else {
-            // It's a word! Ignore filler words, otherwise append to Fruit name
-            if(!['and', 'aur', 'at', 'for', 'rupees'].includes(token)) {
-                currentItem.fruitChunks.push(token);
-            }
-        }
+    // 2. Pre-process string:
+    // - Convert clock times like "8:50" -> "850"
+    // - Strip currency symbols (₹, Rs, /-) and commas
+    // - Separate stuck numbers and letters (e.g., "10anar" -> "10 anar")
+    let cleanStr = transcript.toLowerCase()
+      .replace(/(\d+):(\d+)/g, '$1$2')
+      .replace(/₹|rs\.?|inr|rupees?|\/-/gi, ' ')
+      .replace(/,/g, '')
+      .replace(/(\d+)([a-z])/g, '$1 $2')
+      .replace(/([a-z])(\d+)/g, '$1 $2')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    let rawTokens = cleanStr.split(' ');
+
+    // 3. Convert number words to actual numbers & strip filler words
+    const fillerWords = new Set(['and', 'aur', 'at', 'rate', 'ka', 'ke', 'ki', 'peti', 'box', 'kg']);
+    let stream = [];
+
+    rawTokens.forEach(t => {
+      if (fillerWords.has(t)) return;
+      if (wordToNum.hasOwnProperty(t)) {
+        stream.push({ type: 'num', val: wordToNum[t] });
+      } else if (!isNaN(parseFloat(t)) && isFinite(t)) {
+        stream.push({ type: 'num', val: parseFloat(t) });
+      } else {
+        stream.push({ type: 'word', val: t });
+      }
     });
-    
-    // Push whatever is left at the end of the sentence
-    if (currentItem.qty !== null || currentItem.fruitChunks.length > 0) {
-        pushItem();
+
+    // 4. Group into alternating [Numbers] and [Words] blocks
+    // This allows merging compound spoken numbers like "twenty" (20) + "five" (5) -> 25
+    // or "eight" (8) + "hundred" (100) + "fifty" (50) -> 850
+    let segments = [];
+    stream.forEach(item => {
+      let last = segments[segments.length - 1];
+      if (!last || last.type !== item.type) {
+        segments.push({ type: item.type, items: [item.val] });
+      } else {
+        last.items.push(item.val);
+      }
+    });
+
+    // Helper to collapse a list of spoken number tokens into actual numbers
+    function resolveNumberGroup(nums, isBetweenTwoFruits) {
+      if (nums.length === 1) return [nums[0]];
+
+      let combined = [];
+      let i = 0;
+      while (i < nums.length) {
+        let cur = nums[i];
+        let next = nums[i + 1];
+        let next2 = nums[i + 2];
+
+        // Pattern: "8 hundred 50" -> 850
+        if (cur < 100 && next === 100) {
+          let val = cur * 100;
+          if (next2 && next2 < 100) {
+            val += next2;
+            i += 3;
+          } else {
+            i += 2;
+          }
+          combined.push(val);
+        }
+        // Pattern: "20 5" -> 25
+        else if (cur >= 20 && cur <= 90 && cur % 10 === 0 && next >= 1 && next <= 9) {
+          combined.push(cur + next);
+          i += 2;
+        }
+        // Pattern: "8 50" ("eight fifty") at the end of a phrase -> 850
+        else if (!isBetweenTwoFruits && cur >= 1 && cur <= 9 && next >= 10 && next <= 99 && nums.length === 2) {
+          combined.push(cur * 100 + next);
+          i += 2;
+        } else {
+          combined.push(cur);
+          i++;
+        }
+      }
+      return combined;
+    }
+
+    // 5. Anchor on Word (Fruit) segments to extract [Qty] -> [Fruit] -> [Price]
+    let parsedItems = [];
+    let pendingQty = 0;
+
+    for (let s = 0; s < segments.length; s++) {
+      let seg = segments[s];
+      if (seg.type === 'num') {
+        // Check if this number block sits between two fruits (e.g. "10 Anar [850 5] Dragon 450")
+        let hasPrevFruit = (s > 0 && segments[s - 1].type === 'word');
+        let hasNextFruit = (s + 1 < segments.length && segments[s + 1].type === 'word');
+        let resolved = resolveNumberGroup(seg.items, hasPrevFruit && hasNextFruit);
+
+        if (!hasPrevFruit && hasNextFruit) {
+          // Leading number before the first fruit -> Qty
+          pendingQty = resolved[resolved.length - 1];
+        } else if (hasPrevFruit && hasNextFruit) {
+          // Numbers between two fruits: first is previous Price, last is next Qty
+          if (parsedItems.length > 0) {
+            parsedItems[parsedItems.length - 1].price = resolved[0] || 0;
+          }
+          pendingQty = resolved.length > 1 ? resolved[resolved.length - 1] : 0;
+        } else if (hasPrevFruit && !hasNextFruit) {
+          // Trailing number after the last fruit -> Price
+          if (parsedItems.length > 0) {
+            parsedItems[parsedItems.length - 1].price = resolved[0] || 0;
+          }
+        }
+      } else if (seg.type === 'word') {
+        let rawFruit = seg.items.join(' ');
+        let matched = (window.allFruits || []).find(f => f.toLowerCase() === rawFruit);
+        if (!matched) {
+          matched = (window.allFruits || []).find(f =>
+            f.toLowerCase().includes(rawFruit) || rawFruit.includes(f.toLowerCase())
+          );
+        }
+        let finalFruit = matched || (rawFruit.charAt(0).toUpperCase() + rawFruit.slice(1));
+
+        parsedItems.push({
+          qty: pendingQty || 0,
+          fruit: finalFruit,
+          price: 0
+        });
+        pendingQty = 0;
+      }
     }
 
     if (parsedItems.length === 0) {
-        showToast("Could not understand items. Try '5 Apple 100'", "error");
-        return;
+      showToast(`Heard "${transcript}" — Try '10 Anar 850'`, "error");
+      return;
     }
 
-    // 3. Inject the rows into the UI
+    // 6. Inject the rows into the UI
     const containerId = context === 'add' ? 'detailsContainer' : 'editDetailsContainer';
     let dateInputId = context === 'add' ? 'entryDate' : 'editDate';
     let defaultDate = document.getElementById(dateInputId).value || new Date().toISOString().split('T')[0];
 
     parsedItems.forEach(item => {
-        addDisplayRow(containerId, item.fruit, item.qty, item.price, defaultDate, false);
+      addDisplayRow(containerId, item.fruit, item.qty, item.price, defaultDate, false);
     });
-    
-    showToast(`Parsed ${parsedItems.length} items!`, "success");
-    
+
+    showToast(`🎤 "${transcript}" ➔ Added ${parsedItems.length} item(s)`, "success");
+
     if (context === 'add') saveEntryDraft();
     else saveEditDraft();
   }
