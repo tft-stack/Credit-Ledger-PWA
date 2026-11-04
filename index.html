@@ -3818,16 +3818,13 @@ async function submitEntry(forceDuplicate = false) {
 
   function toggleInlineEdit(btn, showEdit) {
     const row = btn.closest('.detail-row');
-
-    // UX UPDATE: If this row was voice-dictated, remember the correction forever!
-    const spoken = row.getAttribute('data-spoken-fruit') || input.value;
-    if (spoken && spoken.toLowerCase() !== fruitName.toLowerCase()) {
-      learnFruitAlias(spoken, fruitName);
-      row.removeAttribute('data-spoken-fruit');
-    }
+    if (!row) return;
     
-    row.querySelector('.view-mode').style.display = showEdit ? 'none' : 'flex';
-    row.querySelector('.edit-mode').style.display = showEdit ? 'block' : 'none';
+    const viewDiv = row.querySelector('.view-mode');
+    const editDiv = row.querySelector('.edit-mode');
+    
+    if (viewDiv) viewDiv.style.display = showEdit ? 'none' : 'flex';
+    if (editDiv) editDiv.style.display = showEdit ? 'block' : 'none';
   }
 
   function syncInlineData(input) {
