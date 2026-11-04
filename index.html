@@ -5055,20 +5055,102 @@ async function submitEntry(forceDuplicate = false) {
     if (checkboxes.length > 0) handleSmartSettleCheck(checkboxes[0]);
   }
 
-// --- PHASE 1: UPGRADED VOICE DICTATION ENGINE (QTY -> FRUIT -> PRICE) ---
+// =====================================================================
+  // --- PHASE 1: VOICE DICTATION & SMART ALIAS ENGINE ---
+  // =====================================================================
+  
+  const DEFAULT_FRUIT_ALIASES = {
+    'amrood': 'AMD', 'amrud': 'AMD', 'amarud': 'AMD', 'guava': 'AMD',
+    'tarbooz': 'TBZ', 'tarbuj': 'TBZ', 'tarbuz': 'TBZ', 'watermelon': 'TBZ',
+    'kharbooja': 'KBJ', 'kharbuja': 'KBJ', 'kharbuza': 'KBJ', 'muskmelon': 'KBJ',
+    'sharifa': 'Sharifa', 'sitafal': 'Sharifa',
+    'anar': 'Anar', 'pomegranate': 'Anar',
+    'aam': 'Mango', 'mango': 'Mango',
+    'daab': 'Daab', 'dab': 'Daab', 'nariyal paani': 'Daab', 'nariyal pani': 'Daab', 'tender coconut': 'Daab',
+    'nariyal': 'Coconut', 'narial': 'Coconut', 'coconut': 'Coconut'
+  };
+
+  window.fruitAliasMap = Object.assign(
+    {}, 
+    DEFAULT_FRUIT_ALIASES, 
+    JSON.parse(localStorage.getItem('learnedFruitAliases') || '{}')
+  );
+  // Force default overrides in case of old cached test data
+  Object.assign(window.fruitAliasMap, DEFAULT_FRUIT_ALIASES);
+
+  function learnFruitAlias(spokenWord, finalCode) {
+    if (!spokenWord || !finalCode) return;
+    const cleanSpoken = spokenWord.toLowerCase().trim();
+    const cleanFinal = finalCode.trim();
+    if (cleanSpoken === cleanFinal.toLowerCase() || cleanSpoken.length < 2) return;
+
+    window.fruitAliasMap[cleanSpoken] = cleanFinal;
+    localStorage.setItem('learnedFruitAliases', JSON.stringify(window.fruitAliasMap));
+    showToast(`Learned voice shortcut: "${spokenWord}" ➔ ${cleanFinal}`, "success");
+  }
+
+  function resolveSpokenFruit(rawWordsArray) {
+    const fruitsList = window.allFruits || [];
+    let joinedRaw = rawWordsArray.join(' ').replace(/\./g, '').trim().toLowerCase();
+    let collapsedLetters = rawWordsArray.map(w => w.replace(/\./g, '')).join('').toLowerCase();
+
+    // 1. Literal Acronym (e.g. "a m d" -> "AMD")
+    let exactAcronym = fruitsList.find(f => f.toLowerCase() === collapsedLetters);
+    if (exactAcronym) return exactAcronym;
+
+    // 2. Exact Dictionary Match ("nariyal pani" -> "Daab")
+    if (window.fruitAliasMap[joinedRaw]) return window.fruitAliasMap[joinedRaw];
+    if (window.fruitAliasMap[collapsedLetters]) return window.fruitAliasMap[collapsedLetters];
+
+    // Check individual words inside phrase as fallback
+    for (let w of rawWordsArray) {
+      if (window.fruitAliasMap[w]) return window.fruitAliasMap[w];
+    }
+
+    // 3. Substring Match against window.allFruits
+    let exactMatch = fruitsList.find(f => f.toLowerCase() === joinedRaw);
+    if (exactMatch) return exactMatch;
+
+    let partialMatch = fruitsList.find(f => 
+      f.toLowerCase().includes(joinedRaw) || joinedRaw.includes(f.toLowerCase())
+    );
+    if (partialMatch) return partialMatch;
+
+    // 4. Consonant Skeleton Match
+    const getConsonants = (str) => str.toLowerCase().replace(/h/g, '').replace(/[aeiou\s]/g, '');
+    const spokenConsonants = getConsonants(joinedRaw);
+
+    if (spokenConsonants.length >= 2) {
+      let abbrevMatch = fruitsList.find(f => {
+        if (f.length < 2 || f.length > 4 || f !== f.toUpperCase()) return false;
+        let codeChars = f.toLowerCase().split('');
+        let searchIdx = 0;
+        for (let char of codeChars) {
+          searchIdx = spokenConsonants.indexOf(char, searchIdx);
+          if (searchIdx === -1) return false;
+          searchIdx++;
+        }
+        return true;
+      });
+      if (abbrevMatch) return abbrevMatch;
+    }
+
+    // 5. Fallback Title Case
+    return joinedRaw.charAt(0).toUpperCase() + joinedRaw.slice(1);
+  }
+
   let activeVoiceRecognition = null;
 
   function startVoiceDictation(context = 'add') {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      showToast("Voice dictation is not supported in this browser. Try Chrome.", "error");
+      showToast("Voice dictation is not supported in this browser.", "error");
       return;
     }
 
     const btnId = context === 'add' ? 'voiceAddBtn' : 'editVoiceAddBtn';
     const btn = document.getElementById(btnId);
 
-    // If already listening, tapping again stops and processes immediately
     if (activeVoiceRecognition) {
       activeVoiceRecognition.stop();
       return;
@@ -5098,7 +5180,6 @@ async function submitEntry(forceDuplicate = false) {
           latestInterim += event.results[i][0].transcript;
         }
       }
-      // Live preview on screen while speaking
       const preview = (finalTranscript + latestInterim).trim();
       if (preview) {
         const toast = document.getElementById("toast");
@@ -5124,100 +5205,12 @@ async function submitEntry(forceDuplicate = false) {
     recognition.start();
   }
 
-  // --- SMART FRUIT ABBREVIATION & AUTO-LEARN ENGINE ---
-  const DEFAULT_FRUIT_ALIASES = {
-    'amrood': 'AMD', 'amrud': 'AMD', 'amarud': 'AMD', 'guava': 'AMD',
-    'tarbooz': 'TBZ', 'tarbuj': 'TBZ', 'tarbuz': 'TBZ', 'watermelon': 'TBZ',
-    'kharbooja': 'KBJ', 'kharbuja': 'KBJ', 'kharbuza': 'KBJ', 'muskmelon': 'KBJ',
-    'sharifa': 'Sharifa', 'sitafal': 'Sharifa',
-    'anar': 'Anar', 'pomegranate': 'Anar',
-    'aam': 'Mango', 'mango': 'Mango',
-    // Daab vs Coconut kept strictly separate
-    'daab': 'Daab', 'dab': 'Daab', 'nariyal paani': 'Daab', 'nariyal pani': 'Daab', 'tender coconut': 'Daab',
-    'nariyal': 'Coconut', 'narial': 'Coconut', 'coconut': 'Coconut'
-  };
-
-  // Load learned aliases from localStorage and merge with defaults
-  window.fruitAliasMap = Object.assign(
-    {}, 
-    DEFAULT_FRUIT_ALIASES, 
-    JSON.parse(localStorage.getItem('learnedFruitAliases') || '{}')
-  );
-  // Ensure the updated Daab/Coconut defaults override any old cached test values
-  Object.assign(window.fruitAliasMap, DEFAULT_FRUIT_ALIASES);
-
-  // Teaches the app a new spoken word -> abbreviation mapping automatically
-  function learnFruitAlias(spokenWord, finalCode) {
-    if (!spokenWord || !finalCode) return;
-    const cleanSpoken = spokenWord.toLowerCase().trim();
-    const cleanFinal = finalCode.trim();
-    if (cleanSpoken === cleanFinal.toLowerCase() || cleanSpoken.length < 2) return;
-
-    window.fruitAliasMap[cleanSpoken] = cleanFinal;
-    localStorage.setItem('learnedFruitAliases', JSON.stringify(window.fruitAliasMap));
-    showToast(`Learned voice shortcut: "${spokenWord}" ➔ ${cleanFinal}`, "success");
-  }
-
-  function resolveSpokenFruit(rawWordsArray) {
-    const fruitsList = window.allFruits || [];
-    
-    // 1. Collapse spoken initials: ["a", "m", "d"] or ["a.m.d."] -> "amd"
-    let joinedRaw = rawWordsArray.join(' ').replace(/\./g, '').trim().toLowerCase();
-    let collapsedLetters = rawWordsArray.map(w => w.replace(/\./g, '')).join('').toLowerCase();
-
-    // Check if user literally spoke the letters (e.g., "A M D" or "T B Z")
-    let exactAcronym = fruitsList.find(f => f.toLowerCase() === collapsedLetters);
-    if (exactAcronym) return exactAcronym;
-
-    // 2. Check full multi-word phrase first (so "nariyal paani" -> "Daab" before "nariyal" is checked)
-    if (window.fruitAliasMap[joinedRaw]) return window.fruitAliasMap[joinedRaw];
-    if (window.fruitAliasMap[collapsedLetters]) return window.fruitAliasMap[collapsedLetters];
-
-    // Then check single words inside the phrase
-    for (let w of rawWordsArray) {
-      if (window.fruitAliasMap[w]) return window.fruitAliasMap[w];
-    }
-
-    // 3. Exact or Substring Match against window.allFruits
-    let exactMatch = fruitsList.find(f => f.toLowerCase() === joinedRaw);
-    if (exactMatch) return exactMatch;
-
-    let partialMatch = fruitsList.find(f => 
-      f.toLowerCase().includes(joinedRaw) || joinedRaw.includes(f.toLowerCase())
-    );
-    if (partialMatch) return partialMatch;
-
-    // 4. Consonant-Skeleton Fallback (e.g. "k-h-a-r-b-o-o-j-a" -> consonants "krbj" matches "KBJ")
-    const getConsonants = (str) => str.toLowerCase().replace(/h/g, '').replace(/[aeiou\s]/g, '');
-    const spokenConsonants = getConsonants(joinedRaw);
-
-    if (spokenConsonants.length >= 2) {
-      let abbrevMatch = fruitsList.find(f => {
-        if (f.length < 2 || f.length > 4 || f !== f.toUpperCase()) return false;
-        let codeChars = f.toLowerCase().split('');
-        let searchIdx = 0;
-        for (let char of codeChars) {
-          searchIdx = spokenConsonants.indexOf(char, searchIdx);
-          if (searchIdx === -1) return false;
-          searchIdx++;
-        }
-        return true;
-      });
-      if (abbrevMatch) return abbrevMatch;
-    }
-
-    // 5. Fallback: Title-case whatever was spoken
-    return joinedRaw.charAt(0).toUpperCase() + joinedRaw.slice(1);
-  }
-
   function processDictation(transcript, context) {
-    // 1. Base dictionary (0-99 + Multipliers up to 99,999)
     const wordToNum = {
-      'zero': 0, 'shunya': 0,
-      'one': 1, 'won': 1, 'ek': 1,
+      'zero': 0, 'one': 1, 'won': 1, 'ek': 1,
       'two': 2, 'to': 2, 'too': 2, 'do': 2,
       'three': 3, 'tree': 3, 'teen': 3,
-      'four': 4, 'for': 4, 'char': 4, 'chaar': 4,
+      'four': 4, 'for': 4, 'char': 4,
       'five': 5, 'panch': 5, 'paanch': 5,
       'six': 6, 'che': 6, 'chhe': 6,
       'seven': 7, 'saat': 7,
@@ -5233,49 +5226,33 @@ async function submitEntry(forceDuplicate = false) {
       'seventeen': 17, 'satrah': 17,
       'eighteen': 18, 'atharah': 18,
       'nineteen': 19, 'unnis': 19,
-      'twenty': 20, 'bees': 20, 'ikkis': 21, 'bais': 22, 'teis': 23, 'chaubis': 24,
-      'pachis': 25, 'pachees': 25, 'chabbis': 26, 'sattais': 27, 'atthais': 28, 'untis': 29,
-      'thirty': 30, 'tees': 30, 'ikattis': 31, 'battis': 32, 'tetis': 33, 'chautis': 34,
-      'paintis': 35, 'chhattis': 36, 'saintis': 37, 'adtees': 38, 'untalis': 39,
-      'forty': 40, 'chalis': 40, 'iktalis': 41, 'bayalis': 42, 'tetalis': 43, 'chavalis': 44,
-      'paintalis': 45, 'chhiyalis': 46, 'saintalis': 47, 'adtalis': 48, 'unchas': 49,
-      'fifty': 50, 'pachas': 50, 'ikavan': 51, 'bavan': 52, 'tirpan': 53, 'chauvan': 54,
-      'pachpan': 55, 'chhappan': 56, 'sattavan': 57, 'atthavan': 58, 'unsath': 59,
-      'sixty': 60, 'saath': 60, 'iksath': 61, 'basath': 62, 'tirsath': 63, 'chausath': 64,
-      'painsath': 65, 'chhiyasath': 66, 'sadsath': 67, 'adsath': 68, 'unhattar': 69,
-      'seventy': 70, 'sattar': 70, 'ikhattar': 71, 'bahattar': 72, 'tihattar': 73, 'chauhattar': 74,
-      'pachhattar': 75, 'pachattar': 75, 'chhihattar': 76, 'sathattar': 77, 'athhattar': 78, 'unasi': 79,
-      'eighty': 80, 'assi': 80, 'ikyaasi': 81, 'bayaasi': 82, 'tiraasi': 83, 'chauraasi': 84,
-      'pachaasi': 85, 'pachasi': 85, 'chhiyaasi': 86, 'satasi': 87, 'athasi': 88, 'navaasi': 89,
-      'ninety': 90, 'nabbe': 90, 'ikyaanve': 91, 'baanve': 92, 'tiraanve': 93, 'chauraanve': 94,
-      'pachaanve': 95, 'chhiyaanve': 96, 'sataanve': 97, 'athaanve': 98, 'ninyaanve': 99,
+      'twenty': 20, 'bees': 20,
+      'thirty': 30, 'tees': 30,
+      'forty': 40, 'chalis': 40,
+      'fifty': 50, 'pachas': 50,
+      'sixty': 60, 'saath': 60,
+      'seventy': 70, 'sattar': 70,
+      'eighty': 80, 'assi': 80,
+      'ninety': 90, 'nabbe': 90,
       'hundred': 100, 'sau': 100,
       'thousand': 1000, 'hazar': 1000, 'hazaar': 1000
     };
 
-    // 2. Pre-process string & common Mandi fractional shorthand
     let cleanStr = transcript.toLowerCase()
-      .replace(/\bdedh\s+sau\b/g, '150')
-      .replace(/\bdhai\s+sau\b/g, '250')
-      .replace(/\bdedh\s+haza?ar\b/g, '1500')
-      .replace(/\bdhai\s+haza?ar\b/g, '2500')
-      .replace(/(\d+):(\d+)/g, '$1$2')               // "8:50" -> "850"
-      .replace(/(\d),(\d)/g, '$1$2')                 // "12,500" -> "12500"
-      .replace(/₹|rs\.?|inr|rupees?|\/-/gi, ' ')     // Strip currency symbols
-      .replace(/[,\.]/g, ' ')                        // Strip remaining punctuation
-      .replace(/(\d+)([a-z])/g, '$1 $2')             // "10anar" -> "10 anar"
-      .replace(/([a-z])(\d+)/g, '$1 $2')             // "anar850" -> "anar 850"
+      .replace(/(\d+):(\d+)/g, '$1$2')
+      .replace(/₹|rs\.?|inr|rupees?|\/-/gi, ' ')
+      .replace(/,/g, '')
+      .replace(/(\d+)([a-z])/g, '$1 $2')
+      .replace(/([a-z])(\d+)/g, '$1 $2')
       .replace(/\s+/g, ' ')
       .trim();
 
     let rawTokens = cleanStr.split(' ');
-
-    // 3. Convert tokens to typed stream
-    const fillerWords = new Set(['and', 'aur', 'at', 'rate', 'ka', 'ke', 'ki', 'peti', 'box', 'kg', 'nag']);
+    const fillerWords = new Set(['and', 'aur', 'at', 'rate', 'ka', 'ke', 'ki', 'peti', 'box', 'kg']);
     let stream = [];
 
     rawTokens.forEach(t => {
-      if (!t || fillerWords.has(t)) return;
+      if (fillerWords.has(t)) return;
       if (wordToNum.hasOwnProperty(t)) {
         stream.push({ type: 'num', val: wordToNum[t] });
       } else if (!isNaN(parseFloat(t)) && isFinite(t)) {
@@ -5285,7 +5262,6 @@ async function submitEntry(forceDuplicate = false) {
       }
     });
 
-    // 4. Group into alternating [Numbers] and [Words] segments
     let segments = [];
     stream.forEach(item => {
       let last = segments[segments.length - 1];
@@ -5296,81 +5272,37 @@ async function submitEntry(forceDuplicate = false) {
       }
     });
 
-    // 5. Place-Value Resolver: Assembles any spoken number from 0 to 99,999
     function resolveNumberGroup(nums, isBetweenTwoFruits) {
-      if (nums.length <= 1) return nums;
-
-      // Pass A: Merge compound tens (e.g., [20, 5] -> [25], [90, 9] -> [99])
-      let step1 = [];
-      for (let i = 0; i < nums.length; i++) {
+      if (nums.length === 1) return [nums[0]];
+      let combined = [];
+      let i = 0;
+      while (i < nums.length) {
         let cur = nums[i];
         let next = nums[i + 1];
-        if (cur >= 20 && cur <= 90 && cur % 10 === 0 && next >= 1 && next <= 9) {
-          step1.push(cur + next);
-          i++;
-        } else {
-          step1.push(cur);
-        }
-      }
-
-      // Pass B: Apply multipliers (1000 and 100)
-      // Handles "25 thousand" -> 25000, "15 hundred" -> 1500, "8 hundred" -> 800
-      let step2 = [];
-      for (let i = 0; i < step1.length; i++) {
-        let cur = step1[i];
-        let next = step1[i + 1];
-        if (cur >= 1 && cur <= 99 && (next === 1000 || next === 100)) {
-          let val = cur * next;
-          i++;
-          // Handle "2 hundred thousand" or "2 thousand 5 hundred" chaining
-          if (next === 1000 && step1[i + 1] >= 1 && step1[i + 1] <= 9 && step1[i + 2] === 100) {
-            val += step1[i + 1] * 100;
+        let next2 = nums[i + 2];
+        if (cur < 100 && next === 100) {
+          let val = cur * 100;
+          if (next2 && next2 < 100) {
+            val += next2;
+            i += 3;
+          } else {
             i += 2;
           }
-          step2.push(val);
+          combined.push(val);
+        } else if (cur >= 20 && cur <= 90 && cur % 10 === 0 && next >= 1 && next <= 9) {
+          combined.push(cur + next);
+          i += 2;
+        } else if (!isBetweenTwoFruits && cur >= 1 && cur <= 9 && next >= 10 && next <= 99 && nums.length === 2) {
+          combined.push(cur * 100 + next);
+          i += 2;
         } else {
-          step2.push(cur);
-        }
-      }
-
-      // Pass C: Additive Place-Value Assembly (0 to 99,999) + Shorthand ("8 50" -> 850, "12 50" -> 1250)
-      let finalNums = [];
-      for (let i = 0; i < step2.length; i++) {
-        let cur = step2[i];
-        let next = step2[i + 1];
-        let hasMoreAfterNext = (i + 2 < step2.length);
-
-        // 1. Thousands + Hundreds (e.g., 12000 + 500 -> 12500)
-        if (cur >= 1000 && cur <= 99000 && cur % 1000 === 0 && next >= 100 && next <= 900 && next % 100 === 0) {
-          cur += next;
+          combined.push(cur);
           i++;
-          next = step2[i + 1];
-          hasMoreAfterNext = (i + 2 < step2.length);
         }
-
-        // 2. Thousands/Hundreds + Tens/Units (e.g., 12500 + 50 -> 12550, or 800 + 50 -> 850)
-        // If between two fruits, only merge trailing <100 if there is still another number left for the next Qty
-        if (cur >= 100 && cur <= 99900 && cur % 100 === 0 && next >= 1 && next <= 99) {
-          if (!isBetweenTwoFruits || hasMoreAfterNext) {
-            cur += next;
-            i++;
-          }
-        }
-        // 3. Wholesale Shorthand: "8 50" -> 850, "12 50" -> 1250, "24 50" -> 2450
-        else if (cur >= 1 && cur <= 99 && next >= 10 && next <= 99) {
-          if (!isBetweenTwoFruits || hasMoreAfterNext) {
-            cur = (cur * 100) + next;
-            i++;
-          }
-        }
-
-        finalNums.push(cur);
       }
-
-      return finalNums;
+      return combined;
     }
 
-    // 6. Anchor on Fruit segments to extract [Qty] -> [Fruit] -> [Price]
     let parsedItems = [];
     let pendingQty = 0;
 
@@ -5384,23 +5316,21 @@ async function submitEntry(forceDuplicate = false) {
         if (!hasPrevFruit && hasNextFruit) {
           pendingQty = resolved[resolved.length - 1];
         } else if (hasPrevFruit && hasNextFruit) {
-          if (parsedItems.length > 0) {
-            parsedItems[parsedItems.length - 1].price = resolved[0] || 0;
-          }
+          if (parsedItems.length > 0) parsedItems[parsedItems.length - 1].price = resolved[0] || 0;
           pendingQty = resolved.length > 1 ? resolved[resolved.length - 1] : 0;
         } else if (hasPrevFruit && !hasNextFruit) {
-          if (parsedItems.length > 0) {
-            parsedItems[parsedItems.length - 1].price = resolved[0] || 0;
-          }
+          if (parsedItems.length > 0) parsedItems[parsedItems.length - 1].price = resolved[0] || 0;
         }
-        } else if (seg.type === 'word') {
+      } else if (seg.type === 'word') {
+        
+        // THIS IS THE CRITICAL LINE THAT LINKS TO THE DICTIONARY
         let finalFruit = resolveSpokenFruit(seg.items);
 
         parsedItems.push({
           qty: pendingQty || 0,
           fruit: finalFruit,
           price: 0,
-          rawSpoken: seg.items.join(' ') // Keep track of what was spoken for auto-learning
+          rawSpoken: seg.items.join(' ')
         });
         pendingQty = 0;
       }
@@ -5411,235 +5341,14 @@ async function submitEntry(forceDuplicate = false) {
       return;
     }
 
-    // 7. Inject the rows into the UI
     const containerId = context === 'add' ? 'detailsContainer' : 'editDetailsContainer';
     let dateInputId = context === 'add' ? 'entryDate' : 'editDate';
     let defaultDate = document.getElementById(dateInputId).value || new Date().toISOString().split('T')[0];
 
     parsedItems.forEach(item => {
       addDisplayRow(containerId, item.fruit, item.qty, item.price, defaultDate, false);
-    });
-
-    showToast(`🎤 "${transcript}" ➔ Added ${parsedItems.length} item(s)`, "success");
-
-    if (context === 'add') saveEntryDraft();
-    else saveEditDraft();
-  }
-  
-  function processDictation(transcript, context) {
-    // 1. Base dictionary (0-99 + Multipliers up to 99,999)
-    const wordToNum = {
-      'zero': 0, 'shunya': 0,
-      'one': 1, 'won': 1, 'ek': 1,
-      'two': 2, 'to': 2, 'too': 2, 'do': 2,
-      'three': 3, 'tree': 3, 'teen': 3,
-      'four': 4, 'for': 4, 'char': 4, 'chaar': 4,
-      'five': 5, 'panch': 5, 'paanch': 5,
-      'six': 6, 'che': 6, 'chhe': 6,
-      'seven': 7, 'saat': 7,
-      'eight': 8, 'ate': 8, 'aath': 8,
-      'nine': 9, 'nau': 9,
-      'ten': 10, 'das': 10, 'dus': 10,
-      'eleven': 11, 'gyarah': 11,
-      'twelve': 12, 'barah': 12,
-      'thirteen': 13, 'terah': 13,
-      'fourteen': 14, 'chaudah': 14,
-      'fifteen': 15, 'pandrah': 15,
-      'sixteen': 16, 'solah': 16,
-      'seventeen': 17, 'satrah': 17,
-      'eighteen': 18, 'atharah': 18,
-      'nineteen': 19, 'unnis': 19,
-      'twenty': 20, 'bees': 20, 'ikkis': 21, 'bais': 22, 'teis': 23, 'chaubis': 24,
-      'pachis': 25, 'pachees': 25, 'chabbis': 26, 'sattais': 27, 'atthais': 28, 'untis': 29,
-      'thirty': 30, 'tees': 30, 'ikattis': 31, 'battis': 32, 'tetis': 33, 'chautis': 34,
-      'paintis': 35, 'chhattis': 36, 'saintis': 37, 'adtees': 38, 'untalis': 39,
-      'forty': 40, 'chalis': 40, 'iktalis': 41, 'bayalis': 42, 'tetalis': 43, 'chavalis': 44,
-      'paintalis': 45, 'chhiyalis': 46, 'saintalis': 47, 'adtalis': 48, 'unchas': 49,
-      'fifty': 50, 'pachas': 50, 'ikavan': 51, 'bavan': 52, 'tirpan': 53, 'chauvan': 54,
-      'pachpan': 55, 'chhappan': 56, 'sattavan': 57, 'atthavan': 58, 'unsath': 59,
-      'sixty': 60, 'saath': 60, 'iksath': 61, 'basath': 62, 'tirsath': 63, 'chausath': 64,
-      'painsath': 65, 'chhiyasath': 66, 'sadsath': 67, 'adsath': 68, 'unhattar': 69,
-      'seventy': 70, 'sattar': 70, 'ikhattar': 71, 'bahattar': 72, 'tihattar': 73, 'chauhattar': 74,
-      'pachhattar': 75, 'pachattar': 75, 'chhihattar': 76, 'sathattar': 77, 'athhattar': 78, 'unasi': 79,
-      'eighty': 80, 'assi': 80, 'ikyaasi': 81, 'bayaasi': 82, 'tiraasi': 83, 'chauraasi': 84,
-      'pachaasi': 85, 'pachasi': 85, 'chhiyaasi': 86, 'satasi': 87, 'athasi': 88, 'navaasi': 89,
-      'ninety': 90, 'nabbe': 90, 'ikyaanve': 91, 'baanve': 92, 'tiraanve': 93, 'chauraanve': 94,
-      'pachaanve': 95, 'chhiyaanve': 96, 'sataanve': 97, 'athaanve': 98, 'ninyaanve': 99,
-      'hundred': 100, 'sau': 100,
-      'thousand': 1000, 'hazar': 1000, 'hazaar': 1000
-    };
-
-    // 2. Pre-process string & common Mandi fractional shorthand
-    let cleanStr = transcript.toLowerCase()
-      .replace(/\bdedh\s+sau\b/g, '150')
-      .replace(/\bdhai\s+sau\b/g, '250')
-      .replace(/\bdedh\s+haza?ar\b/g, '1500')
-      .replace(/\bdhai\s+haza?ar\b/g, '2500')
-      .replace(/(\d+):(\d+)/g, '$1$2')               // "8:50" -> "850"
-      .replace(/(\d),(\d)/g, '$1$2')                 // "12,500" -> "12500"
-      .replace(/₹|rs\.?|inr|rupees?|\/-/gi, ' ')     // Strip currency symbols
-      .replace(/[,\.]/g, ' ')                        // Strip remaining punctuation
-      .replace(/(\d+)([a-z])/g, '$1 $2')             // "10anar" -> "10 anar"
-      .replace(/([a-z])(\d+)/g, '$1 $2')             // "anar850" -> "anar 850"
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    let rawTokens = cleanStr.split(' ');
-
-    // 3. Convert tokens to typed stream
-    const fillerWords = new Set(['and', 'aur', 'at', 'rate', 'ka', 'ke', 'ki', 'peti', 'box', 'kg', 'nag']);
-    let stream = [];
-
-    rawTokens.forEach(t => {
-      if (!t || fillerWords.has(t)) return;
-      if (wordToNum.hasOwnProperty(t)) {
-        stream.push({ type: 'num', val: wordToNum[t] });
-      } else if (!isNaN(parseFloat(t)) && isFinite(t)) {
-        stream.push({ type: 'num', val: parseFloat(t) });
-      } else {
-        stream.push({ type: 'word', val: t });
-      }
-    });
-
-    // 4. Group into alternating [Numbers] and [Words] segments
-    let segments = [];
-    stream.forEach(item => {
-      let last = segments[segments.length - 1];
-      if (!last || last.type !== item.type) {
-        segments.push({ type: item.type, items: [item.val] });
-      } else {
-        last.items.push(item.val);
-      }
-    });
-
-    // 5. Place-Value Resolver: Assembles any spoken number from 0 to 99,999
-    function resolveNumberGroup(nums, isBetweenTwoFruits) {
-      if (nums.length <= 1) return nums;
-
-      // Pass A: Merge compound tens (e.g., [20, 5] -> [25], [90, 9] -> [99])
-      let step1 = [];
-      for (let i = 0; i < nums.length; i++) {
-        let cur = nums[i];
-        let next = nums[i + 1];
-        if (cur >= 20 && cur <= 90 && cur % 10 === 0 && next >= 1 && next <= 9) {
-          step1.push(cur + next);
-          i++;
-        } else {
-          step1.push(cur);
-        }
-      }
-
-      // Pass B: Apply multipliers (1000 and 100)
-      // Handles "25 thousand" -> 25000, "15 hundred" -> 1500, "8 hundred" -> 800
-      let step2 = [];
-      for (let i = 0; i < step1.length; i++) {
-        let cur = step1[i];
-        let next = step1[i + 1];
-        if (cur >= 1 && cur <= 99 && (next === 1000 || next === 100)) {
-          let val = cur * next;
-          i++;
-          // Handle "2 hundred thousand" or "2 thousand 5 hundred" chaining
-          if (next === 1000 && step1[i + 1] >= 1 && step1[i + 1] <= 9 && step1[i + 2] === 100) {
-            val += step1[i + 1] * 100;
-            i += 2;
-          }
-          step2.push(val);
-        } else {
-          step2.push(cur);
-        }
-      }
-
-      // Pass C: Additive Place-Value Assembly (0 to 99,999) + Shorthand ("8 50" -> 850, "12 50" -> 1250)
-      let finalNums = [];
-      for (let i = 0; i < step2.length; i++) {
-        let cur = step2[i];
-        let next = step2[i + 1];
-        let hasMoreAfterNext = (i + 2 < step2.length);
-
-        // 1. Thousands + Hundreds (e.g., 12000 + 500 -> 12500)
-        if (cur >= 1000 && cur <= 99000 && cur % 1000 === 0 && next >= 100 && next <= 900 && next % 100 === 0) {
-          cur += next;
-          i++;
-          next = step2[i + 1];
-          hasMoreAfterNext = (i + 2 < step2.length);
-        }
-
-        // 2. Thousands/Hundreds + Tens/Units (e.g., 12500 + 50 -> 12550, or 800 + 50 -> 850)
-        // If between two fruits, only merge trailing <100 if there is still another number left for the next Qty
-        if (cur >= 100 && cur <= 99900 && cur % 100 === 0 && next >= 1 && next <= 99) {
-          if (!isBetweenTwoFruits || hasMoreAfterNext) {
-            cur += next;
-            i++;
-          }
-        }
-        // 3. Wholesale Shorthand: "8 50" -> 850, "12 50" -> 1250, "24 50" -> 2450
-        else if (cur >= 1 && cur <= 99 && next >= 10 && next <= 99) {
-          if (!isBetweenTwoFruits || hasMoreAfterNext) {
-            cur = (cur * 100) + next;
-            i++;
-          }
-        }
-
-        finalNums.push(cur);
-      }
-
-      return finalNums;
-    }
-
-    // 6. Anchor on Fruit segments to extract [Qty] -> [Fruit] -> [Price]
-    let parsedItems = [];
-    let pendingQty = 0;
-
-    for (let s = 0; s < segments.length; s++) {
-      let seg = segments[s];
-      if (seg.type === 'num') {
-        let hasPrevFruit = (s > 0 && segments[s - 1].type === 'word');
-        let hasNextFruit = (s + 1 < segments.length && segments[s + 1].type === 'word');
-        let resolved = resolveNumberGroup(seg.items, hasPrevFruit && hasNextFruit);
-
-        if (!hasPrevFruit && hasNextFruit) {
-          pendingQty = resolved[resolved.length - 1];
-        } else if (hasPrevFruit && hasNextFruit) {
-          if (parsedItems.length > 0) {
-            parsedItems[parsedItems.length - 1].price = resolved[0] || 0;
-          }
-          pendingQty = resolved.length > 1 ? resolved[resolved.length - 1] : 0;
-        } else if (hasPrevFruit && !hasNextFruit) {
-          if (parsedItems.length > 0) {
-            parsedItems[parsedItems.length - 1].price = resolved[0] || 0;
-          }
-        }
-      } else if (seg.type === 'word') {
-        let rawFruit = seg.items.join(' ');
-        let matched = (window.allFruits || []).find(f => f.toLowerCase() === rawFruit);
-        if (!matched) {
-          matched = (window.allFruits || []).find(f =>
-            f.toLowerCase().includes(rawFruit) || rawFruit.includes(f.toLowerCase())
-          );
-        }
-        let finalFruit = matched || (rawFruit.charAt(0).toUpperCase() + rawFruit.slice(1));
-
-        parsedItems.push({
-          qty: pendingQty || 0,
-          fruit: finalFruit,
-          price: 0
-        });
-        pendingQty = 0;
-      }
-    }
-
-    if (parsedItems.length === 0) {
-      showToast(`Heard "${transcript}" — Try '10 Anar 850'`, "error");
-      return;
-    }
-
-    // 7. Inject the rows into the UI
-    const containerId = context === 'add' ? 'detailsContainer' : 'editDetailsContainer';
-    let dateInputId = context === 'add' ? 'entryDate' : 'editDate';
-    let defaultDate = document.getElementById(dateInputId).value || new Date().toISOString().split('T')[0];
-
-    parsedItems.forEach(item => {
-      addDisplayRow(containerId, item.fruit, item.qty, item.price, defaultDate, false);
+      
+      // Attach the raw spoken text to the DOM row for the auto-learner to reference later
       const rows = document.getElementById(containerId).querySelectorAll('.detail-row');
       const lastRow = rows[rows.length - 1];
       if (lastRow && item.rawSpoken) {
