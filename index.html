@@ -5301,11 +5301,14 @@ async function submitEntry(forceDuplicate = false) {
     
     if (mode === 'items') {
       inputsHtml = `
-        <div style="display: grid; grid-template-columns: 55px 1fr 65px 60px; gap: 6px; align-items: center; margin-top: 8px;">
-           <input type="number" class="input-field bulk-qty" placeholder="Qty" value="${qty}" style="width: 100%; padding: 8px 4px; margin-bottom: 0; font-size: 13px; text-align: center;" oninput="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();">
-           <input type="text" class="input-field bulk-fruit" placeholder="Fruit" value="${fruit}" style="width: 100%; padding: 8px 6px; margin-bottom: 0; font-size: 13px;" oninput="saveBulkDraft();">
-           <input type="number" class="input-field bulk-price" placeholder="Price" value="${price}" style="width: 100%; padding: 8px 4px; margin-bottom: 0; font-size: 13px; text-align: center;" oninput="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
-           <div class="bulk-row-total-disp" style="width: 100%; text-align: right; font-weight: bold; font-size: 13px; color: #007bff; overflow: hidden; text-overflow: ellipsis; padding-right: 2px;">₹0</div>
+        <div style="display: flex; flex-direction: row; gap: 6px; align-items: center; margin-top: 8px; width: 100%;">
+           <input type="number" class="input-field bulk-qty" placeholder="Qty" value="${qty}" style="flex: 0 0 55px; min-width: 0; padding: 8px 4px; margin-bottom: 0; font-size: 13px; text-align: center; box-sizing: border-box;" oninput="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();">
+           
+           <input type="text" class="input-field bulk-fruit" placeholder="Fruit" value="${fruit}" style="flex: 1 1 0%; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 13px; box-sizing: border-box;" oninput="saveBulkDraft();">
+           
+           <input type="number" class="input-field bulk-price" placeholder="Price" value="${price}" style="flex: 0 0 65px; min-width: 0; padding: 8px 4px; margin-bottom: 0; font-size: 13px; text-align: center; box-sizing: border-box;" oninput="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
+           
+           <div class="bulk-row-total-disp" style="flex: 0 0 60px; text-align: right; font-weight: bold; font-size: 13px; color: #007bff; overflow: hidden; text-overflow: ellipsis; padding-right: 2px;">₹0</div>
         </div>
       `;
     } else {
