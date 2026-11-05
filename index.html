@@ -5467,7 +5467,7 @@ async function submitEntry(forceDuplicate = false) {
   async function submitBulkEntries(forceDuplicate = false) {
     const dateVal = document.getElementById('bulkDate').value;
     const mode = document.getElementById('bulkEntryMode').value;
-    const typeVal = document.getElementById('bulkEntryTypeSelected').value; // Robust fallback
+    const typeVal = document.getElementById('bulkEntryTypeSelected').value; 
     const rowEls = document.querySelectorAll('.bulk-row');
     
     const newCustomers = []; 
@@ -5479,7 +5479,8 @@ async function submitEntry(forceDuplicate = false) {
       let cust = row.querySelector('.bulk-cust').value.trim();
       if (!cust) continue;
 
-      const exactMatch = (window.allCustomers || []).find(c => c.toLowerCase() === cust.toLowerCase());
+      // FIXED: Safely query the global allCustomers array
+      const exactMatch = allCustomers.find(c => c.toLowerCase() === cust.toLowerCase());
       if (exactMatch) cust = exactMatch;
       else if (!newCustomers.includes(cust)) newCustomers.push(cust);
 
@@ -5554,8 +5555,9 @@ async function submitEntry(forceDuplicate = false) {
         
         if (newCustomers.length > 0) {
           newCustomers.forEach(nc => {
-            if (!(window.allCustomers || []).includes(nc)) {
-              window.allCustomers.push(nc);
+            // FIXED: Use allCustomers
+            if (!allCustomers.includes(nc)) {
+              allCustomers.push(nc);
               let opt = document.createElement('option'); opt.value = nc; 
               document.getElementById('customerList').appendChild(opt);
             }
@@ -5566,7 +5568,6 @@ async function submitEntry(forceDuplicate = false) {
         throw new Error(res.error || 'Unknown server error');
       }
     } catch(e) {
-      // THIS REVEALS THE EXACT CAUSE OF THE FAILURE ON THE SCREEN
       showToast("Save Failed: " + e.message, "error");
     } finally {
       hideLoading();
