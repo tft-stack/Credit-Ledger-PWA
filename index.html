@@ -5118,7 +5118,7 @@ async function submitEntry(forceDuplicate = false) {
 
     let parsedItems = [];
     let pendingQty = 0;
-    let pendingCust = ''; // Stores spoken customer name
+    let pendingCustChunks = [];
 
     for (let s = 0; s < segments.length; s++) {
       let seg = segments[s];
@@ -5128,6 +5128,10 @@ async function submitEntry(forceDuplicate = false) {
         let resolved = resolveNumberGroup(seg.items, hasPrevWord && hasNextWord);
 
         if (!hasPrevWord && hasNextWord) {
+          // All word segments collected BEFORE this first number block belong to the Customer Name!
+          if (context === 'bulk' && s === 1 && segments[0].type === 'word') {
+             pendingCustChunks = segments[0].items;
+          }
           pendingQty = resolved[resolved.length - 1];
         } else if (hasPrevWord && hasNextWord) {
           if (parsedItems.length > 0) parsedItems[parsedItems.length - 1].price = resolved[0] || 0;
@@ -5136,25 +5140,22 @@ async function submitEntry(forceDuplicate = false) {
           if (parsedItems.length > 0) parsedItems[parsedItems.length - 1].price = resolved[0] || 0;
         }
       } else if (seg.type === 'word') {
-        let nextSeg = segments[s + 1];
-        
-        // SMART ANCHOR LOGIC: If we don't have a Qty yet, and the NEXT thing is a Number, this word is a Customer Name!
-        if (context === 'bulk' && pendingQty === 0 && nextSeg && nextSeg.type === 'num') {
-          let rawCust = seg.items.join(' ');
-          pendingCust = rawCust.charAt(0).toUpperCase() + rawCust.slice(1);
-        } else {
-          // Otherwise, it's a Fruit!
-          let finalFruit = resolveSpokenFruit(seg.items);
-
-          parsedItems.push({
-            customer: pendingCust, // Attach the customer if one was spoken
-            qty: pendingQty || 0,
-            fruit: finalFruit,
-            price: 0,
-            rawSpoken: seg.items.join(' ')
-          });
-          pendingQty = 0;
+        // Skip if these words were already consumed as part of the multi-word customer name at the very beginning
+        if (context === 'bulk' && s === 0 && segments.length > 1 && segments[1].type === 'num') {
+           continue; 
         }
+
+        let finalFruit = resolveSpokenFruit(seg.items);
+        let custNameStr = pendingCustChunks.length > 0 ? pendingCustChunks.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : '';
+
+        parsedItems.push({
+          customer: custNameStr,
+          qty: pendingQty || 0,
+          fruit: finalFruit,
+          price: 0,
+          rawSpoken: seg.items.join(' ')
+        });
+        pendingQty = 0;
       }
     }
 
@@ -5169,7 +5170,7 @@ async function submitEntry(forceDuplicate = false) {
       if (allCustInputs.length > 0) lastCust = allCustInputs[allCustInputs.length - 1].value;
 
       parsedItems.forEach((item, index) => {
-        let targetCust = item.customer || lastCust; // Use spoken customer, fallback to active UI customer
+        let targetCust = item.customer || lastCust; 
         lastCust = targetCust; 
 
         const rows = document.querySelectorAll('.bulk-row');
@@ -5177,7 +5178,6 @@ async function submitEntry(forceDuplicate = false) {
         let qtyInput = lastRow.querySelector('.bulk-qty');
         let fruitInput = lastRow.querySelector('.bulk-fruit');
         
-        // Populate current blank row, or append a new one
         if (index === 0 && qtyInput && !qtyInput.value && fruitInput && !fruitInput.value) {
             qtyInput.value = item.qty;
             fruitInput.value = item.fruit;
@@ -5186,10 +5186,9 @@ async function submitEntry(forceDuplicate = false) {
             let custInput = lastRow.querySelector('.bulk-cust');
             if (targetCust && !custInput.value) {
                 custInput.value = targetCust;
-                if (typeof handleBulkCustChange === 'function') handleBulkCustChange(custInput); // Trigger 4-Tier Match
+                if (typeof handleBulkCustChange === 'function') handleBulkCustChange(custInput);
             }
             if (item.rawSpoken) lastRow.setAttribute('data-spoken-fruit', item.rawSpoken);
-            
             if (typeof updateBulkRowTotal === 'function') updateBulkRowTotal(lastRow.id);
         } else {
             if (typeof addBulkRow === 'function') {
@@ -5199,7 +5198,7 @@ async function submitEntry(forceDuplicate = false) {
                 
                 let custInput = newRow.querySelector('.bulk-cust');
                 if (custInput && custInput.value && typeof handleBulkCustChange === 'function') {
-                    handleBulkCustChange(custInput); // Trigger 4-Tier Match
+                    handleBulkCustChange(custInput);
                 }
                 if (item.rawSpoken) newRow.setAttribute('data-spoken-fruit', item.rawSpoken);
                 if (typeof updateBulkRowTotal === 'function') updateBulkRowTotal(newRow.id);
@@ -5212,7 +5211,6 @@ async function submitEntry(forceDuplicate = false) {
       showToast(`🎤 "${transcript}" ➔ Added ${parsedItems.length} item(s)`, "success");
 
     } else {
-      // Standard Add/Edit Modal
       const containerId = context === 'add' ? 'detailsContainer' : 'editDetailsContainer';
       let dateInputId = context === 'add' ? 'entryDate' : 'editDate';
       let defaultDate = document.getElementById(dateInputId).value || new Date().toISOString().split('T')[0];
