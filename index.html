@@ -5085,7 +5085,8 @@ async function submitEntry(forceDuplicate = false) {
       }
     });
 
-    function resolveNumberGroup(nums, isBetweenTwoFruits) {
+    // Helper to merge spoken numbers (e.g. "eight fifty" -> 850, "twenty five" -> 25)
+    function resolveNumberGroup(nums) {
       if (nums.length === 1) return [nums[0]];
       let combined = [];
       let i = 0;
@@ -5093,19 +5094,16 @@ async function submitEntry(forceDuplicate = false) {
         let cur = nums[i];
         let next = nums[i + 1];
         let next2 = nums[i + 2];
+        
         if (cur < 100 && next === 100) {
           let val = cur * 100;
-          if (next2 && next2 < 100) {
-            val += next2;
-            i += 3;
-          } else {
-            i += 2;
-          }
+          if (next2 && next2 < 100) { val += next2; i += 3; }
+          else { i += 2; }
           combined.push(val);
         } else if (cur >= 20 && cur <= 90 && cur % 10 === 0 && next >= 1 && next <= 9) {
           combined.push(cur + next);
           i += 2;
-        } else if (!isBetweenTwoFruits && cur >= 1 && cur <= 9 && next >= 10 && next <= 99 && nums.length === 2) {
+        } else if (cur >= 1 && cur <= 9 && next >= 10 && next <= 99) {
           combined.push(cur * 100 + next);
           i += 2;
         } else {
@@ -5117,53 +5115,71 @@ async function submitEntry(forceDuplicate = false) {
     }
 
     let parsedItems = [];
-    let pendingQty = 0;
-    let pendingCustChunks = [];
+    let currentItem = { customer: '', qty: 0, fruit: '', price: 0, rawSpoken: [] };
+    let globalCust = ''; 
 
+    // SMART LINEAR STATE MACHINE
     for (let s = 0; s < segments.length; s++) {
       let seg = segments[s];
-      if (seg.type === 'num') {
-        let hasPrevWord = (s > 0 && segments[s - 1].type === 'word');
-        let hasNextWord = (s + 1 < segments.length && segments[s + 1].type === 'word');
-        let resolved = resolveNumberGroup(seg.items, hasPrevWord && hasNextWord);
-
-        if (!hasPrevWord && hasNextWord) {
-          // All word segments collected BEFORE this first number block belong to the Customer Name!
-          if (context === 'bulk' && s === 1 && segments[0].type === 'word') {
-             pendingCustChunks = segments[0].items;
+      
+      if (seg.type === 'word') {
+        if (currentItem.qty === 0) {
+          // If we haven't hit a Quantity number yet, these words belong to the Customer Name
+          currentItem.customer = (currentItem.customer + ' ' + seg.items.join(' ')).trim();
+          globalCust = currentItem.customer;
+        } else {
+          // If we already have a Quantity, these words belong to the Fruit
+          currentItem.fruit = (currentItem.fruit + ' ' + seg.items.join(' ')).trim();
+        }
+        currentItem.rawSpoken.push(...seg.items);
+        
+      } else if (seg.type === 'num') {
+        let resolved = resolveNumberGroup(seg.items);
+        
+        if (currentItem.qty === 0 && currentItem.fruit === '') {
+          // First number encountered: Assign to Quantity
+          currentItem.qty = resolved[0] || 0;
+        } else if (currentItem.qty > 0 && currentItem.fruit !== '') {
+          // We have a Qty and a Fruit, so this number must be the Price!
+          currentItem.price = resolved[0] || 0;
+          
+          // Row complete! Push it to the list.
+          parsedItems.push({
+            customer: currentItem.customer.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+            qty: currentItem.qty,
+            fruit: resolveSpokenFruit(currentItem.fruit.split(' ')),
+            price: currentItem.price,
+            rawSpoken: currentItem.rawSpoken.join(' ')
+          });
+          
+          // Reset the row for the next item (but keep the customer name memory intact!)
+          currentItem = { customer: globalCust, qty: 0, fruit: '', price: 0, rawSpoken: [] };
+          
+          // If the user spoke the price and next quantity without pausing (e.g. "850 5 Daab")
+          if (resolved.length > 1) {
+            currentItem.qty = resolved[resolved.length - 1]; 
           }
-          pendingQty = resolved[resolved.length - 1];
-        } else if (hasPrevWord && hasNextWord) {
-          if (parsedItems.length > 0) parsedItems[parsedItems.length - 1].price = resolved[0] || 0;
-          pendingQty = resolved.length > 1 ? resolved[resolved.length - 1] : 0;
-        } else if (hasPrevWord && !hasNextWord) {
-          if (parsedItems.length > 0) parsedItems[parsedItems.length - 1].price = resolved[0] || 0;
         }
-      } else if (seg.type === 'word') {
-        // Skip if these words were already consumed as part of the multi-word customer name at the very beginning
-        if (context === 'bulk' && s === 0 && segments.length > 1 && segments[1].type === 'num') {
-           continue; 
-        }
-
-        let finalFruit = resolveSpokenFruit(seg.items);
-        let custNameStr = pendingCustChunks.length > 0 ? pendingCustChunks.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : '';
-
-        parsedItems.push({
-          customer: custNameStr,
-          qty: pendingQty || 0,
-          fruit: finalFruit,
-          price: 0,
-          rawSpoken: seg.items.join(' ')
-        });
-        pendingQty = 0;
       }
     }
 
+    // Push any remaining item at the end of the sentence
+    if (currentItem.qty > 0 || currentItem.fruit !== '') {
+        parsedItems.push({
+            customer: currentItem.customer.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+            qty: currentItem.qty,
+            fruit: currentItem.fruit ? resolveSpokenFruit(currentItem.fruit.split(' ')) : '',
+            price: currentItem.price || 0,
+            rawSpoken: currentItem.rawSpoken.join(' ')
+        });
+    }
+
     if (parsedItems.length === 0) {
-      showToast(`Heard "${transcript}" — Try '10 Anar 850'`, "error");
+      showToast(`Heard "${transcript}" — Try 'Sanjay Mandi 10 Anar 850'`, "error");
       return;
     }
 
+    // INJECT TO UI
     if (context === 'bulk') {
       const allCustInputs = document.querySelectorAll('.bulk-cust');
       let lastCust = '';
@@ -5178,6 +5194,7 @@ async function submitEntry(forceDuplicate = false) {
         let qtyInput = lastRow.querySelector('.bulk-qty');
         let fruitInput = lastRow.querySelector('.bulk-fruit');
         
+        // Fill current blank row, or create a new one
         if (index === 0 && qtyInput && !qtyInput.value && fruitInput && !fruitInput.value) {
             qtyInput.value = item.qty;
             fruitInput.value = item.fruit;
@@ -5186,7 +5203,7 @@ async function submitEntry(forceDuplicate = false) {
             let custInput = lastRow.querySelector('.bulk-cust');
             if (targetCust && !custInput.value) {
                 custInput.value = targetCust;
-                if (typeof handleBulkCustChange === 'function') handleBulkCustChange(custInput);
+                if (typeof handleBulkCustChange === 'function') handleBulkCustChange(custInput); // Triggers fuzzy match
             }
             if (item.rawSpoken) lastRow.setAttribute('data-spoken-fruit', item.rawSpoken);
             if (typeof updateBulkRowTotal === 'function') updateBulkRowTotal(lastRow.id);
@@ -5198,7 +5215,7 @@ async function submitEntry(forceDuplicate = false) {
                 
                 let custInput = newRow.querySelector('.bulk-cust');
                 if (custInput && custInput.value && typeof handleBulkCustChange === 'function') {
-                    handleBulkCustChange(custInput);
+                    handleBulkCustChange(custInput); // Triggers fuzzy match
                 }
                 if (item.rawSpoken) newRow.setAttribute('data-spoken-fruit', item.rawSpoken);
                 if (typeof updateBulkRowTotal === 'function') updateBulkRowTotal(newRow.id);
@@ -5227,7 +5244,6 @@ async function submitEntry(forceDuplicate = false) {
       });
 
       showToast(`🎤 "${transcript}" ➔ Added ${parsedItems.length} item(s)`, "success");
-
       if (context === 'add' && typeof saveEntryDraft === 'function') saveEntryDraft();
       else if (context === 'edit' && typeof saveEditDraft === 'function') saveEditDraft();
     }
