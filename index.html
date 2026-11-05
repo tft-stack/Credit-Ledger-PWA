@@ -5467,6 +5467,7 @@ async function submitEntry(forceDuplicate = false) {
   async function submitBulkEntries(forceDuplicate = false) {
     const dateVal = document.getElementById('bulkDate').value;
     const mode = document.getElementById('bulkEntryMode').value;
+    const typeVal = document.getElementById('bulkEntryTypeSelected').value; // Robust fallback
     const rowEls = document.querySelectorAll('.bulk-row');
     
     const newCustomers = []; 
@@ -5478,7 +5479,7 @@ async function submitEntry(forceDuplicate = false) {
       let cust = row.querySelector('.bulk-cust').value.trim();
       if (!cust) continue;
 
-      const exactMatch = allCustomers.find(c => c.toLowerCase() === cust.toLowerCase());
+      const exactMatch = (window.allCustomers || []).find(c => c.toLowerCase() === cust.toLowerCase());
       if (exactMatch) cust = exactMatch;
       else if (!newCustomers.includes(cust)) newCustomers.push(cust);
 
@@ -5496,7 +5497,7 @@ async function submitEntry(forceDuplicate = false) {
               const matched = (window.allFruits || []).find(f => f.toLowerCase() === fruit.toLowerCase());
               fruit = matched || (fruit.charAt(0).toUpperCase() + fruit.slice(1));
 
-              validRowsMap[cust].amount += total; // Auto-Consolidation magic happens here!
+              validRowsMap[cust].amount += total; 
               validRowsMap[cust].details.push({ fruit: fruit, qty: qty, price: price, total: total, date: dateVal });
           }
       } else {
@@ -5505,14 +5506,13 @@ async function submitEntry(forceDuplicate = false) {
              validRowsMap[cust].amount += amt;
              const batchSig = `${cust.toLowerCase()}|${amt.toFixed(2)}`;
              if (seenInBatch.has(batchSig)) {
-                internalBatchDups.push({ customerName: cust, date: dateVal, type: currentBulkType, amount: amt });
+                internalBatchDups.push({ customerName: cust, date: dateVal, type: typeVal, amount: amt });
              }
              seenInBatch.add(batchSig);
           }
       }
     }
 
-    // Convert the dictionary back to a flat array to send to the backend
     const validRows = Object.values(validRowsMap).filter(r => r.amount > 0 || (mode === 'items' && r.details.length > 0));
 
     if (validRows.length === 0) {
@@ -5532,12 +5532,12 @@ async function submitEntry(forceDuplicate = false) {
     if (mode === 'items') {
         let newFruits = [];
         validRows.forEach(vr => vr.details.forEach(d => { if (d.fruit) newFruits.push(d); }));
-        learnNewFruits(newFruits);
+        if (typeof learnNewFruits === 'function') learnNewFruits(newFruits);
     }
 
     showLoading();
     try {
-      const payload = { type: currentBulkType, date: dateVal, entries: validRows, forceDuplicate: forceDuplicate };
+      const payload = { type: typeVal, date: dateVal, entries: validRows, forceDuplicate: forceDuplicate };
       const res = await apiPost('addBulkEntries', payload);
       
       if (res && res.status === 'duplicate_warning') {
@@ -5548,14 +5548,14 @@ async function submitEntry(forceDuplicate = false) {
 
       if (res && res.status === 'success') {
         localStorage.removeItem(BULK_DRAFT_KEY); 
-        showToast(`Saved ${validRows.length} grouped entries successfully!`, "success");
+        showToast(`Saved ${validRows.length} grouped entries!`, "success");
         closeBulkModal();
         isDashboardStale = true; 
         
         if (newCustomers.length > 0) {
           newCustomers.forEach(nc => {
-            if (!allCustomers.includes(nc)) {
-              allCustomers.push(nc);
+            if (!(window.allCustomers || []).includes(nc)) {
+              window.allCustomers.push(nc);
               let opt = document.createElement('option'); opt.value = nc; 
               document.getElementById('customerList').appendChild(opt);
             }
@@ -5563,10 +5563,11 @@ async function submitEntry(forceDuplicate = false) {
           if (typeof syncLocalInitDataCache === 'function') syncLocalInitDataCache();
         }
       } else {
-        throw new Error(res.error || 'Unknown error');
+        throw new Error(res.error || 'Unknown server error');
       }
     } catch(e) {
-      showToast("Failed to save batch.", "error");
+      // THIS REVEALS THE EXACT CAUSE OF THE FAILURE ON THE SCREEN
+      showToast("Save Failed: " + e.message, "error");
     } finally {
       hideLoading();
     }
