@@ -856,8 +856,8 @@
           <label style="margin: 0;">Entries</label>
           <!-- Safe Harbor protects the mic button when rows are cleared -->
           <div id="bulkVoiceSafeHarbor" style="display: none;">
-            <button type="button" id="bulkVoiceBtn" onclick="startVoiceDictation('bulk')" style="display: none; background: #28a745; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: 0.2s; flex-shrink: 0;" title="Voice Dictation">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+            <button type="button" id="bulkVoiceBtn" onclick="startVoiceDictation('bulk')" style="display: none; background: #28a745; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: 0.2s; flex-shrink: 0;" title="Voice Dictation">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
             </button>
           </div>
         </div>
@@ -4368,32 +4368,32 @@ async function submitEntry(forceDuplicate = false) {
     let html = '';
 
     if (mode === 'items') {
-      // NOTEBOOK PAGE VIEW (Flat, Borderless, Comma-Separated)
+      // COMPACT NOTEBOOK PAGE VIEW
       html = `
-      <div id="${rowId}" class="bulk-row" style="display: flex; flex-direction: column; border-bottom: 1px solid var(--border-light); padding: 8px 0; width: 100%;">
-        <div style="display: flex; align-items: center; width: 100%; font-size: 14px; gap: 2px;">
+      <div id="${rowId}" class="bulk-row" style="display: flex; flex-direction: column; border-bottom: 1px solid var(--border-light); padding: 6px 0; width: 100%; box-sizing: border-box; overflow: hidden;">
+        <div style="display: flex; align-items: center; width: 100%; font-size: 13px; gap: 2px;">
            
-           <span class="bulk-sno" style="font-weight: bold; color: var(--text-muted); width: 22px; flex-shrink: 0; text-align: right; padding-right: 4px;"></span>
+           <span class="bulk-sno" style="font-weight: 600; color: var(--text-muted); width: 14px; flex-shrink: 0; text-align: left; font-size: 11px;"></span>
            
-           <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name" value="${cust}" style="border: none; background: transparent; padding: 0 2px; margin: 0; flex: 2; min-width: 40px; font-weight: 500; border-radius: 0; outline: none; box-shadow: none;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); checkBulkExactMatch(this); saveBulkDraft()" onchange="handleBulkCustChange(this)">
+           <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name" value="${cust}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 2.5; min-width: 0; font-weight: 600; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-overflow: ellipsis; white-space: nowrap;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); checkBulkExactMatch(this); saveBulkDraft()" onchange="handleBulkCustChange(this)">
            
-           <span style="color: var(--text-muted);">,</span>
+           <span style="color: var(--text-muted); font-size: 12px;">,</span>
            
-           <input type="number" class="input-field bulk-qty" placeholder="Qty" value="${qty}" style="border: none; background: transparent; padding: 0 2px; margin: 0; flex: 0.8; min-width: 25px; text-align: center; border-radius: 0; outline: none; box-shadow: none;" oninput="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();">
+           <input type="number" class="input-field bulk-qty" placeholder="Qty" value="${qty}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 0.8; min-width: 0; text-align: center; border-radius: 0; outline: none; box-shadow: none; font-size: 13px;" oninput="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();">
            
-           <input type="text" class="input-field bulk-fruit" placeholder="Fruit" value="${fruit}" style="border: none; background: transparent; padding: 0 2px; margin: 0; flex: 1.2; min-width: 35px; border-radius: 0; outline: none; box-shadow: none;" oninput="saveBulkDraft();">
+           <input type="text" class="input-field bulk-fruit" placeholder="Fruit" value="${fruit}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 1.5; min-width: 0; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-align: center; text-overflow: ellipsis; white-space: nowrap;" oninput="saveBulkDraft();">
            
-           <span style="color: var(--text-muted);">,</span>
+           <span style="color: var(--text-muted); font-size: 12px;">,</span>
            
-           <input type="number" class="input-field bulk-price" placeholder="Price" value="${price}" style="border: none; background: transparent; padding: 0 2px; margin: 0; flex: 1; min-width: 35px; text-align: center; border-radius: 0; outline: none; box-shadow: none;" oninput="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
+           <input type="number" class="input-field bulk-price" placeholder="Price" value="${price}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 1.1; min-width: 0; text-align: center; border-radius: 0; outline: none; box-shadow: none; font-size: 13px;" oninput="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
            
-           <span style="color: var(--text-muted); margin: 0 2px;">=</span>
+           <span style="color: var(--text-muted); font-size: 12px; margin: 0 1px;">=</span>
            
-           <div class="bulk-row-total-disp" style="font-weight: bold; color: #007bff; flex-shrink: 0; width: 55px; text-align: right;">₹0</div>
+           <div class="bulk-row-total-disp" style="font-weight: 700; color: #007bff; flex-shrink: 0; width: 44px; text-align: right; font-size: 13px; overflow: hidden; text-overflow: ellipsis;">₹0</div>
            
-           <button class="bulk-remove-btn" onclick="removeBulkRow('${rowId}')" style="background: none; border: none; color: #d32f2f; font-size: 16px; padding: 0 4px; cursor: pointer; flex-shrink: 0;">✕</button>
+           <button class="bulk-remove-btn" onclick="removeBulkRow('${rowId}')" style="background: none; border: none; color: #d32f2f; font-size: 16px; padding: 0; cursor: pointer; flex-shrink: 0; width: 18px; display: flex; justify-content: center; align-items: center; margin-left: 2px;">✕</button>
            
-           <div class="row-mic-container" style="width: 28px; flex-shrink: 0; display: flex; justify-content: center; align-items: center; margin-left: 2px;"></div>
+           <div class="row-mic-container" style="width: 22px; flex-shrink: 0; display: flex; justify-content: center; align-items: center; margin-left: 2px;"></div>
         </div>
         
         <div class="bulk-similarity-warning" style="display: none; font-size: 11px; color: #d32f2f; margin-top: 4px; background: #ffebee; padding: 4px; border-radius: 4px;">
