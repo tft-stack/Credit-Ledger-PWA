@@ -5488,11 +5488,56 @@ async function submitEntry(forceDuplicate = false) {
   }
 
   function restoreBulkDraft(draft) {
+    // 1. Rescue the Mic Button BEFORE clearing the screen!
+    const voiceBtn = document.getElementById('bulkVoiceBtn');
+    if (voiceBtn) {
+        document.getElementById('bulkVoiceSafeHarbor').appendChild(voiceBtn);
+    }
+
+    // 2. Restore Type (Purchase/Payment)
     document.getElementById('bulkEntryTypeSelected').value = draft.type;
     currentBulkType = draft.type;
-    setBulkMode(draft.mode || 'quick');
-    bulkDatePicker.setDate(draft.date);
     
+    const purBtn = document.getElementById('bulkBtnPurchase');
+    const payBtn = document.getElementById('bulkBtnPayment');
+    const modeContainer = document.getElementById('bulkModeContainer');
+
+    if (draft.type === 'Purchase' || draft.type === 'Goods Purchased') {
+      purBtn.className = 'btn btn-red btn-sm';
+      payBtn.className = 'btn btn-outline-green btn-sm';
+      modeContainer.style.display = 'block';
+    } else {
+      purBtn.className = 'btn btn-outline-red btn-sm';
+      payBtn.className = 'btn btn-green btn-sm';
+      modeContainer.style.display = 'none';
+    }
+
+    // 3. Restore Mode (Quick Amount / Voice Items)
+    const mode = draft.mode || 'quick';
+    document.getElementById('bulkEntryMode').value = mode;
+    const btnQuick = document.getElementById('bulkModeQuick');
+    const btnItems = document.getElementById('bulkModeItems');
+
+    if (mode === 'quick') {
+      btnQuick.className = 'btn btn-blue btn-sm';
+      btnQuick.style.cssText = '';
+      btnItems.className = 'btn btn-outline btn-sm';
+      btnItems.style.cssText = 'border-color: #007bff; color: #007bff;';
+    } else {
+      btnItems.className = 'btn btn-blue btn-sm';
+      btnItems.style.cssText = '';
+      btnQuick.className = 'btn btn-outline btn-sm';
+      btnQuick.style.cssText = 'border-color: #007bff; color: #007bff;';
+    }
+
+    // 4. Restore Date
+    if (typeof bulkDatePicker !== 'undefined' && bulkDatePicker.setDate) {
+        bulkDatePicker.setDate(draft.date);
+    } else {
+        document.getElementById('bulkDate').value = draft.date;
+    }
+
+    // 5. Safely clear and rebuild rows
     document.getElementById('bulkRowsContainer').innerHTML = '';
     if (draft.rows && draft.rows.length > 0) {
       draft.rows.forEach(r => addBulkRow(r));
