@@ -5547,23 +5547,31 @@ async function submitEntry(forceDuplicate = false) {
         return;
       }
 
-      if (res && res.status === 'success') {
+    if (res && res.status === 'success') {
         localStorage.removeItem(BULK_DRAFT_KEY); 
-        showToast(`Saved ${validRows.length} grouped entries!`, "success");
         closeBulkModal();
         isDashboardStale = true; 
         
+        // Add new customers to autocomplete list
         if (newCustomers.length > 0) {
           newCustomers.forEach(nc => {
-            // FIXED: Use allCustomers
-            if (!allCustomers.includes(nc)) {
-              allCustomers.push(nc);
+            if (!(window.allCustomers || []).includes(nc)) {
+              window.allCustomers.push(nc);
               let opt = document.createElement('option'); opt.value = nc; 
               document.getElementById('customerList').appendChild(opt);
             }
           });
           if (typeof syncLocalInitDataCache === 'function') syncLocalInitDataCache();
         }
+
+        // Show success, or success + skipped warning!
+        if (res.skipped && res.skipped.length > 0) {
+          alert(`Saved entries successfully!\n\nHowever, the following customers ALREADY HAVE detailed entries for this date and were SKIPPED:\n\n• ${res.skipped.join('\n• ')}\n\nPlease go to their individual Ledger screen to modify their items.`);
+          showToast(`Saved. Skipped ${res.skipped.length} existing entries.`, "info");
+        } else {
+          showToast(`Saved ${validRows.length} grouped entries successfully!`, "success");
+        }
+
       } else {
         throw new Error(res.error || 'Unknown server error');
       }
