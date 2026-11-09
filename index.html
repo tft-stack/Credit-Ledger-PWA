@@ -5265,23 +5265,69 @@ async function submitEntry(forceDuplicate = false) {
         
         if (currentItem.qty === 0 && currentItem.fruit === '') {
           
-          // LOOK-AHEAD CHECK: Is this number actually part of the customer name? (e.g. Minta N 10)
-          let testName = (currentItem.customer + ' ' + resolved[0]).trim();
-          let nameHasMatch = custList.some(c => c.toLowerCase().includes(testName.toLowerCase()));
-          
-          if (nameHasMatch && currentItem.customer !== '') {
-             currentItem.customer = testName;
-             globalCust = currentItem.customer;
-             currentItem.rawSpoken.push(resolved[0]);
-             
-             // If there's a second number right after it (e.g. "Minta N 10 5 Rani"), that becomes the Qty
-             if (resolved.length > 1) {
-                 currentItem.qty = resolved[1];
-             }
-             continue; // Skip setting qty with the first number
+          let baseName = currentItem.customer.trim();
+          let matchedTrailingNumber = false;
+
+          if (baseName !== '') {
+            // ADVANCED PATTERN: Find customers ending in a number that match our base name
+            let possibleCusts = custList.filter(c => {
+                let cleanC = c.toLowerCase().trim();
+                if (!/\d+$/.test(cleanC)) return false; // Must end in a number
+                
+                let cleanCNoSpaces = cleanC.replace(/\s+/g, '');
+                let cleanBase = baseName.toLowerCase().replace(/\s+/g, '');
+                if (cleanCNoSpaces.startsWith(cleanBase)) return true;
+                
+                // Allow fuzzy match on the text portion just in case STT misspelled the name
+                let cText = cleanC.replace(/[^a-z]/g, '');
+                let baseText = baseName.toLowerCase().replace(/[^a-z]/g, '');
+                return cText.startsWith(baseText) || (typeof getEditDistance === 'function' && getEditDistance(cText, baseText) <= 2);
+            });
+
+            if (possibleCusts.length > 0) {
+                // Prioritize the closest length matches
+                possibleCusts.sort((a, b) => a.length - b.length);
+                
+                for (let c of possibleCusts) {
+                    let match = c.trim().match(/\d+$/);
+                    if (match) {
+                        let custNum = match[0];
+                        
+                        // Case A: Spoken as two clean separate numbers (e.g., "10", "1")
+                        if (resolved[0].toString() === custNum) {
+                            currentItem.customer = c; // Auto-complete the exact full name
+                            globalCust = currentItem.customer;
+                            currentItem.rawSpoken.push(resolved[0]);
+                            
+                            if (resolved.length > 1) {
+                                currentItem.qty = resolved[1]; // The next number is the Qty
+                            }
+                            matchedTrailingNumber = true;
+                            break;
+                        }
+                        
+                        // Case B: STT aggressively merged the numbers (e.g., "101" -> 10 and 1)
+                        let resStr = resolved[0].toString();
+                        if (resStr.startsWith(custNum) && resStr.length > custNum.length) {
+                            currentItem.customer = c;
+                            globalCust = currentItem.customer;
+                            currentItem.rawSpoken.push(custNum);
+                            
+                            // Extract the leftover trailing digits as the Qty
+                            let leftover = resStr.substring(custNum.length);
+                            currentItem.qty = parseInt(leftover, 10);
+                            matchedTrailingNumber = true;
+                            break;
+                        }
+                    }
+                }
+            }
           }
-            
-          currentItem.qty = resolved[0] || 0;
+          
+          if (!matchedTrailingNumber) {
+            // Standard Behavior: Take the first number as the Quantity
+            currentItem.qty = resolved[0] || 0;
+          }
           
         } else if (currentItem.qty > 0 && currentItem.fruit !== '') {
           currentItem.price = resolved[0] || 0;
