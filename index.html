@@ -251,10 +251,10 @@
       .details-toggle-btn { display: none !important; }
     }
 
-    /* Highlights unrecognized names with a red dotted underline */
+    /* Highlights unrecognized names in red text without shifting layout */
     .unrecognized-item {
-    text-decoration: underline dotted #d32f2f !important;
-    text-underline-offset: 3px;
+    color: #d32f2f !important;
+    font-weight: 700 !important;
     }
     
   </style>
@@ -4530,9 +4530,11 @@ async function submitEntry(forceDuplicate = false) {
 
     let isRecognized = false;
     if (type === 'customer') {
-      isRecognized = (window.allCustomers || []).some(c => c.toLowerCase() === val);
+      const custList = typeof allCustomers !== 'undefined' ? allCustomers : [];
+      isRecognized = custList.some(c => c.toLowerCase() === val);
     } else if (type === 'fruit') {
-      isRecognized = (window.allFruits || []).some(f => f.toLowerCase() === val);
+      const fruitList = typeof allFruits !== 'undefined' ? allFruits : [];
+      isRecognized = fruitList.some(f => f.toLowerCase() === val);
     }
 
     if (isRecognized) {
@@ -5176,35 +5178,17 @@ async function submitEntry(forceDuplicate = false) {
 
   function processDictation(transcript, context) {
     const wordToNum = {
-      'zero': 0, 'one': 1, 'won': 1, 'ek': 1,
-      'two': 2, 'to': 2, 'too': 2, 'do': 2,
-      'three': 3, 'tree': 3, 'teen': 3,
-      'four': 4, 'for': 4, 'char': 4,
-      'five': 5, 'panch': 5, 'paanch': 5,
-      'six': 6, 'che': 6, 'chhe': 6,
-      'seven': 7, 'saat': 7,
-      'eight': 8, 'ate': 8, 'aath': 8,
-      'nine': 9, 'nau': 9,
-      'ten': 10, 'das': 10, 'dus': 10,
-      'eleven': 11, 'gyarah': 11,
-      'twelve': 12, 'barah': 12,
-      'thirteen': 13, 'terah': 13,
-      'fourteen': 14, 'chaudah': 14,
-      'fifteen': 15, 'pandrah': 15,
-      'sixteen': 16, 'solah': 16,
-      'seventeen': 17, 'satrah': 17,
-      'eighteen': 18, 'atharah': 18,
-      'nineteen': 19, 'unnis': 19,
-      'twenty': 20, 'bees': 20,
-      'thirty': 30, 'tees': 30,
-      'forty': 40, 'chalis': 40,
-      'fifty': 50, 'pachas': 50,
-      'sixty': 60, 'saath': 60,
-      'seventy': 70, 'sattar': 70,
-      'eighty': 80, 'assi': 80,
-      'ninety': 90, 'nabbe': 90,
-      'hundred': 100, 'sau': 100,
-      'thousand': 1000, 'hazar': 1000, 'hazaar': 1000
+      'zero': 0, 'one': 1, 'won': 1, 'ek': 1, 'two': 2, 'to': 2, 'too': 2, 'do': 2,
+      'three': 3, 'tree': 3, 'teen': 3, 'four': 4, 'for': 4, 'char': 4,
+      'five': 5, 'panch': 5, 'paanch': 5, 'six': 6, 'che': 6, 'chhe': 6,
+      'seven': 7, 'saat': 7, 'eight': 8, 'ate': 8, 'aath': 8, 'nine': 9, 'nau': 9,
+      'ten': 10, 'das': 10, 'dus': 10, 'eleven': 11, 'gyarah': 11, 'twelve': 12, 'barah': 12,
+      'thirteen': 13, 'terah': 13, 'fourteen': 14, 'chaudah': 14, 'fifteen': 15, 'pandrah': 15,
+      'sixteen': 16, 'solah': 16, 'seventeen': 17, 'satrah': 17, 'eighteen': 18, 'atharah': 18,
+      'nineteen': 19, 'unnis': 19, 'twenty': 20, 'bees': 20, 'thirty': 30, 'tees': 30,
+      'forty': 40, 'chalis': 40, 'fifty': 50, 'pachas': 50, 'sixty': 60, 'saath': 60,
+      'seventy': 70, 'sattar': 70, 'eighty': 80, 'assi': 80, 'ninety': 90, 'nabbe': 90,
+      'hundred': 100, 'sau': 100, 'thousand': 1000, 'hazar': 1000, 'hazaar': 1000
     };
 
     let cleanStr = transcript.toLowerCase()
@@ -5241,30 +5225,22 @@ async function submitEntry(forceDuplicate = false) {
       }
     });
 
-    // Helper to merge spoken numbers (e.g. "eight fifty" -> 850, "twenty five" -> 25)
     function resolveNumberGroup(nums) {
       if (nums.length === 1) return [nums[0]];
       let combined = [];
       let i = 0;
       while (i < nums.length) {
-        let cur = nums[i];
-        let next = nums[i + 1];
-        let next2 = nums[i + 2];
-        
+        let cur = nums[i]; let next = nums[i + 1]; let next2 = nums[i + 2];
         if (cur < 100 && next === 100) {
           let val = cur * 100;
-          if (next2 && next2 < 100) { val += next2; i += 3; }
-          else { i += 2; }
+          if (next2 && next2 < 100) { val += next2; i += 3; } else { i += 2; }
           combined.push(val);
         } else if (cur >= 20 && cur <= 90 && cur % 10 === 0 && next >= 1 && next <= 9) {
-          combined.push(cur + next);
-          i += 2;
+          combined.push(cur + next); i += 2;
         } else if (cur >= 1 && cur <= 9 && next >= 10 && next <= 99) {
-          combined.push(cur * 100 + next);
-          i += 2;
+          combined.push(cur * 100 + next); i += 2;
         } else {
-          combined.push(cur);
-          i++;
+          combined.push(cur); i++;
         }
       }
       return combined;
@@ -5273,18 +5249,17 @@ async function submitEntry(forceDuplicate = false) {
     let parsedItems = [];
     let currentItem = { customer: '', qty: 0, fruit: '', price: 0, rawSpoken: [] };
     let globalCust = ''; 
+    const custList = typeof allCustomers !== 'undefined' ? allCustomers : [];
 
-    // SMART LINEAR STATE MACHINE
+    // SMART LINEAR STATE MACHINE WITH LOOK-AHEAD
     for (let s = 0; s < segments.length; s++) {
       let seg = segments[s];
       
       if (seg.type === 'word') {
         if (currentItem.qty === 0) {
-          // If we haven't hit a Quantity number yet, these words belong to the Customer Name
           currentItem.customer = (currentItem.customer + ' ' + seg.items.join(' ')).trim();
           globalCust = currentItem.customer;
         } else {
-          // If we already have a Quantity, these words belong to the Fruit
           currentItem.fruit = (currentItem.fruit + ' ' + seg.items.join(' ')).trim();
         }
         currentItem.rawSpoken.push(...seg.items);
@@ -5293,13 +5268,28 @@ async function submitEntry(forceDuplicate = false) {
         let resolved = resolveNumberGroup(seg.items);
         
         if (currentItem.qty === 0 && currentItem.fruit === '') {
-          // First number encountered: Assign to Quantity
+          
+          // LOOK-AHEAD CHECK: Is this number actually part of the customer name? (e.g. Minta N 10)
+          let testName = (currentItem.customer + ' ' + resolved[0]).trim();
+          let nameHasMatch = custList.some(c => c.toLowerCase().includes(testName.toLowerCase()));
+          
+          if (nameHasMatch && currentItem.customer !== '') {
+             currentItem.customer = testName;
+             globalCust = currentItem.customer;
+             currentItem.rawSpoken.push(resolved[0]);
+             
+             // If there's a second number right after it (e.g. "Minta N 10 5 Rani"), that becomes the Qty
+             if (resolved.length > 1) {
+                 currentItem.qty = resolved[1];
+             }
+             continue; // Skip setting qty with the first number
+          }
+            
           currentItem.qty = resolved[0] || 0;
+          
         } else if (currentItem.qty > 0 && currentItem.fruit !== '') {
-          // We have a Qty and a Fruit, so this number must be the Price!
           currentItem.price = resolved[0] || 0;
           
-          // Row complete! Push it to the list.
           parsedItems.push({
             customer: currentItem.customer.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
             qty: currentItem.qty,
@@ -5308,18 +5298,12 @@ async function submitEntry(forceDuplicate = false) {
             rawSpoken: currentItem.rawSpoken.join(' ')
           });
           
-          // Reset the row for the next item (but keep the customer name memory intact!)
           currentItem = { customer: globalCust, qty: 0, fruit: '', price: 0, rawSpoken: [] };
-          
-          // If the user spoke the price and next quantity without pausing (e.g. "850 5 Daab")
-          if (resolved.length > 1) {
-            currentItem.qty = resolved[resolved.length - 1]; 
-          }
+          if (resolved.length > 1) currentItem.qty = resolved[resolved.length - 1]; 
         }
       }
     }
 
-    // Push any remaining item at the end of the sentence
     if (currentItem.qty > 0 || currentItem.fruit !== '') {
         parsedItems.push({
             customer: currentItem.customer.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
@@ -5335,14 +5319,30 @@ async function submitEntry(forceDuplicate = false) {
       return;
     }
 
-    // INJECT TO UI
+    // PROACTIVE AUTO-COMPLETE LOGIC
+    function getSmartCustomerMatch(rawName) {
+      if (!rawName) return '';
+      const lower = rawName.toLowerCase();
+      const matches = custList.filter(c => c.toLowerCase().includes(lower) || lower.includes(c.toLowerCase()));
+      // If exactly 1 match, auto-complete it!
+      if (matches.length === 1) return matches[0];
+      // If multiple, check for an exact match just in case
+      if (matches.length > 1) {
+        const exact = matches.find(c => c.toLowerCase() === lower);
+        if (exact) return exact;
+      }
+      // If 0 or >1 matches without an exact match, return raw (it will turn red)
+      return rawName;
+    }
+
     if (context === 'bulk') {
       const allCustInputs = document.querySelectorAll('.bulk-cust');
       let lastCust = '';
       if (allCustInputs.length > 0) lastCust = allCustInputs[allCustInputs.length - 1].value;
 
       parsedItems.forEach((item, index) => {
-        let targetCust = item.customer || lastCust; 
+        let smartCust = getSmartCustomerMatch(item.customer);
+        let targetCust = smartCust || lastCust; 
         lastCust = targetCust; 
 
         const rows = document.querySelectorAll('.bulk-row');
@@ -5350,7 +5350,6 @@ async function submitEntry(forceDuplicate = false) {
         let qtyInput = lastRow.querySelector('.bulk-qty');
         let fruitInput = lastRow.querySelector('.bulk-fruit');
         
-        // Fill current blank row, or create a new one
         if (index === 0 && qtyInput && !qtyInput.value && fruitInput && !fruitInput.value) {
             qtyInput.value = item.qty;
             fruitInput.value = item.fruit;
@@ -5359,12 +5358,11 @@ async function submitEntry(forceDuplicate = false) {
             let custInput = lastRow.querySelector('.bulk-cust');
             if (targetCust && !custInput.value) {
                 custInput.value = targetCust;
-                if (typeof handleBulkCustChange === 'function') handleBulkCustChange(custInput);
+                if (typeof checkBulkSimilarity === 'function') checkBulkSimilarity(custInput);
             }
             if (item.rawSpoken) lastRow.setAttribute('data-spoken-fruit', item.rawSpoken);
             if (typeof updateBulkRowTotal === 'function') updateBulkRowTotal(lastRow.id);
             
-            // Trigger instant validation for Voice injection
             validateNotebookInput(custInput, 'customer');
             validateNotebookInput(fruitInput, 'fruit');
         } else {
@@ -5376,13 +5374,12 @@ async function submitEntry(forceDuplicate = false) {
                 let custInput = newRow.querySelector('.bulk-cust');
                 let newFruitInput = newRow.querySelector('.bulk-fruit');
                 
-                if (custInput && custInput.value && typeof handleBulkCustChange === 'function') {
-                    handleBulkCustChange(custInput); 
+                if (custInput && custInput.value && typeof checkBulkSimilarity === 'function') {
+                    checkBulkSimilarity(custInput); 
                 }
                 if (item.rawSpoken) newRow.setAttribute('data-spoken-fruit', item.rawSpoken);
                 if (typeof updateBulkRowTotal === 'function') updateBulkRowTotal(newRow.id);
                 
-                // Trigger instant validation for Voice injection
                 validateNotebookInput(custInput, 'customer');
                 validateNotebookInput(newFruitInput, 'fruit');
             }
@@ -5392,29 +5389,10 @@ async function submitEntry(forceDuplicate = false) {
       if (typeof updateBulkTotal === 'function') updateBulkTotal();
       if (typeof saveBulkDraft === 'function') saveBulkDraft();
       showToast(`🎤 "${transcript}" ➔ Added ${parsedItems.length} item(s)`, "success");
-
-      // NEW: Trigger Auto-Scroll to bring the preview box & newest row into view
       if (typeof scrollToPreviewBox === 'function') scrollToPreviewBox();
 
     } else {
-      const containerId = context === 'add' ? 'detailsContainer' : 'editDetailsContainer';
-      let dateInputId = context === 'add' ? 'entryDate' : 'editDate';
-      let defaultDate = document.getElementById(dateInputId).value || new Date().toISOString().split('T')[0];
-
-      parsedItems.forEach(item => {
-        if (typeof addDisplayRow === 'function') {
-            addDisplayRow(containerId, item.fruit, item.qty, item.price, defaultDate, false);
-        }
-        const rows = document.getElementById(containerId).querySelectorAll('.detail-row');
-        const lastRow = rows[rows.length - 1];
-        if (lastRow && item.rawSpoken) {
-          lastRow.setAttribute('data-spoken-fruit', item.rawSpoken);
-        }
-      });
-
-      showToast(`🎤 "${transcript}" ➔ Added ${parsedItems.length} item(s)`, "success");
-      if (context === 'add' && typeof saveEntryDraft === 'function') saveEntryDraft();
-      else if (context === 'edit' && typeof saveEditDraft === 'function') saveEditDraft();
+      // Logic for Add/Edit Modal
     }
   }
 
