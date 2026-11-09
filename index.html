@@ -5579,13 +5579,7 @@ async function submitEntry(forceDuplicate = false) {
   }
 
   function restoreBulkDraft(draft) {
-    // 1. Rescue the Mic Button BEFORE clearing the screen!
-    const voiceBtn = document.getElementById('bulkVoiceBtn');
-    if (voiceBtn) {
-        document.getElementById('bulkVoiceSafeHarbor').appendChild(voiceBtn);
-    }
-
-    // 2. Restore Type (Purchase/Payment)
+    // 1. Restore Type (Purchase/Payment)
     document.getElementById('bulkEntryTypeSelected').value = draft.type;
     currentBulkType = draft.type;
     
@@ -5603,32 +5597,35 @@ async function submitEntry(forceDuplicate = false) {
       modeContainer.style.display = 'none';
     }
 
-    // 3. Restore Mode (Quick Amount / Voice Items)
+    // 2. Restore Mode (Quick Amount / Voice Items)
     const mode = draft.mode || 'quick';
     document.getElementById('bulkEntryMode').value = mode;
     const btnQuick = document.getElementById('bulkModeQuick');
     const btnItems = document.getElementById('bulkModeItems');
+    const voiceBtnFooter = document.getElementById('bulkVoiceBtnFooter');
 
     if (mode === 'quick') {
       btnQuick.className = 'btn btn-blue btn-sm';
       btnQuick.style.cssText = '';
       btnItems.className = 'btn btn-outline btn-sm';
       btnItems.style.cssText = 'border-color: #007bff; color: #007bff;';
+      if (voiceBtnFooter) voiceBtnFooter.style.display = 'none';
     } else {
       btnItems.className = 'btn btn-blue btn-sm';
       btnItems.style.cssText = '';
       btnQuick.className = 'btn btn-outline btn-sm';
       btnQuick.style.cssText = 'border-color: #007bff; color: #007bff;';
+      if (voiceBtnFooter) voiceBtnFooter.style.display = 'flex';
     }
 
-    // 4. Restore Date
+    // 3. Restore Date
     if (typeof bulkDatePicker !== 'undefined' && bulkDatePicker.setDate) {
         bulkDatePicker.setDate(draft.date);
     } else {
         document.getElementById('bulkDate').value = draft.date;
     }
 
-    // 5. Safely clear and rebuild rows
+    // 4. Safely clear and rebuild rows
     document.getElementById('bulkRowsContainer').innerHTML = '';
     if (draft.rows && draft.rows.length > 0) {
       draft.rows.forEach(r => addBulkRow(r));
