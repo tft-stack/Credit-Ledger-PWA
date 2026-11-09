@@ -4320,6 +4320,10 @@ async function submitEntry(forceDuplicate = false) {
 
   function setBulkMode(mode) {
     document.getElementById('bulkEntryMode').value = mode;
+    
+    // Build the fruit dropdown list
+    if (typeof ensureFruitDatalist === 'function') ensureFruitDatalist();
+    
     const btnQuick = document.getElementById('bulkModeQuick');
     const btnItems = document.getElementById('bulkModeItems');
     const voiceBtn = document.getElementById('bulkVoiceBtnFooter');
@@ -4397,7 +4401,7 @@ async function submitEntry(forceDuplicate = false) {
              oninput="updateBulkRowTotal('${rowId}');" 
              onblur="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();">
            
-           <input type="text" class="input-field bulk-fruit" placeholder="Fruit" value="${fruit}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 1.5; min-width: 0; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-align: center; text-overflow: ellipsis; white-space: nowrap;" 
+           <input type="text" class="input-field bulk-fruit" list="fruitList" placeholder="Fruit" value="${fruit}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 1.5; min-width: 0; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-align: center; text-overflow: ellipsis; white-space: nowrap;" 
              oninput="validateNotebookInput(this, 'fruit');" 
              onblur="validateNotebookInput(this, 'fruit'); updateBulkTotal(); saveBulkDraft();">
            
@@ -4512,6 +4516,20 @@ async function submitEntry(forceDuplicate = false) {
         };
         chipContainer.appendChild(chip);
       });
+    }
+  }
+
+  // Dynamically creates the fruit autocomplete list if it doesn't exist
+  function ensureFruitDatalist() {
+    if (!document.getElementById('fruitList') && window.allFruits) {
+      const dl = document.createElement('datalist');
+      dl.id = 'fruitList';
+      window.allFruits.forEach(f => {
+        let opt = document.createElement('option');
+        opt.value = f;
+        dl.appendChild(opt);
+      });
+      document.body.appendChild(dl);
     }
   }
 
