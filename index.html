@@ -4381,21 +4381,30 @@ async function submitEntry(forceDuplicate = false) {
 
     let html = '';
 
-    if (mode === 'items') {
-      // ULTRA-COMPACT NOTEBOOK VIEW (No commas, Total in a pill badge)
+  if (mode === 'items') {
+      // ULTRA-COMPACT NOTEBOOK VIEW (Updates instantly on "Tap Out")
       html = `
       <div id="${rowId}" class="bulk-row" style="display: flex; flex-direction: column; border-bottom: 1px solid var(--border-light); padding: 6px 0; width: 100%; box-sizing: border-box; overflow: hidden;">
         <div style="display: flex; align-items: center; width: 100%; font-size: 13px; gap: 4px;">
            
            <span class="bulk-sno" style="font-weight: 600; color: var(--text-muted); width: 14px; flex-shrink: 0; text-align: left; font-size: 11px;"></span>
            
-           <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name" value="${cust}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 2.5; min-width: 0; font-weight: 600; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-overflow: ellipsis; white-space: nowrap;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); checkBulkExactMatch(this); validateNotebookInput(this, 'customer'); saveBulkDraft()" onchange="handleBulkCustChange(this); validateNotebookInput(this, 'customer');">
+           <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name" value="${cust}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 2.5; min-width: 0; font-weight: 600; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-overflow: ellipsis; white-space: nowrap;" 
+             oninput="validateNotebookInput(this, 'customer');" 
+             onblur="handleNativeAutocomplete(this); checkBulkExactMatch(this); validateNotebookInput(this, 'customer'); updateBulkTotal(); saveBulkDraft();">
            
-           <input type="number" class="input-field bulk-qty" placeholder="Qty" value="${qty}" style="border: none; background: #f8f9fa; padding: 2px 0; margin: 0; flex: 0.8; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" oninput="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();">
+           <input type="number" class="input-field bulk-qty" placeholder="Qty" value="${qty}" style="border: none; background: #f8f9fa; padding: 2px 0; margin: 0; flex: 0.8; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" 
+             oninput="updateBulkRowTotal('${rowId}');" 
+             onblur="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();">
            
-           <input type="text" class="input-field bulk-fruit" placeholder="Fruit" value="${fruit}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 1.5; min-width: 0; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-align: center; text-overflow: ellipsis; white-space: nowrap;" oninput="validateNotebookInput(this, 'fruit'); saveBulkDraft();">
+           <input type="text" class="input-field bulk-fruit" placeholder="Fruit" value="${fruit}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 1.5; min-width: 0; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-align: center; text-overflow: ellipsis; white-space: nowrap;" 
+             oninput="validateNotebookInput(this, 'fruit');" 
+             onblur="validateNotebookInput(this, 'fruit'); updateBulkTotal(); saveBulkDraft();">
            
-           <input type="number" class="input-field bulk-price" placeholder="Price" value="${price}" style="border: none; background: #f8f9fa; padding: 2px 0; margin: 0; flex: 1.1; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" oninput="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
+           <input type="number" class="input-field bulk-price" placeholder="Price" value="${price}" style="border: none; background: #f8f9fa; padding: 2px 0; margin: 0; flex: 1.1; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" 
+             oninput="updateBulkRowTotal('${rowId}');" 
+             onblur="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();" 
+             onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
            
            <!-- Compact Highlighted Total Badge -->
            <div class="bulk-row-total-disp" style="font-weight: 700; color: #0056b3; background: #e3f2fd; flex-shrink: 0; min-width: 38px; text-align: right; font-size: 12px; padding: 2px 4px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis;">₹0</div>
