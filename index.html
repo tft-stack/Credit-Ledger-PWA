@@ -858,14 +858,8 @@
           </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <label style="margin: 0;">Entries</label>
-          <!-- Safe Harbor protects the mic button when rows are cleared -->
-          <div id="bulkVoiceSafeHarbor" style="display: none;">
-            <button type="button" id="bulkVoiceBtn" onclick="startVoiceDictation('bulk')" style="display: none; background: #28a745; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: 0.2s; flex-shrink: 0;" title="Voice Dictation">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
-            </button>
-          </div>
+        <div style="margin-bottom: 8px;">
+          <label style="margin: 0; font-weight: bold; font-size: 13px; color: var(--text-muted);">ENTRIES</label>
         </div>
 
         <!-- Rows injected via JS here -->
@@ -877,9 +871,15 @@
           <div id="bulkPreviewList" style="font-size: 11px; color: #0d47a1; line-height: 1.4;"></div>
         </div>
 
-        <div style="display: flex; gap: 8px;">
-          <button class="btn btn-outline" style="flex: 1;" onclick="closeBulkModal()">Cancel</button>
-          <button class="btn btn-blue" style="flex: 1;" onclick="submitBulkEntries()">Save</button>
+        <div style="display: flex; gap: 12px; margin-top: 15px; align-items: center;">
+          <button type="button" class="btn btn-outline" style="flex: 1; padding: 12px 0;" onclick="closeBulkModal()">Cancel</button>
+          
+          <!-- Big Floating Footer Mic Button -->
+          <button type="button" id="bulkVoiceBtnFooter" onclick="startVoiceDictation('bulk')" style="display: none; background: #28a745; color: white; border: none; border-radius: 50%; width: 48px; height: 48px; flex-shrink: 0; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 10px rgba(40, 167, 69, 0.4); transition: 0.2s;" title="Voice Dictation">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+          </button>
+
+          <button type="button" class="btn btn-blue" style="flex: 1; padding: 12px 0;" onclick="submitBulkEntries()">Save</button>
         </div>
       </div>
     </div>
@@ -4322,21 +4322,20 @@ async function submitEntry(forceDuplicate = false) {
     document.getElementById('bulkEntryMode').value = mode;
     const btnQuick = document.getElementById('bulkModeQuick');
     const btnItems = document.getElementById('bulkModeItems');
-    
-    // Rescue Mic Button before clearing rows
-    const voiceBtn = document.getElementById('bulkVoiceBtn');
-    document.getElementById('bulkVoiceSafeHarbor').appendChild(voiceBtn);
+    const voiceBtn = document.getElementById('bulkVoiceBtnFooter');
 
     if (mode === 'quick') {
       btnQuick.className = 'btn btn-blue btn-sm';
       btnQuick.style.cssText = '';
       btnItems.className = 'btn btn-outline btn-sm';
       btnItems.style.cssText = 'border-color: #007bff; color: #007bff;';
+      if (voiceBtn) voiceBtn.style.display = 'none';
     } else {
       btnItems.className = 'btn btn-blue btn-sm';
       btnItems.style.cssText = '';
       btnQuick.className = 'btn btn-outline btn-sm';
       btnQuick.style.cssText = 'border-color: #007bff; color: #007bff;';
+      if (voiceBtn) voiceBtn.style.display = 'flex';
     }
     
     document.getElementById('bulkRowsContainer').innerHTML = '';
@@ -4347,13 +4346,22 @@ async function submitEntry(forceDuplicate = false) {
 
   function removeBulkRow(rowId) {
     const row = document.getElementById(rowId);
+    const container = document.getElementById('bulkRowsContainer');
+    
     if (row) {
-      // Rescue Mic Button if it is inside the row being deleted
-      const voiceBtn = document.getElementById('bulkVoiceBtn');
-      if (row.contains(voiceBtn)) {
-          document.getElementById('bulkVoiceSafeHarbor').appendChild(voiceBtn);
+      if (container.children.length === 1) {
+        // If it's the only row left, clear its contents instead of deleting it
+        row.querySelector('.bulk-cust').value = '';
+        row.querySelector('.bulk-qty').value = '';
+        row.querySelector('.bulk-fruit').value = '';
+        row.querySelector('.bulk-price').value = '';
+        row.querySelector('.bulk-row-total-disp').innerText = '₹0';
+        validateNotebookInput(row.querySelector('.bulk-cust'), 'customer');
+        validateNotebookInput(row.querySelector('.bulk-fruit'), 'fruit');
+      } else {
+        // If there are multiple rows, safely remove it
+        row.remove();
       }
-      row.remove();
       updateBulkRowUI();
       updateBulkTotal();
       saveBulkDraft();
@@ -4374,32 +4382,26 @@ async function submitEntry(forceDuplicate = false) {
     let html = '';
 
     if (mode === 'items') {
-      // COMPACT NOTEBOOK PAGE VIEW
+      // ULTRA-COMPACT NOTEBOOK VIEW (No commas, Total in a pill badge)
       html = `
       <div id="${rowId}" class="bulk-row" style="display: flex; flex-direction: column; border-bottom: 1px solid var(--border-light); padding: 6px 0; width: 100%; box-sizing: border-box; overflow: hidden;">
-        <div style="display: flex; align-items: center; width: 100%; font-size: 13px; gap: 2px;">
+        <div style="display: flex; align-items: center; width: 100%; font-size: 13px; gap: 4px;">
            
            <span class="bulk-sno" style="font-weight: 600; color: var(--text-muted); width: 14px; flex-shrink: 0; text-align: left; font-size: 11px;"></span>
            
            <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name" value="${cust}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 2.5; min-width: 0; font-weight: 600; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-overflow: ellipsis; white-space: nowrap;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); checkBulkExactMatch(this); validateNotebookInput(this, 'customer'); saveBulkDraft()" onchange="handleBulkCustChange(this); validateNotebookInput(this, 'customer');">
            
-           <span style="color: var(--text-muted); font-size: 12px;">,</span>
-           
-           <input type="number" class="input-field bulk-qty" placeholder="Qty" value="${qty}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 0.8; min-width: 0; text-align: center; border-radius: 0; outline: none; box-shadow: none; font-size: 13px;" oninput="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();">
+           <input type="number" class="input-field bulk-qty" placeholder="Qty" value="${qty}" style="border: none; background: #f8f9fa; padding: 2px 0; margin: 0; flex: 0.8; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" oninput="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();">
            
            <input type="text" class="input-field bulk-fruit" placeholder="Fruit" value="${fruit}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 1.5; min-width: 0; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-align: center; text-overflow: ellipsis; white-space: nowrap;" oninput="validateNotebookInput(this, 'fruit'); saveBulkDraft();">
            
-           <span style="color: var(--text-muted); font-size: 12px;">,</span>
+           <input type="number" class="input-field bulk-price" placeholder="Price" value="${price}" style="border: none; background: #f8f9fa; padding: 2px 0; margin: 0; flex: 1.1; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" oninput="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
            
-           <input type="number" class="input-field bulk-price" placeholder="Price" value="${price}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 1.1; min-width: 0; text-align: center; border-radius: 0; outline: none; box-shadow: none; font-size: 13px;" oninput="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
+           <!-- Compact Highlighted Total Badge -->
+           <div class="bulk-row-total-disp" style="font-weight: 700; color: #0056b3; background: #e3f2fd; flex-shrink: 0; min-width: 38px; text-align: right; font-size: 12px; padding: 2px 4px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis;">₹0</div>
            
-           <span style="color: var(--text-muted); font-size: 12px; margin: 0 1px;">=</span>
+           <button class="bulk-remove-btn" onclick="removeBulkRow('${rowId}')" style="background: none; border: none; color: #d32f2f; font-size: 16px; padding: 0; cursor: pointer; flex-shrink: 0; width: 22px; display: flex; justify-content: center; align-items: center;">✕</button>
            
-           <div class="bulk-row-total-disp" style="font-weight: 700; color: #007bff; flex-shrink: 0; width: 44px; text-align: right; font-size: 13px; overflow: hidden; text-overflow: ellipsis;">₹0</div>
-           
-           <button class="bulk-remove-btn" onclick="removeBulkRow('${rowId}')" style="background: none; border: none; color: #d32f2f; font-size: 16px; padding: 0; cursor: pointer; flex-shrink: 0; width: 18px; display: flex; justify-content: center; align-items: center; margin-left: 2px;">✕</button>
-           
-           <div class="row-mic-container" style="width: 22px; flex-shrink: 0; display: flex; justify-content: center; align-items: center; margin-left: 2px;"></div>
         </div>
         
         <div class="bulk-similarity-warning" style="display: none; font-size: 11px; color: #d32f2f; margin-top: 4px; background: #ffebee; padding: 4px; border-radius: 4px;">
@@ -4448,29 +4450,14 @@ async function submitEntry(forceDuplicate = false) {
   function updateBulkRowUI() {
     const rows = document.querySelectorAll('.bulk-row');
     const mode = document.getElementById('bulkEntryMode').value;
-    const voiceBtn = document.getElementById('bulkVoiceBtn');
 
     rows.forEach((row, index) => {
       const snoEl = row.querySelector('.bulk-sno');
       if (snoEl) snoEl.innerText = (index + 1) + ".";
       
       const removeBtn = row.querySelector('.bulk-remove-btn');
-      if (removeBtn) removeBtn.style.display = rows.length > 1 ? 'block' : 'none';
-
-      // Attach the Floating Mic Button to the LAST row dynamically
-      if (mode === 'items') {
-          const micContainer = row.querySelector('.row-mic-container');
-          if (micContainer && index === rows.length - 1 && voiceBtn) {
-              micContainer.appendChild(voiceBtn);
-              voiceBtn.style.display = 'flex';
-          }
-      }
+      if (removeBtn) removeBtn.style.display = 'flex'; // ALWAYS show the delete button
     });
-    
-    // Hide Mic entirely if in Quick Amount mode
-    if (mode === 'quick' && voiceBtn) {
-        voiceBtn.style.display = 'none';
-    }
   }
 
   function checkBulkSimilarity(inputElement) {
