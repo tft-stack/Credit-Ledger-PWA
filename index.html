@@ -5191,7 +5191,7 @@ async function submitEntry(forceDuplicate = false) {
   }
 
   function processDictation(transcript, context) {
-    const wordToNum = {
+  const wordToNum = {
       'zero': 0, 'one': 1, 'won': 1, 'ek': 1, 'two': 2, 'to': 2, 'too': 2, 'do': 2,
       'three': 3, 'tree': 3, 'teen': 3, 'four': 4, 'for': 4, 'char': 4,
       'five': 5, 'panch': 5, 'paanch': 5, 'six': 6, 'che': 6, 'chhe': 6,
@@ -5202,7 +5202,27 @@ async function submitEntry(forceDuplicate = false) {
       'nineteen': 19, 'unnis': 19, 'twenty': 20, 'bees': 20, 'thirty': 30, 'tees': 30,
       'forty': 40, 'chalis': 40, 'fifty': 50, 'pachas': 50, 'sixty': 60, 'saath': 60,
       'seventy': 70, 'sattar': 70, 'eighty': 80, 'assi': 80, 'ninety': 90, 'nabbe': 90,
-      'hundred': 100, 'sau': 100, 'thousand': 1000, 'hazar': 1000, 'hazaar': 1000
+      
+      // Base Hundreds
+      'hundred': 100, 'sau': 100, 'so': 100, 
+      
+      // Hindi Merged Hundreds
+      'dosau': 200, 'doso': 200, 
+      'teensau': 300, 'teenso': 300, 
+      'charsau': 400, 'charso': 400, 
+      'paanchsau': 500, 'paanchso': 500, 'pansau': 500, 'panso': 500,
+      'chesau': 600, 'cheso': 600, 'chhesau': 600, 'chheso': 600,
+      'saatsau': 700, 'saatso': 700, 
+      'aathsau': 800, 'aathso': 800, 
+      'nausau': 900, 'nauso': 900,
+      
+      // Common Fractions
+      'dedh': 1.5, 'dedhsau': 150, 'dedhso': 150,
+      'dhai': 2.5, 'dhaisau': 250, 'dhaiso': 250,
+      
+      // Thousands & Lakhs
+      'thousand': 1000, 'hazar': 1000, 'hazaar': 1000,
+      'lakh': 100000, 'laakh': 100000
     };
 
     // STT PRE-PROCESSING: Compress STT expansions ("number 10" -> "n 10")
