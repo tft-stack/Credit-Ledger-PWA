@@ -5187,7 +5187,9 @@ async function submitEntry(forceDuplicate = false) {
       'hundred': 100, 'sau': 100, 'thousand': 1000, 'hazar': 1000, 'hazaar': 1000
     };
 
+    // STT PRE-PROCESSING: Compress STT expansions ("number 10" -> "n 10")
     let cleanStr = transcript.toLowerCase()
+      .replace(/\b(number|no\.?|num)\b\s*(?=\d)/gi, 'n ') 
       .replace(/(\d+):(\d+)/g, '$1$2')
       .replace(/₹|rs\.?|inr|rupees?|\/-/gi, ' ')
       .replace(/,/g, '')
@@ -5247,7 +5249,7 @@ async function submitEntry(forceDuplicate = false) {
     let globalCust = ''; 
     const custList = typeof allCustomers !== 'undefined' ? allCustomers : [];
 
-    // SMART LINEAR STATE MACHINE WITH LOOK-AHEAD
+    // SMART LINEAR STATE MACHINE
     for (let s = 0; s < segments.length; s++) {
       let seg = segments[s];
       
@@ -5269,51 +5271,47 @@ async function submitEntry(forceDuplicate = false) {
           let matchedTrailingNumber = false;
 
           if (baseName !== '') {
-            // ADVANCED PATTERN: Find customers ending in a number that match our base name
             let possibleCusts = custList.filter(c => {
                 let cleanC = c.toLowerCase().trim();
-                if (!/\d+$/.test(cleanC)) return false; // Must end in a number
+                if (!/\d+$/.test(cleanC)) return false; 
                 
                 let cleanCNoSpaces = cleanC.replace(/\s+/g, '');
                 let cleanBase = baseName.toLowerCase().replace(/\s+/g, '');
                 if (cleanCNoSpaces.startsWith(cleanBase)) return true;
                 
-                // Allow fuzzy match on the text portion just in case STT misspelled the name
                 let cText = cleanC.replace(/[^a-z]/g, '');
                 let baseText = baseName.toLowerCase().replace(/[^a-z]/g, '');
                 return cText.startsWith(baseText) || (typeof getEditDistance === 'function' && getEditDistance(cText, baseText) <= 2);
             });
 
             if (possibleCusts.length > 0) {
-                // Prioritize the closest length matches
                 possibleCusts.sort((a, b) => a.length - b.length);
-                
                 for (let c of possibleCusts) {
                     let match = c.trim().match(/\d+$/);
                     if (match) {
                         let custNum = match[0];
                         
-                        // Case A: Spoken as two clean separate numbers (e.g., "10", "1")
                         if (resolved[0].toString() === custNum) {
-                            currentItem.customer = c; // Auto-complete the exact full name
+                            currentItem.customer = c; 
                             globalCust = currentItem.customer;
                             currentItem.rawSpoken.push(resolved[0]);
                             
+                            // Assign the very next number to Quantity
                             if (resolved.length > 1) {
-                                currentItem.qty = resolved[1]; // The next number is the Qty
+                                currentItem.qty = resolved[1]; 
+                            } else {
+                                currentItem.qty = 1; // Safe fallback if they omit it
                             }
                             matchedTrailingNumber = true;
                             break;
                         }
                         
-                        // Case B: STT aggressively merged the numbers (e.g., "101" -> 10 and 1)
                         let resStr = resolved[0].toString();
                         if (resStr.startsWith(custNum) && resStr.length > custNum.length) {
                             currentItem.customer = c;
                             globalCust = currentItem.customer;
                             currentItem.rawSpoken.push(custNum);
                             
-                            // Extract the leftover trailing digits as the Qty
                             let leftover = resStr.substring(custNum.length);
                             currentItem.qty = parseInt(leftover, 10);
                             matchedTrailingNumber = true;
@@ -5325,7 +5323,6 @@ async function submitEntry(forceDuplicate = false) {
           }
           
           if (!matchedTrailingNumber) {
-            // Standard Behavior: Take the first number as the Quantity
             currentItem.qty = resolved[0] || 0;
           }
           
@@ -5361,7 +5358,7 @@ async function submitEntry(forceDuplicate = false) {
       return;
     }
 
-  // PROACTIVE AUTO-COMPLETE & FUZZY MATCHING LOGIC
+    // FUZZY MATCHER
     function getEditDistance(a, b) {
       if(a.length === 0) return b.length; 
       if(b.length === 0) return a.length; 
@@ -5383,9 +5380,8 @@ async function submitEntry(forceDuplicate = false) {
     function getSmartCustomerMatch(rawName) {
       if (!rawName) return '';
       const lowerRaw = rawName.toLowerCase();
-      const lowerClean = lowerRaw.replace(/\s+/g, ''); // Strip spaces for comparison
+      const lowerClean = lowerRaw.replace(/\s+/g, ''); 
       
-      // 1. Try Substring Match First (e.g. "Mohin" -> "Mohinder NG")
       const matches = custList.filter(c => c.toLowerCase().includes(lowerRaw) || lowerRaw.includes(c.toLowerCase()));
       if (matches.length === 1) return matches[0];
       if (matches.length > 1) {
@@ -5393,7 +5389,6 @@ async function submitEntry(forceDuplicate = false) {
         if (exact) return exact;
       }
       
-      // 2. Fuzzy Matching for Typos (e.g. "Netarpal Mg" -> "Netar Pal MJ")
       let bestMatch = '';
       let lowestDistance = 999;
       
@@ -5406,13 +5401,12 @@ async function submitEntry(forceDuplicate = false) {
         }
       });
       
-      // Allow up to 3 character differences (covers missed spaces and letter swaps)
       let threshold = lowerClean.length <= 5 ? 1 : 3; 
       if (lowestDistance <= threshold && bestMatch) {
         return bestMatch;
       }
 
-      return rawName; // Return raw red text if it's way too far off
+      return rawName; 
     }
 
     if (context === 'bulk') {
@@ -5438,7 +5432,7 @@ async function submitEntry(forceDuplicate = false) {
             let custInput = lastRow.querySelector('.bulk-cust');
             if (targetCust && !custInput.value) {
                 custInput.value = targetCust;
-                if (typeof checkBulkSimilarity === 'function') checkBulkSimilarity(custInput);
+                if (typeof checkBulkExactMatch === 'function') checkBulkExactMatch(custInput);
             }
             if (item.rawSpoken) lastRow.setAttribute('data-spoken-fruit', item.rawSpoken);
             if (typeof updateBulkRowTotal === 'function') updateBulkRowTotal(lastRow.id);
@@ -5454,8 +5448,8 @@ async function submitEntry(forceDuplicate = false) {
                 let custInput = newRow.querySelector('.bulk-cust');
                 let newFruitInput = newRow.querySelector('.bulk-fruit');
                 
-                if (custInput && custInput.value && typeof checkBulkSimilarity === 'function') {
-                    checkBulkSimilarity(custInput); 
+                if (custInput && custInput.value && typeof checkBulkExactMatch === 'function') {
+                    checkBulkExactMatch(custInput); 
                 }
                 if (item.rawSpoken) newRow.setAttribute('data-spoken-fruit', item.rawSpoken);
                 if (typeof updateBulkRowTotal === 'function') updateBulkRowTotal(newRow.id);
