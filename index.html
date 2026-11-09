@@ -250,6 +250,12 @@
       .details-dropdown { display: block !important; border: 1px solid #ccc !important; background: #fafafa !important; }
       .details-toggle-btn { display: none !important; }
     }
+
+    /* Highlights unrecognized names with a red dotted underline */
+    .unrecognized-item {
+    text-decoration: underline dotted #d32f2f !important;
+    text-underline-offset: 3px;
+    }
     
   </style>
 
@@ -4375,13 +4381,13 @@ async function submitEntry(forceDuplicate = false) {
            
            <span class="bulk-sno" style="font-weight: 600; color: var(--text-muted); width: 14px; flex-shrink: 0; text-align: left; font-size: 11px;"></span>
            
-           <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name" value="${cust}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 2.5; min-width: 0; font-weight: 600; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-overflow: ellipsis; white-space: nowrap;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); checkBulkExactMatch(this); saveBulkDraft()" onchange="handleBulkCustChange(this)">
+           <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name" value="${cust}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 2.5; min-width: 0; font-weight: 600; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-overflow: ellipsis; white-space: nowrap;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); checkBulkExactMatch(this); validateNotebookInput(this, 'customer'); saveBulkDraft()" onchange="handleBulkCustChange(this); validateNotebookInput(this, 'customer');">
            
            <span style="color: var(--text-muted); font-size: 12px;">,</span>
            
            <input type="number" class="input-field bulk-qty" placeholder="Qty" value="${qty}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 0.8; min-width: 0; text-align: center; border-radius: 0; outline: none; box-shadow: none; font-size: 13px;" oninput="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();">
            
-           <input type="text" class="input-field bulk-fruit" placeholder="Fruit" value="${fruit}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 1.5; min-width: 0; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-align: center; text-overflow: ellipsis; white-space: nowrap;" oninput="saveBulkDraft();">
+           <input type="text" class="input-field bulk-fruit" placeholder="Fruit" value="${fruit}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 1.5; min-width: 0; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-align: center; text-overflow: ellipsis; white-space: nowrap;" oninput="validateNotebookInput(this, 'fruit'); saveBulkDraft();">
            
            <span style="color: var(--text-muted); font-size: 12px;">,</span>
            
@@ -4510,6 +4516,29 @@ async function submitEntry(forceDuplicate = false) {
         };
         chipContainer.appendChild(chip);
       });
+    }
+  }
+
+  function validateNotebookInput(inputEl, type) {
+    if (!inputEl) return;
+    const val = inputEl.value.trim().toLowerCase();
+    
+    if (!val) {
+      inputEl.classList.remove('unrecognized-item');
+      return;
+    }
+
+    let isRecognized = false;
+    if (type === 'customer') {
+      isRecognized = (window.allCustomers || []).some(c => c.toLowerCase() === val);
+    } else if (type === 'fruit') {
+      isRecognized = (window.allFruits || []).some(f => f.toLowerCase() === val);
+    }
+
+    if (isRecognized) {
+      inputEl.classList.remove('unrecognized-item');
+    } else {
+      inputEl.classList.add('unrecognized-item');
     }
   }
 
@@ -5330,10 +5359,14 @@ async function submitEntry(forceDuplicate = false) {
             let custInput = lastRow.querySelector('.bulk-cust');
             if (targetCust && !custInput.value) {
                 custInput.value = targetCust;
-                if (typeof handleBulkCustChange === 'function') handleBulkCustChange(custInput); // Triggers fuzzy match
+                if (typeof handleBulkCustChange === 'function') handleBulkCustChange(custInput);
             }
             if (item.rawSpoken) lastRow.setAttribute('data-spoken-fruit', item.rawSpoken);
             if (typeof updateBulkRowTotal === 'function') updateBulkRowTotal(lastRow.id);
+            
+            // Trigger instant validation for Voice injection
+            validateNotebookInput(custInput, 'customer');
+            validateNotebookInput(fruitInput, 'fruit');
         } else {
             if (typeof addBulkRow === 'function') {
                 addBulkRow({ customer: targetCust, qty: item.qty, fruit: item.fruit, price: item.price });
@@ -5341,11 +5374,17 @@ async function submitEntry(forceDuplicate = false) {
                 const newRow = updatedRows[updatedRows.length - 1];
                 
                 let custInput = newRow.querySelector('.bulk-cust');
+                let newFruitInput = newRow.querySelector('.bulk-fruit');
+                
                 if (custInput && custInput.value && typeof handleBulkCustChange === 'function') {
-                    handleBulkCustChange(custInput); // Triggers fuzzy match
+                    handleBulkCustChange(custInput); 
                 }
                 if (item.rawSpoken) newRow.setAttribute('data-spoken-fruit', item.rawSpoken);
                 if (typeof updateBulkRowTotal === 'function') updateBulkRowTotal(newRow.id);
+                
+                // Trigger instant validation for Voice injection
+                validateNotebookInput(custInput, 'customer');
+                validateNotebookInput(newFruitInput, 'fruit');
             }
         }
       });
