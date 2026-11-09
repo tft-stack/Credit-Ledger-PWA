@@ -5315,20 +5315,58 @@ async function submitEntry(forceDuplicate = false) {
       return;
     }
 
-    // PROACTIVE AUTO-COMPLETE LOGIC
+  // PROACTIVE AUTO-COMPLETE & FUZZY MATCHING LOGIC
+    function getEditDistance(a, b) {
+      if(a.length === 0) return b.length; 
+      if(b.length === 0) return a.length; 
+      var matrix = [];
+      for(var i = 0; i <= b.length; i++) { matrix[i] = [i]; }
+      for(var j = 0; j <= a.length; j++) { matrix[0][j] = j; }
+      for(var i = 1; i <= b.length; i++) {
+        for(var j = 1; j <= a.length; j++) {
+          if(b.charAt(i-1) == a.charAt(j-1)) {
+            matrix[i][j] = matrix[i-1][j-1];
+          } else {
+            matrix[i][j] = Math.min(matrix[i-1][j-1] + 1, Math.min(matrix[i][j-1] + 1, matrix[i-1][j] + 1));
+          }
+        }
+      }
+      return matrix[b.length][a.length];
+    }
+
     function getSmartCustomerMatch(rawName) {
       if (!rawName) return '';
-      const lower = rawName.toLowerCase();
-      const matches = custList.filter(c => c.toLowerCase().includes(lower) || lower.includes(c.toLowerCase()));
-      // If exactly 1 match, auto-complete it!
+      const lowerRaw = rawName.toLowerCase();
+      const lowerClean = lowerRaw.replace(/\s+/g, ''); // Strip spaces for comparison
+      
+      // 1. Try Substring Match First (e.g. "Mohin" -> "Mohinder NG")
+      const matches = custList.filter(c => c.toLowerCase().includes(lowerRaw) || lowerRaw.includes(c.toLowerCase()));
       if (matches.length === 1) return matches[0];
-      // If multiple, check for an exact match just in case
       if (matches.length > 1) {
-        const exact = matches.find(c => c.toLowerCase() === lower);
+        const exact = matches.find(c => c.toLowerCase() === lowerRaw);
         if (exact) return exact;
       }
-      // If 0 or >1 matches without an exact match, return raw (it will turn red)
-      return rawName;
+      
+      // 2. Fuzzy Matching for Typos (e.g. "Netarpal Mg" -> "Netar Pal MJ")
+      let bestMatch = '';
+      let lowestDistance = 999;
+      
+      custList.forEach(c => {
+        let cleanCust = c.toLowerCase().replace(/\s+/g, '');
+        let dist = getEditDistance(lowerClean, cleanCust);
+        if (dist < lowestDistance) {
+          lowestDistance = dist;
+          bestMatch = c;
+        }
+      });
+      
+      // Allow up to 3 character differences (covers missed spaces and letter swaps)
+      let threshold = lowerClean.length <= 5 ? 1 : 3; 
+      if (lowestDistance <= threshold && bestMatch) {
+        return bestMatch;
+      }
+
+      return rawName; // Return raw red text if it's way too far off
     }
 
     if (context === 'bulk') {
