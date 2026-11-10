@@ -4337,7 +4337,11 @@ async function submitEntry(forceDuplicate = false) {
           if (tc) bal = tc.balance;
         }
         
-        if (bal > 0) {
+        // ONLY display the red pill if the active mode is Payment
+        const currentType = document.getElementById('bulkEntryTypeSelected').value;
+        const isPayment = (currentType === 'Payment' || currentType === 'Amount Received');
+        
+        if (bal > 0 && isPayment) {
           balDisp.innerText = `₹${bal.toLocaleString('en-IN')}`;
           balDisp.setAttribute('data-bal', bal);
           balDisp.style.display = 'block';
