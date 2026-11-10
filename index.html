@@ -4324,10 +4324,11 @@ async function submitEntry(forceDuplicate = false) {
       }
     }
     
-    // --- FIXED: FETCH & DISPLAY PENDING BALANCE PILL ---
+    // --- FETCH & DISPLAY RED PENDING BALANCE PILL ---
     const row = inputElement.closest('.bulk-row');
     if (row && exactMatch) {
       const balDisp = row.querySelector('.bulk-bal-disp');
+      const amtInput = row.querySelector('.bulk-amt');
       
       if (balDisp) {
         let bal = 0;
@@ -4341,11 +4342,19 @@ async function submitEntry(forceDuplicate = false) {
         }
         
         if (bal > 0) {
-          balDisp.innerText = `₹${bal.toLocaleString('en-IN')} Pending`;
+          // Just the amount, no extra text
+          balDisp.innerText = `₹${bal.toLocaleString('en-IN')}`;
+          // Save the raw number so the click-to-fill function can use it
+          balDisp.setAttribute('data-bal', bal);
           balDisp.style.display = 'block';
         } else {
           balDisp.style.display = 'none';
         }
+      }
+
+      // Force cursor to jump to Amount box instantly
+      if (amtInput) {
+         setTimeout(() => amtInput.focus(), 50);
       }
     }
     // -------------------------------------------------
@@ -4470,9 +4479,8 @@ async function submitEntry(forceDuplicate = false) {
                   <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
                     <input type="number" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="width: 100%; padding: 8px 6px; margin-bottom: 0; font-size: 14px; box-sizing: border-box;" oninput="updateBulkTotal(); saveBulkDraft()" onfocus="handleBulkCustChange(this.closest('.bulk-row').querySelector('.bulk-cust'))" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
                     
-                    <!-- RESTORED PENDING BALANCE PILL -->
-                    <div class="bulk-bal-disp" style="display: none; font-size: 11px; color: #155724; background: #d4edda; margin-top: 4px; padding: 2px 4px; border-radius: 4px; text-align: center; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
-                  </div>
+                    <!-- RED CLICKABLE BALANCE PILL -->
+                    <div class="bulk-bal-disp" onclick="const row = this.closest('.bulk-row'); const amtInput = row.querySelector('.bulk-amt'); amtInput.value = this.getAttribute('data-bal'); amtInput.focus(); updateBulkTotal(); saveBulkDraft();" style="display: none; font-size: 11px; color: #b71c1c; background: #ffcdd2; border: 1px solid #ef9a9a; margin-top: 4px; padding: 4px; border-radius: 4px; text-align: center; font-weight: bold; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05); user-select: none;" title="Tap to fill amount"></div>
 
               </div>
           </div>
