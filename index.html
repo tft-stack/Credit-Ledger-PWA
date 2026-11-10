@@ -4350,7 +4350,9 @@ async function submitEntry(forceDuplicate = false) {
       if (amtInput && document.activeElement === inputElement) {
          setTimeout(() => {
            amtInput.focus();
-         }, 50); // 50ms delay ensures mobile keyboard transition is smooth
+           // Push the active row to the center of the screen so the pill isn't hidden by the keypad
+           row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         }, 50);
       }
     } else {
       if (balDisp) balDisp.style.display = 'none';
@@ -4475,8 +4477,8 @@ async function submitEntry(forceDuplicate = false) {
           <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
             <input type="number" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="width: 100%; padding: 8px 6px; margin-bottom: 0; font-size: 14px; box-sizing: border-box;" oninput="updateBulkTotal(); saveBulkDraft()" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
             
-            <!-- RED CLICKABLE BALANCE PILL -->
-            <div class="bulk-bal-disp" onclick="const row = this.closest('.bulk-row'); const amtInput = row.querySelector('.bulk-amt'); amtInput.value = this.getAttribute('data-bal'); updateBulkTotal(); saveBulkDraft(); amtInput.focus();" style="display: none; font-size: 11px; color: #b71c1c; background: #ffcdd2; border: 1px solid #ef9a9a; margin-top: 4px; padding: 4px; border-radius: 4px; text-align: center; font-weight: bold; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05); user-select: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Tap to fill amount"></div>
+            <!-- RED CLICKABLE BALANCE PILL (Fixed Trimming & Padding) -->
+            <div class="bulk-bal-disp" onclick="const r = this.closest('.bulk-row'); const a = r.querySelector('.bulk-amt'); a.value = this.getAttribute('data-bal'); updateBulkTotal(); saveBulkDraft(); a.focus(); r.scrollIntoView({ behavior: 'smooth', block: 'center' });" style="display: none; font-size: 9.5px; letter-spacing: -0.2px; color: #b71c1c; background: #ffcdd2; border: 1px solid #ef9a9a; margin-top: 4px; padding: 4px 1px; border-radius: 4px; text-align: center; font-weight: 900; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05); user-select: none; white-space: nowrap; overflow: visible;" title="Tap to fill amount"></div>
           </div>
           
           <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0; margin-top: 4px;">
@@ -4498,8 +4500,10 @@ async function submitEntry(forceDuplicate = false) {
         if (newRow) {
           const nameInput = newRow.querySelector('.bulk-cust');
           if (nameInput) nameInput.focus();
+          
+          // Force scroll to CENTER so the new row is perfectly visible above the keypad
+          newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-        scrollToPreviewBox();
       }, 50); 
     }
   }
