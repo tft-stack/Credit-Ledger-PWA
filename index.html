@@ -4385,7 +4385,7 @@ async function submitEntry(forceDuplicate = false) {
 
     let html = '';
 
-  if (mode === 'items') {
+    if (mode === 'items') {
       // ULTRA-COMPACT NOTEBOOK VIEW (Updates instantly on "Tap Out")
       html = `
       <div id="${rowId}" class="bulk-row" style="display: flex; flex-direction: column; border-bottom: 1px solid var(--border-light); padding: 6px 0; width: 100%; box-sizing: border-box; overflow: hidden;">
@@ -4431,9 +4431,14 @@ async function submitEntry(forceDuplicate = false) {
           <div style="flex: 1; display: flex; flex-direction: column;">
               <div style="display: flex; gap: 6px;">
                   <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name or UPI" value="${cust}" style="flex: 1; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); checkBulkExactMatch(this); saveBulkDraft()" onchange="handleBulkCustChange(this)">
+                  
                   <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
                     <input type="number" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="width: 100%; padding: 8px 6px; margin-bottom: 0; font-size: 14px; box-sizing: border-box;" oninput="updateBulkTotal(); saveBulkDraft()" onfocus="handleBulkCustChange(this.closest('.bulk-row').querySelector('.bulk-cust'))" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
+                    
+                    <!-- RESTORED PENDING BALANCE PILL -->
+                    <div class="bulk-bal-disp" style="display: none; font-size: 11px; color: #155724; background: #d4edda; margin-top: 4px; padding: 2px 4px; border-radius: 4px; text-align: center; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
                   </div>
+
               </div>
           </div>
           <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0; margin-top: 4px;">
