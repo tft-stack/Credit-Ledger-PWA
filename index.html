@@ -4296,20 +4296,21 @@ async function submitEntry(forceDuplicate = false) {
   function handleBulkCustChange(inputElement) {
     if (!inputElement) return;
     let val = inputElement.value.trim().toLowerCase();
+    const row = inputElement.closest('.bulk-row');
+    if (!row) return;
+    
+    const balDisp = row.querySelector('.bulk-bal-disp');
+    const amtInput = row.querySelector('.bulk-amt');
     
     // Hide balance pill if input is cleared
     if (!val) {
-      const row = inputElement.closest('.bulk-row');
-      if (row) {
-        const balDisp = row.querySelector('.bulk-bal-disp');
-        if (balDisp) balDisp.style.display = 'none';
-      }
+      if (balDisp) balDisp.style.display = 'none';
       return;
     }
 
     let exactMatch = allCustomers.find(c => c.toLowerCase() === val);
     
-    // UX UPDATE: Auto-complete partial names to speed up data entry
+    // Auto-complete partial names to speed up data entry
     if (!exactMatch && val.length >= 2) {
       let partials = allCustomers.filter(c => c.toLowerCase().includes(val));
       if (partials.length === 1) {
@@ -4324,15 +4325,10 @@ async function submitEntry(forceDuplicate = false) {
       }
     }
     
-    // --- FETCH & DISPLAY RED PENDING BALANCE PILL ---
-    const row = inputElement.closest('.bulk-row');
-    if (row && exactMatch) {
-      const balDisp = row.querySelector('.bulk-bal-disp');
-      const amtInput = row.querySelector('.bulk-amt');
-      
+    // --- FETCH PILL & AUTO-FOCUS AMOUNT ---
+    if (exactMatch) {
       if (balDisp) {
         let bal = 0;
-        // Look up the balance securely from the active dashboard memory
         if (typeof currentDashboardData !== 'undefined' && currentDashboardData.length > 0) {
           let tc = currentDashboardData.find(c => c.name.toLowerCase() === exactMatch.toLowerCase());
           if (tc) bal = tc.balance;
@@ -4342,9 +4338,7 @@ async function submitEntry(forceDuplicate = false) {
         }
         
         if (bal > 0) {
-          // Just the amount, no extra text
           balDisp.innerText = `₹${bal.toLocaleString('en-IN')}`;
-          // Save the raw number so the click-to-fill function can use it
           balDisp.setAttribute('data-bal', bal);
           balDisp.style.display = 'block';
         } else {
@@ -4352,14 +4346,15 @@ async function submitEntry(forceDuplicate = false) {
         }
       }
 
-      // Force cursor to jump to Amount box instantly
-      if (amtInput) {
-         setTimeout(() => amtInput.focus(), 50);
+      // Automatically jump to the Amount box and open the Numpad
+      if (amtInput && document.activeElement === inputElement) {
+         setTimeout(() => {
+           amtInput.focus();
+         }, 50); // 50ms delay ensures mobile keyboard transition is smooth
       }
+    } else {
+      if (balDisp) balDisp.style.display = 'none';
     }
-    // -------------------------------------------------
-    
-    checkBulkExactMatch(inputElement);
   }
 
   function setBulkMode(mode) {
@@ -4467,27 +4462,28 @@ async function submitEntry(forceDuplicate = false) {
         </div>
       </div>`;
     } else {
-      // QUICK AMOUNT VIEW (Standard Card)
+      // QUICK AMOUNT VIEW (Standard Card - Flattened Single Row)
       html = `
-      <div id="${rowId}" class="bulk-row" style="background: var(--card-bg); padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-        <div style="display: flex; gap: 6px; align-items: flex-start;">
-          <div class="bulk-sno" style="font-weight: bold; font-size: 12px; color: var(--text-muted); width: 20px; text-align: center; flex-shrink: 0; margin-top: 10px;"></div>
-          <div style="flex: 1; display: flex; flex-direction: column;">
-              <div style="display: flex; gap: 6px;">
-                  <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name or UPI" value="${cust}" style="flex: 1; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); checkBulkExactMatch(this); handleBulkCustChange(this); saveBulkDraft();" onblur="handleBulkCustChange(this);">
-                  
-                  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
-                    <input type="number" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="width: 100%; padding: 8px 6px; margin-bottom: 0; font-size: 14px; box-sizing: border-box;" oninput="updateBulkTotal(); saveBulkDraft()" onfocus="handleBulkCustChange(this.closest('.bulk-row').querySelector('.bulk-cust'))" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
-                    
-                    <!-- RED CLICKABLE BALANCE PILL -->
-                    <div class="bulk-bal-disp" onclick="const row = this.closest('.bulk-row'); const amtInput = row.querySelector('.bulk-amt'); amtInput.value = this.getAttribute('data-bal'); amtInput.focus(); updateBulkTotal(); saveBulkDraft();" style="display: none; font-size: 11px; color: #b71c1c; background: #ffcdd2; border: 1px solid #ef9a9a; margin-top: 4px; padding: 4px; border-radius: 4px; text-align: center; font-weight: bold; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05); user-select: none;" title="Tap to fill amount"></div>
-
-              </div>
+      <div id="${rowId}" class="bulk-row" style="background: var(--card-bg); padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); box-sizing: border-box; width: 100%;">
+        
+        <div style="display: flex; gap: 6px; align-items: flex-start; width: 100%; flex-wrap: nowrap;">
+          
+          <div class="bulk-sno" style="font-weight: bold; font-size: 12px; color: var(--text-muted); width: 16px; text-align: center; flex-shrink: 0; margin-top: 10px;"></div>
+          
+          <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name or UPI" value="${cust}" style="flex: 1.5; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); handleBulkCustChange(this); saveBulkDraft();" onchange="handleBulkCustChange(this);">
+          
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+            <input type="number" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="width: 100%; padding: 8px 6px; margin-bottom: 0; font-size: 14px; box-sizing: border-box;" oninput="updateBulkTotal(); saveBulkDraft()" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
+            
+            <!-- RED CLICKABLE BALANCE PILL -->
+            <div class="bulk-bal-disp" onclick="const row = this.closest('.bulk-row'); const amtInput = row.querySelector('.bulk-amt'); amtInput.value = this.getAttribute('data-bal'); updateBulkTotal(); saveBulkDraft(); amtInput.focus();" style="display: none; font-size: 11px; color: #b71c1c; background: #ffcdd2; border: 1px solid #ef9a9a; margin-top: 4px; padding: 4px; border-radius: 4px; text-align: center; font-weight: bold; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05); user-select: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Tap to fill amount"></div>
           </div>
+          
           <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0; margin-top: 4px;">
-            <button class="bulk-remove-btn" onclick="removeBulkRow('${rowId}')" style="background: none; border: none; color: #d32f2f; font-size: 18px; padding: 0 4px; cursor: pointer; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;" title="Remove">✕</button>
+            <button class="bulk-remove-btn" onclick="removeBulkRow('${rowId}')" style="background: none; border: none; color: #d32f2f; font-size: 18px; padding: 0; cursor: pointer; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;" title="Remove">✕</button>
             <button class="bulk-add-btn" onclick="addBulkRow({}, true)" style="background: #007bff; color: white; border: none; border-radius: 6px; width: 28px; height: 28px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 0 2px 4px rgba(0,123,255,0.3);" title="Add Row">＋</button>
           </div>
+          
         </div>
       </div>`;
     }
