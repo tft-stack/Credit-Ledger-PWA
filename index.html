@@ -4296,7 +4296,16 @@ async function submitEntry(forceDuplicate = false) {
   function handleBulkCustChange(inputElement) {
     if (!inputElement) return;
     let val = inputElement.value.trim().toLowerCase();
-    if (!val) return;
+    
+    // Hide balance pill if input is cleared
+    if (!val) {
+      const row = inputElement.closest('.bulk-row');
+      if (row) {
+        const balDisp = row.querySelector('.bulk-bal-disp');
+        if (balDisp) balDisp.style.display = 'none';
+      }
+      return;
+    }
 
     let exactMatch = allCustomers.find(c => c.toLowerCase() === val);
     
@@ -4314,6 +4323,24 @@ async function submitEntry(forceDuplicate = false) {
         }
       }
     }
+    
+    // --- NEW: FETCH & DISPLAY PENDING BALANCE PILL ---
+    const row = inputElement.closest('.bulk-row');
+    if (row && exactMatch) {
+      const balDisp = row.querySelector('.bulk-bal-disp');
+      // Look up the customer object in your loaded data
+      if (balDisp && typeof customersData !== 'undefined') {
+        const custObj = customersData.find(c => c.name === exactMatch);
+        
+        if (custObj && custObj.balance && parseFloat(custObj.balance) !== 0) {
+          balDisp.innerText = `₹${custObj.balance} Pending`;
+          balDisp.style.display = 'block';
+        } else {
+          balDisp.style.display = 'none';
+        }
+      }
+    }
+    // -------------------------------------------------
     
     checkBulkExactMatch(inputElement);
   }
@@ -4430,7 +4457,7 @@ async function submitEntry(forceDuplicate = false) {
           <div class="bulk-sno" style="font-weight: bold; font-size: 12px; color: var(--text-muted); width: 20px; text-align: center; flex-shrink: 0; margin-top: 10px;"></div>
           <div style="flex: 1; display: flex; flex-direction: column;">
               <div style="display: flex; gap: 6px;">
-                  <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name or UPI" value="${cust}" style="flex: 1; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); checkBulkExactMatch(this); saveBulkDraft()" onchange="handleBulkCustChange(this)">
+                  <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name or UPI" value="${cust}" style="flex: 1; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); checkBulkExactMatch(this); handleBulkCustChange(this); saveBulkDraft();" onblur="handleBulkCustChange(this);">
                   
                   <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
                     <input type="number" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="width: 100%; padding: 8px 6px; margin-bottom: 0; font-size: 14px; box-sizing: border-box;" oninput="updateBulkTotal(); saveBulkDraft()" onfocus="handleBulkCustChange(this.closest('.bulk-row').querySelector('.bulk-cust'))" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
