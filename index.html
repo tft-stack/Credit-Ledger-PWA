@@ -4406,14 +4406,26 @@ async function submitEntry(forceDuplicate = false) {
     
     if (row) {
       if (container.children.length === 1) {
-        // If it's the only row left, clear its contents instead of deleting it
-        row.querySelector('.bulk-cust').value = '';
-        row.querySelector('.bulk-qty').value = '';
-        row.querySelector('.bulk-fruit').value = '';
-        row.querySelector('.bulk-price').value = '';
-        row.querySelector('.bulk-row-total-disp').innerText = '₹0';
-        validateNotebookInput(row.querySelector('.bulk-cust'), 'customer');
-        validateNotebookInput(row.querySelector('.bulk-fruit'), 'fruit');
+        // Safely fetch all possible inputs across both view modes
+        const custInput = row.querySelector('.bulk-cust');
+        const qtyInput = row.querySelector('.bulk-qty');
+        const fruitInput = row.querySelector('.bulk-fruit');
+        const priceInput = row.querySelector('.bulk-price');
+        const amtInput = row.querySelector('.bulk-amt');
+        const totalDisp = row.querySelector('.bulk-row-total-disp');
+        const balDisp = row.querySelector('.bulk-bal-disp');
+
+        // Clear only the fields that actually exist on the screen
+        if (custInput) custInput.value = '';
+        if (qtyInput) qtyInput.value = '';
+        if (fruitInput) fruitInput.value = '';
+        if (priceInput) priceInput.value = '';
+        if (amtInput) amtInput.value = '';
+        if (totalDisp) totalDisp.innerText = '₹0';
+        if (balDisp) balDisp.style.display = 'none'; // Hide the red pill too
+
+        validateNotebookInput(custInput, 'customer');
+        validateNotebookInput(fruitInput, 'fruit');
       } else {
         // If there are multiple rows, safely remove it
         row.remove();
