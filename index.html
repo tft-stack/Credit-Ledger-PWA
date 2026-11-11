@@ -3285,8 +3285,8 @@ async function submitEntry(forceDuplicate = false) {
           </div>
         `).join('');
         
-        detailsHtml = `
-          <div id="desc_${item.id}" class="details-dropdown" style="background: #f8f9fa; border: none; border-radius: 8px; padding: 8px 12px; margin-top: 8px;">
+          detailsHtml = `
+          <div id="desc_${item.id}" class="details-dropdown" style="background: var(--pill-bg); border: 1px solid var(--border-light); border-radius: 8px; padding: 8px 12px; margin-top: 8px;">
             ${rowsHtml}
           </div>
         `;
@@ -4449,7 +4449,7 @@ async function submitEntry(forceDuplicate = false) {
              oninput="validateNotebookInput(this, 'customer');" 
              onblur="handleNativeAutocomplete(this); checkBulkExactMatch(this); validateNotebookInput(this, 'customer'); updateBulkTotal(); saveBulkDraft();">
            
-           <input type="number" inputmode="decimal" class="input-field bulk-qty" placeholder="Qty" value="${qty}" style="border: none; background: #f8f9fa; padding: 2px 0; margin: 0; flex: 0.8; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" 
+           <input type="number" class="input-field bulk-qty" placeholder="Qty" value="${qty}" style="border: 1px solid var(--border-light); background: var(--pill-bg); padding: 2px 0; margin: 0; flex: 0.8; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" 
              oninput="updateBulkRowTotal('${rowId}');" 
              onblur="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();">
            
@@ -4457,7 +4457,7 @@ async function submitEntry(forceDuplicate = false) {
              oninput="validateNotebookInput(this, 'fruit');" 
              onblur="validateNotebookInput(this, 'fruit'); updateBulkTotal(); saveBulkDraft();">
            
-           <input type="number" inputmode="decimal" class="input-field bulk-price" placeholder="Price" value="${price}" style="border: none; background: #f8f9fa; padding: 2px 0; margin: 0; flex: 1.1; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" 
+           <input type="number" class="input-field bulk-price" placeholder="Price" value="${price}" style="border: 1px solid var(--border-light); background: var(--pill-bg); padding: 2px 0; margin: 0; flex: 1.1; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" 
              oninput="updateBulkRowTotal('${rowId}');" 
              onblur="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();" 
              onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
