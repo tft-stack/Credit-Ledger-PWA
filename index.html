@@ -21,6 +21,8 @@
       transition: filter 0.2s ease, opacity 0.2s ease;
       user-select: none;
       display: inline-block; /* Forces mobile browsers to respect the blur on text */
+      will-change: filter, opacity; /* NEW: Hardware acceleration */
+      transform: translateZ(0);     /* NEW: Force GPU rendering */
     }
     .privacy-blur.revealed {
       filter: blur(0px) !important;
@@ -583,7 +585,7 @@
     <div class="card no-print" style="margin-bottom: 12px;">
       <label>Customer Name</label>
       <div style="position: relative; margin-bottom: 8px;">
-        <input type="text" id="searchCustomerInput" list="customerList" placeholder="🔍 Search Name or UPI..." oninput="handleNativeAutocomplete(this); this.value = this.value.replace(/[^a-zA-Z0-9 @.-_]/g, ''); toggleClearSearch('searchCustomerInput', 'clearSearchBtn');" onchange="handleSearchChange()" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
+        <input type="text" id="searchCustomerInput" autocomplete="off" list="customerList" placeholder="🔍 Search Name or UPI..." oninput="handleNativeAutocomplete(this); this.value = this.value.replace(/[^a-zA-Z0-9 @.-_]/g, ''); toggleClearSearch('searchCustomerInput', 'clearSearchBtn');" onchange="handleSearchChange()" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
         <div id="clearSearchBtn" onclick="clearSearch('searchCustomerInput', 'clearSearchBtn'); handleSearchChange();" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--border-color); color: var(--btn-text); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer; transition: background 0.3s, color 0.3s;">✕</div>
       </div>
       
@@ -729,7 +731,7 @@
       <h3>Add Entry</h3>
       <label>Customer Name</label>
       <div style="position: relative; margin-bottom: 8px;">
-        <input type="text" id="entryCustomerInput" list="customerList" placeholder="🔍 Search Name or UPI..." oninput="handleNativeAutocomplete(this); this.value = this.value.replace(/[^a-zA-Z0-9 @.-_]/g, ''); checkSimilarity(this.value); checkAndFocusAmount(this); toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn'); saveEntryDraft();" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
+        <input type="text" id="entryCustomerInput" autocomplete="off" list="customerList" placeholder="🔍 Search Name or UPI..." oninput="handleNativeAutocomplete(this); this.value = this.value.replace(/[^a-zA-Z0-9 @.-_]/g, ''); checkSimilarity(this.value); checkAndFocusAmount(this); toggleClearSearch('entryCustomerInput', 'clearAddSearchBtn'); saveEntryDraft();" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
         <div id="clearAddSearchBtn" onclick="clearSearch('entryCustomerInput', 'clearAddSearchBtn')" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--border-color); color: var(--btn-text); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer; transition: background 0.3s, color 0.3s;">✕</div>
       </div>
       
@@ -753,7 +755,7 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px;">
           <div>
             <label>Amount (₹)</label>
-            <input type="number" id="entryAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); saveEntryDraft();">
+            <input type="number" inputmode="decimal" id="entryAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); saveEntryDraft();">
           </div>
           <div>
             <label>Date</label>
@@ -977,7 +979,7 @@
       <div style="padding: 0 16px; text-align: left;">
         <label style="font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 6px;">Customer Name</label>
         <div style="position: relative;">
-          <input type="text" id="archiveSearchInput" list="customerList" placeholder="🔍 Search Customer Name or UPI..." oninput="handleNativeAutocomplete(this); this.value = this.value.replace(/[^a-zA-Z0-9 @.-_]/g, ''); toggleClearSearch('archiveSearchInput', 'clearArchiveBtn');" onchange="loadArchiveLedger()" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
+          <input type="text" id="archiveSearchInput" autocomplete="off" list="customerList" placeholder="🔍 Search Customer Name or UPI..." oninput="handleNativeAutocomplete(this); this.value = this.value.replace(/[^a-zA-Z0-9 @.-_]/g, ''); toggleClearSearch('archiveSearchInput', 'clearArchiveBtn');" onchange="loadArchiveLedger()" style="width: 100%; padding-right: 40px; margin-bottom: 0;">
           <div id="clearArchiveBtn" onclick="resetArchiveView()" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--border-color); color: var(--btn-text); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer;">✕</div>
         </div>
       </div>
@@ -1036,7 +1038,7 @@
     <div class="card" style="width: 100%; max-width: 350px;">
       <h3>Edit Profile</h3>
       <label>Customer Name</label>
-      <input type="text" id="editCustomerNameInput" placeholder="Enter customer name" oninput="this.value = this.value.replace(/[^a-zA-Z0-9 ]/g, ''); checkEditSimilarity(this.value);">
+      <input type="text" id="editCustomerNameInput" autocomplete="off" placeholder="Enter customer name" oninput="this.value = this.value.replace(/[^a-zA-Z0-9 ]/g, ''); checkEditSimilarity(this.value);">
       
       <div id="editSimilarityWarning" style="font-size: 12px; color: #d32f2f; margin-top: -8px; margin-bottom: 12px; display: none; background: #ffebee; padding: 8px; border-radius: 4px;">
         <strong>Similar names found:</strong><br>
@@ -1072,7 +1074,7 @@
         </div>
         <div>
           <label>Amount (₹)</label>
-          <input type="number" id="editAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); saveEditDraft();">
+          <input type="number" inputmode="decimal" id="editAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); saveEditDraft();">
         </div>
       </div>
 
@@ -1210,11 +1212,11 @@
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
         <div>
           <label>Quantity</label>
-          <input type="number" id="modalQty" placeholder="0" min="0" step="0.01" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
+          <input type="number" inputmode="decimal" id="modalQty" placeholder="0" min="0" step="0.01" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
         </div>
         <div>
           <label>Unit Price (₹)</label>
-          <input type="number" id="modalPrice" placeholder="0" min="0" step="0.01" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
+          <input type="number" inputmode="decimal" id="modalPrice" placeholder="0" min="0" step="0.01" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
         </div>
       </div>
       
@@ -3602,9 +3604,9 @@ async function submitEntry(forceDuplicate = false) {
       <!-- EDIT MODE: Qty -> Fruit -> Price -->
       <div class="edit-mode" style="${startInEditMode ? 'display: block;' : 'display: none;'} background: var(--pill-bg); padding: 10px; border-radius: 8px; border: 1px dashed var(--border-color); margin-top: 4px;">
         <div style="display: grid; grid-template-columns: 0.8fr 2fr 1.2fr; gap: 6px; margin-bottom: 6px;">
-          <input type="number" class="inline-edit-qty" value="${qty}" placeholder="Qty" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)" onkeydown="if(event.key==='Enter') { event.preventDefault(); this.closest('.detail-row').querySelector('.inline-edit-fruit').focus(); }">
+          <input type="number" inputmode="decimal" class="inline-edit-qty" value="${qty}" placeholder="Qty" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)" onkeydown="if(event.key==='Enter') { event.preventDefault(); this.closest('.detail-row').querySelector('.inline-edit-fruit').focus(); }">
           <input type="text" class="inline-edit-fruit" value="${fruit}" placeholder="Fruit" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)" onfocus="checkFruitSimilarity(this)" onkeydown="if(event.key==='Enter') { event.preventDefault(); this.closest('.detail-row').querySelector('.inline-edit-price').focus(); }">
-          <input type="number" class="inline-edit-price" value="${price}" placeholder="Price" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)" onkeydown="if(event.key==='Enter') { event.preventDefault(); saveAndAddNewRow(this, '${context}'); }">
+          <input type="number" inputmode="decimal" class="inline-edit-price" value="${price}" placeholder="Price" style="margin:0; padding:8px; font-size:13px; border-radius: 4px; border: 1px solid var(--border-color);" oninput="syncInlineData(this)" onkeydown="if(event.key==='Enter') { event.preventDefault(); saveAndAddNewRow(this, '${context}'); }">
         </div>
         
         <div class="fruit-warning-container" style="display: none; font-size: 11px; margin-bottom: 10px; padding: 6px; border-radius: 4px; line-height: 1.4;"></div>
@@ -4442,7 +4444,7 @@ async function submitEntry(forceDuplicate = false) {
              oninput="validateNotebookInput(this, 'customer');" 
              onblur="handleNativeAutocomplete(this); checkBulkExactMatch(this); validateNotebookInput(this, 'customer'); updateBulkTotal(); saveBulkDraft();">
            
-           <input type="number" class="input-field bulk-qty" placeholder="Qty" value="${qty}" style="border: none; background: #f8f9fa; padding: 2px 0; margin: 0; flex: 0.8; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" 
+           <input type="number" inputmode="decimal" class="input-field bulk-qty" placeholder="Qty" value="${qty}" style="border: none; background: #f8f9fa; padding: 2px 0; margin: 0; flex: 0.8; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" 
              oninput="updateBulkRowTotal('${rowId}');" 
              onblur="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();">
            
@@ -4450,7 +4452,7 @@ async function submitEntry(forceDuplicate = false) {
              oninput="validateNotebookInput(this, 'fruit');" 
              onblur="validateNotebookInput(this, 'fruit'); updateBulkTotal(); saveBulkDraft();">
            
-           <input type="number" class="input-field bulk-price" placeholder="Price" value="${price}" style="border: none; background: #f8f9fa; padding: 2px 0; margin: 0; flex: 1.1; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" 
+           <input type="number" inputmode="decimal" class="input-field bulk-price" placeholder="Price" value="${price}" style="border: none; background: #f8f9fa; padding: 2px 0; margin: 0; flex: 1.1; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" 
              oninput="updateBulkRowTotal('${rowId}');" 
              onblur="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();" 
              onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
@@ -4479,7 +4481,7 @@ async function submitEntry(forceDuplicate = false) {
           <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name or UPI" value="${cust}" style="flex: 1.5; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); handleBulkCustChange(this); saveBulkDraft();" onchange="handleBulkCustChange(this);">
           
           <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
-            <input type="number" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="width: 100%; padding: 8px 6px; margin-bottom: 0; font-size: 14px; box-sizing: border-box;" oninput="updateBulkTotal(); saveBulkDraft()" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
+            <input type="number" inputmode="decimal" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="width: 100%; padding: 8px 6px; margin-bottom: 0; font-size: 14px; box-sizing: border-box;" oninput="updateBulkTotal(); saveBulkDraft()" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
             
             <!-- RED CLICKABLE BALANCE PILL (Fixed Trimming & Padding) -->
             <div class="bulk-bal-disp" onclick="const r = this.closest('.bulk-row'); const a = r.querySelector('.bulk-amt'); a.value = this.getAttribute('data-bal'); updateBulkTotal(); saveBulkDraft(); a.focus(); r.scrollIntoView({ behavior: 'smooth', block: 'center' });" style="display: none; font-size: 9.5px; letter-spacing: -0.2px; color: #b71c1c; background: #ffcdd2; border: 1px solid #ef9a9a; margin-top: 4px; padding: 4px 1px; border-radius: 4px; text-align: center; font-weight: 900; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05); user-select: none; white-space: nowrap; overflow: visible;" title="Tap to fill amount"></div>
