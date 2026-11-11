@@ -258,6 +258,11 @@
     color: #d32f2f !important;
     font-weight: 700 !important;
     }
+
+    /* DOM Optimization Classes for Ledger */
+    .ledger-cell { flex: 1; padding: 0 6px; display: flex; flex-direction: column; }
+    .ledger-cell-left { border-right: 1px dashed var(--border-color); }
+    .ledger-cell-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
     
   </style>
 
@@ -755,7 +760,7 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px;">
           <div>
             <label>Amount (₹)</label>
-            <input type="number" inputmode="decimal" id="entryAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); saveEntryDraft();">
+            <input type="number" inputmode="decimal" id="entryAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); onblur=saveEntryDraft();">
           </div>
           <div>
             <label>Date</label>
@@ -812,7 +817,7 @@
           <div id="detailsContainer"></div>
         </div>
         
-        <input type="text" id="entryNotes" placeholder="Notes (Optional)" style="margin-bottom: 16px;" oninput="saveEntryDraft()">
+        <input type="text" id="entryNotes" placeholder="Notes (Optional)" style="margin-bottom: 16px;" onblur="saveEntryDraft()">
         
         <!-- Action Buttons: Cancel + Save in the same row -->
         <div style="display: flex; gap: 8px;">
@@ -1074,7 +1079,7 @@
         </div>
         <div>
           <label>Amount (₹)</label>
-          <input type="number" inputmode="decimal" id="editAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); saveEditDraft();">
+          <input type="number" inputmode="decimal" id="editAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); onblur=saveEditDraft();">
         </div>
       </div>
 
@@ -1124,7 +1129,7 @@
       </div>
 
       <label>Notes</label>
-      <input type="text" id="editNotes" oninput="saveEditDraft()">
+      <input type="text" id="editNotes" onblur="saveEditDraft()">
       
       <div class="btn-group">
         <button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
@@ -3290,8 +3295,8 @@ async function submitEntry(forceDuplicate = false) {
       }
 
       return `
-        <div style="flex: 1; padding: 0 6px; ${isLeft ? 'border-right: 1px dashed var(--border-color);' : ''} display: flex; flex-direction: column;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+        <div class="ledger-cell ${isLeft ? 'ledger-cell-left' : ''}">
+          <div class="ledger-cell-header">
             <div>
               <div class="ledger-date" style="color: var(--text-muted); font-size: 11px; margin-bottom: 2px; display: flex; align-items: center; white-space: nowrap;">${shortDate}${dupBadgeHtml}</div>
               ${amountDisplayHtml}
@@ -4481,7 +4486,7 @@ async function submitEntry(forceDuplicate = false) {
           <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name or UPI" value="${cust}" style="flex: 1.5; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); handleBulkCustChange(this); saveBulkDraft();" onchange="handleBulkCustChange(this);">
           
           <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
-            <input type="number" inputmode="decimal" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="width: 100%; padding: 8px 6px; margin-bottom: 0; font-size: 14px; box-sizing: border-box;" oninput="updateBulkTotal(); saveBulkDraft()" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
+            <input type="number" inputmode="decimal" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="width: 100%; padding: 8px 6px; margin-bottom: 0; font-size: 14px; box-sizing: border-box;" oninput="updateBulkTotal(); onblur=saveBulkDraft()" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
             
             <!-- RED CLICKABLE BALANCE PILL (Fixed Trimming & Padding) -->
             <div class="bulk-bal-disp" onclick="const r = this.closest('.bulk-row'); const a = r.querySelector('.bulk-amt'); a.value = this.getAttribute('data-bal'); updateBulkTotal(); saveBulkDraft(); a.focus(); r.scrollIntoView({ behavior: 'smooth', block: 'center' });" style="display: none; font-size: 9.5px; letter-spacing: -0.2px; color: #b71c1c; background: #ffcdd2; border: 1px solid #ef9a9a; margin-top: 4px; padding: 4px 1px; border-radius: 4px; text-align: center; font-weight: 900; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05); user-select: none; white-space: nowrap; overflow: visible;" title="Tap to fill amount"></div>
