@@ -5870,6 +5870,21 @@ async function submitEntry(forceDuplicate = false) {
           showToast(`Saved ${validRows.length} grouped entries successfully!`, "success");
         }
 
+        if (res.skipped && res.skipped.length > 0) {
+          alert(`Saved entries successfully!\n\nHowever, the following customers ALREADY HAVE detailed entries for this date and were SKIPPED:\n\n• ${res.skipped.join('\n• ')}\n\nPlease go to their individual Ledger screen to modify their items.`);
+          showToast(`Saved. Skipped ${res.skipped.length} existing entries.`, "info");
+        } else {
+          showToast(`Saved ${validRows.length} grouped entries successfully!`, "success");
+        }
+        
+        // NEW: If the user is currently viewing a ledger, instantly refresh it to show new details
+        if (document.getElementById('screen-view').classList.contains('active')) {
+          const activeCust = document.getElementById('searchCustomerInput').value.trim();
+          if (activeCust) {
+            loadLedger();
+          }
+        }
+
       } else {
         throw new Error(res.error || 'Unknown server error');
       }
