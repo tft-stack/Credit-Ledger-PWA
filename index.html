@@ -5576,6 +5576,23 @@ async function submitEntry(forceDuplicate = false) {
 
     } else {
       // Logic for Add/Edit Modal
+      const containerId = context === 'edit' ? 'editDetailsContainer' : 'detailsContainer';
+      const dateInputId = context === 'edit' ? 'editDate' : 'entryDate';
+      const mainDate = document.getElementById(dateInputId).value;
+      
+      parsedItems.forEach(item => {
+        // Drop the parsed quantities, fruits, and prices into the standard detailed layout
+        addDisplayRow(containerId, item.fruit, item.qty, item.price, mainDate, false);
+      });
+      
+      // Instantly calculate the new grand total and save the draft
+      if (context === 'edit') {
+        saveEditDraft();
+      } else {
+        saveEntryDraft();
+      }
+      
+      showToast(`🎤 "${transcript}" ➔ Added ${parsedItems.length} item(s)`, "success");
     }
   }
 
