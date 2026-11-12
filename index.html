@@ -5852,8 +5852,9 @@ async function submitEntry(forceDuplicate = false) {
         // Add new customers to autocomplete list
         if (newCustomers.length > 0) {
           newCustomers.forEach(nc => {
-            if (!(window.allCustomers || []).includes(nc)) {
-              window.allCustomers.push(nc);
+            // FIXED: Removed 'window.' prefix which caused the undefined push crash
+            if (!allCustomers.includes(nc)) {
+              allCustomers.push(nc);
               let opt = document.createElement('option'); opt.value = nc; 
               document.getElementById('customerList').appendChild(opt);
             }
