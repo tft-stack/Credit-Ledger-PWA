@@ -5866,8 +5866,7 @@
         isDashboardStale = true;
 
         let isPay = (typeVal === 'Payment' || typeVal === 'Amount Received');
-        newEntriesToProcess.forEach(e => updateLocalDashboardMemory(e.customerName, parseFloat(e.amount) || 0, isPay, dateVal));
-        balanceAdjustments.forEach(adj => updateLocalDashboardMemory(adj.customerName, parseFloat(adj.amount) || 0, isPay, dateVal));
+        validRows.forEach(e => updateLocalDashboardMemory(e.customerName, parseFloat(e.amount) || 0, isPay, dateVal));
         
         // Add new customers to autocomplete list
         if (newCustomers.length > 0) {
