@@ -4450,7 +4450,7 @@ async function submitEntry(forceDuplicate = false) {
     let html = '';
 
     if (mode === 'items') {
-      // ULTRA-COMPACT NOTEBOOK VIEW (Updates instantly on "Tap Out")
+      // ULTRA-COMPACT NOTEBOOK VIEW (Updates instantly on Keystroke)
       html = `
       <div id="${rowId}" class="bulk-row" style="display: flex; flex-direction: column; border-bottom: 1px solid var(--border-light); padding: 6px 0; width: 100%; box-sizing: border-box; overflow: hidden;">
         <div style="display: flex; align-items: center; width: 100%; font-size: 13px; gap: 4px;">
@@ -4458,20 +4458,20 @@ async function submitEntry(forceDuplicate = false) {
            <span class="bulk-sno" style="font-weight: 600; color: var(--text-muted); width: 14px; flex-shrink: 0; text-align: left; font-size: 11px;"></span>
            
            <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name" value="${cust}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 2.5; min-width: 0; font-weight: 600; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-overflow: ellipsis; white-space: nowrap;" 
-             oninput="validateNotebookInput(this, 'customer');" 
+             oninput="validateNotebookInput(this, 'customer'); updateBulkTotal();" 
              onblur="handleNativeAutocomplete(this); checkBulkExactMatch(this); validateNotebookInput(this, 'customer'); updateBulkTotal(); saveBulkDraft();">
            
-           <input type="number" class="input-field bulk-qty" placeholder="Qty" value="${qty}" style="border: 1px solid var(--border-light); background: var(--pill-bg); padding: 2px 0; margin: 0; flex: 0.8; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" 
-             oninput="updateBulkRowTotal('${rowId}');" 
-             onblur="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();">
+           <input type="number" inputmode="decimal" class="input-field bulk-qty" placeholder="Qty" value="${qty}" style="border: 1px solid var(--border-light); background: var(--pill-bg); padding: 2px 0; margin: 0; flex: 0.8; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" 
+             oninput="updateBulkTotal();" 
+             onblur="updateBulkTotal(); saveBulkDraft();">
            
            <input type="text" class="input-field bulk-fruit" list="fruitList" placeholder="Fruit" value="${fruit}" style="border: none; background: transparent; padding: 0; margin: 0; flex: 1.5; min-width: 0; border-radius: 0; outline: none; box-shadow: none; font-size: 13px; text-align: center; text-overflow: ellipsis; white-space: nowrap;" 
              oninput="validateNotebookInput(this, 'fruit');" 
-             onblur="validateNotebookInput(this, 'fruit'); updateBulkTotal(); saveBulkDraft();">
+             onblur="validateNotebookInput(this, 'fruit'); saveBulkDraft();">
            
-           <input type="number" class="input-field bulk-price" placeholder="Price" value="${price}" style="border: 1px solid var(--border-light); background: var(--pill-bg); padding: 2px 0; margin: 0; flex: 1.1; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" 
-             oninput="updateBulkRowTotal('${rowId}');" 
-             onblur="updateBulkRowTotal('${rowId}'); updateBulkTotal(); saveBulkDraft();" 
+           <input type="number" inputmode="decimal" class="input-field bulk-price" placeholder="Price" value="${price}" style="border: 1px solid var(--border-light); background: var(--pill-bg); padding: 2px 0; margin: 0; flex: 1.1; min-width: 0; text-align: center; border-radius: 4px; outline: none; box-shadow: none; font-size: 13px;" 
+             oninput="updateBulkTotal();" 
+             onblur="updateBulkTotal(); saveBulkDraft();" 
              onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
            
            <!-- Compact Highlighted Total Badge -->
@@ -5544,7 +5544,6 @@ async function submitEntry(forceDuplicate = false) {
                 if (typeof checkBulkExactMatch === 'function') checkBulkExactMatch(custInput);
             }
             if (item.rawSpoken) lastRow.setAttribute('data-spoken-fruit', item.rawSpoken);
-            if (typeof updateBulkRowTotal === 'function') updateBulkRowTotal(lastRow.id);
             
             validateNotebookInput(custInput, 'customer');
             validateNotebookInput(fruitInput, 'fruit');
@@ -5561,7 +5560,6 @@ async function submitEntry(forceDuplicate = false) {
                     checkBulkExactMatch(custInput); 
                 }
                 if (item.rawSpoken) newRow.setAttribute('data-spoken-fruit', item.rawSpoken);
-                if (typeof updateBulkRowTotal === 'function') updateBulkRowTotal(newRow.id);
                 
                 validateNotebookInput(custInput, 'customer');
                 validateNotebookInput(newFruitInput, 'fruit');
@@ -5569,6 +5567,7 @@ async function submitEntry(forceDuplicate = false) {
         }
       });
       
+      // This single call instantly calculates all row badges and the consolidated preview
       if (typeof updateBulkTotal === 'function') updateBulkTotal();
       if (typeof saveBulkDraft === 'function') saveBulkDraft();
       showToast(`🎤 "${transcript}" ➔ Added ${parsedItems.length} item(s)`, "success");
