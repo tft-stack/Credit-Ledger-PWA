@@ -760,7 +760,7 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px;">
           <div>
             <label>Amount (₹)</label>
-            <input type="number" inputmode="decimal" id="entryAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); onblur=saveEntryDraft();">
+            <input type="number" inputmode="decimal" id="entryAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" onblur="saveEntryDraft();">
           </div>
           <div>
             <label>Date</label>
@@ -1079,7 +1079,7 @@
         </div>
         <div>
           <label>Amount (₹)</label>
-          <input type="number" inputmode="decimal" id="editAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); onblur=saveEditDraft();">
+          <input type="number" inputmode="decimal" id="editAmount" placeholder="Enter Amount" required style="transition: background 0.3s; margin-bottom: 0;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" onblur="saveEditDraft();">
         </div>
       </div>
 
@@ -1903,10 +1903,19 @@
   // --- SMART SETTLE FUNCTIONS ---
   async function navToSmartSettle() {
     switchScreen('settle');
+    
+    // PHASE 3: Instant 0ms Load if data is already cached and hasn't changed
+    if (!isDashboardStale && window.cachedSmartSettle) {
+      renderSmartSettle(window.cachedSmartSettle.data, window.cachedSmartSettle.rule4Data, window.cachedSmartSettle.duplicateData);
+      return;
+    }
+    
     showLoading();
     try {
       const res = await apiGet('getReadyToSettleData');
       if (res && (res.status === 'success' || res.data)) {
+        // Save to RAM for instant future loads
+        window.cachedSmartSettle = { data: res.data || [], rule4Data: res.rule4Data || [], duplicateData: res.duplicateData || [] };
         renderSmartSettle(res.data || [], res.rule4Data || [], res.duplicateData || []);
       } else {
         showToast("Failed to load smart settle data: " + (res && res.error ? res.error : "Unknown"), "error");
@@ -2897,7 +2906,7 @@
     }
   }
 
-async function submitEntry(forceDuplicate = false) {
+  async function submitEntry(forceDuplicate = false) {
     let name = document.getElementById('entryCustomerInput').value.trim();
     const amount = document.getElementById('entryAmount').value;
     const isBF = document.getElementById('broughtForward').checked;
@@ -2979,6 +2988,7 @@ async function submitEntry(forceDuplicate = false) {
         
          showToast("Entry Saved Successfully!", "success");
          isDashboardStale = true;
+         updateLocalDashboardMemory(name, parseFloat(amount) || 0, type === 'Payment' || type === 'Amount Received', date);
          syncLocalInitDataCache(); // 0ms local update
         
          document.getElementById('entryAmount').value = '';
@@ -3514,6 +3524,9 @@ async function submitEntry(forceDuplicate = false) {
         showToast("Transaction Deleted", "success");
         isDashboardStale = true;
 
+        // Flip the boolean: Deleting a purchase acts like a payment (-bal), deleting a payment acts like a purchase (+bal)
+        updateLocalDashboardMemory(currentCustName, parseFloat(item.amount) || 0, item.type === 'Purchase' || item.type === 'Goods Purchased', null);
+
         // ZERO-RELOAD UI UPDATE (0ms)
         let itemIndex = currentLedgerHistory.findIndex(i => i.id.toString() === id);
         if (itemIndex > -1) {
@@ -3766,6 +3779,9 @@ async function submitEntry(forceDuplicate = false) {
         localStorage.removeItem(EDIT_DRAFT_KEY);
         showToast("Changes Saved Successfully!", "success");
         isDashboardStale = true;
+
+        let diff = parseFloat(amount) - (parseFloat(oldAmount) || 0);
+        updateLocalDashboardMemory(custName, diff, type === 'Payment' || type === 'Amount Received', date);
 
         // ZERO-RELOAD UI UPDATE (0ms)
         let itemIndex = currentLedgerHistory.findIndex(i => i.id.toString() === id);
@@ -4498,7 +4514,7 @@ async function submitEntry(forceDuplicate = false) {
           <input type="text" class="input-field bulk-cust" list="customerList" placeholder="Name or UPI" value="${cust}" style="flex: 1.5; min-width: 0; padding: 8px 6px; margin-bottom: 0; font-size: 14px;" oninput="handleNativeAutocomplete(this); checkBulkSimilarity(this); handleBulkCustChange(this); saveBulkDraft();" onchange="handleBulkCustChange(this);">
           
           <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
-            <input type="number" inputmode="decimal" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="width: 100%; padding: 8px 6px; margin-bottom: 0; font-size: 14px; box-sizing: border-box;" oninput="updateBulkTotal(); onblur=saveBulkDraft()" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
+            <input type="number" inputmode="decimal" class="input-field bulk-amt" placeholder="Amt(₹)" value="${amt}" style="width: 100%; padding: 8px 6px; margin-bottom: 0; font-size: 14px; box-sizing: border-box;" oninput="updateBulkTotal();" onblur="saveBulkDraft();" onkeydown="if(event.key==='Enter') { event.preventDefault(); addBulkRow({}, true); }">
             
             <!-- RED CLICKABLE BALANCE PILL (Fixed Trimming & Padding) -->
             <div class="bulk-bal-disp" onclick="const r = this.closest('.bulk-row'); const a = r.querySelector('.bulk-amt'); a.value = this.getAttribute('data-bal'); updateBulkTotal(); saveBulkDraft(); a.focus(); r.scrollIntoView({ behavior: 'smooth', block: 'center' });" style="display: none; font-size: 9.5px; letter-spacing: -0.2px; color: #b71c1c; background: #ffcdd2; border: 1px solid #ef9a9a; margin-top: 4px; padding: 4px 1px; border-radius: 4px; text-align: center; font-weight: 900; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05); user-select: none; white-space: nowrap; overflow: visible;" title="Tap to fill amount"></div>
@@ -5846,7 +5862,11 @@ async function submitEntry(forceDuplicate = false) {
     if (res && res.status === 'success') {
         localStorage.removeItem(BULK_DRAFT_KEY); 
         closeBulkModal();
-        isDashboardStale = true; 
+        isDashboardStale = true;
+
+        let isPay = (typeVal === 'Payment' || typeVal === 'Amount Received');
+        newEntriesToProcess.forEach(e => updateLocalDashboardMemory(e.customerName, parseFloat(e.amount) || 0, isPay, dateVal));
+        balanceAdjustments.forEach(adj => updateLocalDashboardMemory(adj.customerName, parseFloat(adj.amount) || 0, isPay, dateVal));
         
         // Add new customers to autocomplete list
         if (newCustomers.length > 0) {
@@ -5862,13 +5882,6 @@ async function submitEntry(forceDuplicate = false) {
         }
 
         // Show success, or success + skipped warning!
-        if (res.skipped && res.skipped.length > 0) {
-          alert(`Saved entries successfully!\n\nHowever, the following customers ALREADY HAVE detailed entries for this date and were SKIPPED:\n\n• ${res.skipped.join('\n• ')}\n\nPlease go to their individual Ledger screen to modify their items.`);
-          showToast(`Saved. Skipped ${res.skipped.length} existing entries.`, "info");
-        } else {
-          showToast(`Saved ${validRows.length} grouped entries successfully!`, "success");
-        }
-
         if (res.skipped && res.skipped.length > 0) {
           alert(`Saved entries successfully!\n\nHowever, the following customers ALREADY HAVE detailed entries for this date and were SKIPPED:\n\n• ${res.skipped.join('\n• ')}\n\nPlease go to their individual Ledger screen to modify their items.`);
           showToast(`Saved. Skipped ${res.skipped.length} existing entries.`, "info");
@@ -5892,6 +5905,40 @@ async function submitEntry(forceDuplicate = false) {
     } finally {
       hideLoading();
     }
+  }
+
+  // PHASE 3: Instant Local Memory Injection
+  function updateLocalDashboardMemory(custName, deltaAmount, isPayment, dateStr) {
+    if (!custName || deltaAmount === 0) return;
+    let targetName = custName.toLowerCase().trim();
+    let balanceChange = isPayment ? -deltaAmount : deltaAmount;
+    
+    const updateArray = (dataArray) => {
+      if (!dataArray) return;
+      let cust = dataArray.find(c => c.name.toLowerCase() === targetName);
+      if (cust) {
+        cust.balance += balanceChange;
+      } else {
+        dataArray.push({ name: custName, balance: balanceChange, lastPaymentAmount: 0, lastPaymentDate: null });
+      }
+    };
+
+    updateArray(currentDashboardData);
+    if (window.currentDashboardDataPayload) {
+      updateArray(window.currentDashboardDataPayload.customers);
+    }
+    
+    // Also patch LocalStorage so a hard-refresh retains the 0ms speed
+    try {
+      let cached = localStorage.getItem('dashboard_cached_payload');
+      if (cached) {
+        let parsed = JSON.parse(cached);
+        if (parsed.customers) {
+          updateArray(parsed.customers);
+          localStorage.setItem('dashboard_cached_payload', JSON.stringify(parsed));
+        }
+      }
+    } catch(e) {}
   }
   
 </script>
