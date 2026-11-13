@@ -3524,9 +3524,6 @@
         showToast("Transaction Deleted", "success");
         isDashboardStale = true;
 
-        // Flip the boolean: Deleting a purchase acts like a payment (-bal), deleting a payment acts like a purchase (+bal)
-        updateLocalDashboardMemory(currentCustName, parseFloat(item.amount) || 0, item.type === 'Purchase' || item.type === 'Goods Purchased', null);
-
         // ZERO-RELOAD UI UPDATE (0ms)
         let itemIndex = currentLedgerHistory.findIndex(i => i.id.toString() === id);
         if (itemIndex > -1) {
@@ -3543,6 +3540,10 @@
           currentLedgerHistory.splice(itemIndex, 1);
 
           const currentCustName = document.getElementById('dispCustomerName').innerText;
+          
+          // Phase 3: Instant Memory Injection (Corrected placement)
+          updateLocalDashboardMemory(currentCustName, parseFloat(item.amount) || 0, item.type === 'Purchase' || item.type === 'Goods Purchased', null);
+          
           const lastPaidAmt = document.getElementById('viewLastPaidAmount').innerText.replace(/[^0-9.-]+/g,"");
           const lastPaidDate = document.getElementById('viewLastPaidDate').innerText;
 
