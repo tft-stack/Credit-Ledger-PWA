@@ -4609,16 +4609,19 @@
 
   // Dynamically creates the fruit autocomplete list if it doesn't exist
   function ensureFruitDatalist() {
-    if (!document.getElementById('fruitList') && window.allFruits) {
-      const dl = document.createElement('datalist');
+    if (!window.allFruits || window.allFruits.length === 0) return;
+    let dl = document.getElementById('fruitList');
+    if (!dl) {
+      dl = document.createElement('datalist');
       dl.id = 'fruitList';
-      window.allFruits.forEach(f => {
-        let opt = document.createElement('option');
-        opt.value = f;
-        dl.appendChild(opt);
-      });
       document.body.appendChild(dl);
     }
+    dl.innerHTML = '';
+    window.allFruits.forEach(f => {
+      let opt = document.createElement('option');
+      opt.value = f;
+      dl.appendChild(opt);
+    });
   }
 
   function validateNotebookInput(inputEl, type) {
@@ -5133,13 +5136,19 @@
   // =====================================================================
   
   const DEFAULT_FRUIT_ALIASES = {
-    'amrood': 'AMD', 'amrud': 'AMD', 'amarud': 'AMD', 'guava': 'AMD',
+    'chikoo': 'Chikoo', 'chiku': 'Chikoo', 'cheeku': 'Chikoo', 'chiko': 'Chikoo',
+    'amrood': 'AMD', 'amrud': 'AMD', 'amarud': 'AMD', 'amroodh': 'AMD', 'guava': 'AMD',
     'tarbooz': 'TBZ', 'tarbuj': 'TBZ', 'tarbuz': 'TBZ', 'watermelon': 'TBZ',
     'kharbooja': 'KBJ', 'kharbuja': 'KBJ', 'kharbuza': 'KBJ', 'muskmelon': 'KBJ',
+    'baer': 'Baer', 'ber': 'Baer', 'bair': 'Baer', 'bear': 'Baer', 'bare': 'Baer',
+    'angur': 'Grapes', 'angoor': 'Grapes', 'grapes': 'Grapes',
+    'sarda': 'Sarda', 'sharda': 'Sarda', 'sardha': 'Sarda',
+    'fit': 'Fit', 'feet': 'Fit', 'feat': 'Fit',
+    'others': 'Others', 'other': 'Others', 'adarsh': 'Others', 'athar': 'Others', 'udhar': 'Others', 'adar': 'Others',
     'sharifa': 'Sharifa', 'sitafal': 'Sharifa',
     'anar': 'Anar', 'pomegranate': 'Anar',
     'aam': 'Mango', 'mango': 'Mango',
-    'daab': 'Daab', 'dab': 'Daab', 'nariyal paani': 'Daab', 'nariyal pani': 'Daab', 'tender coconut': 'Daab',
+    'daab': 'Daab', 'dab': 'Daab', 'dub': 'Daab', 'nariyal paani': 'Daab', 'nariyal pani': 'Daab', 'narial pani': 'Daab', 'tender coconut': 'Daab',
     'nariyal': 'Coconut', 'narial': 'Coconut', 'coconut': 'Coconut'
   };
 
@@ -5280,7 +5289,7 @@
 
   function processDictation(transcript, context) {
   const wordToNum = {
-      'zero': 0, 'one': 1, 'won': 1, 'ek': 1, 'two': 2, 'to': 2, 'too': 2, 'do': 2,
+      'zero': 0, 'one': 1, 'won': 1, 'ek': 1, 'aik': 1, 'two': 2, 'to': 2, 'too': 2, 'do': 2,
       'three': 3, 'tree': 3, 'teen': 3, 'four': 4, 'for': 4, 'char': 4,
       'five': 5, 'panch': 5, 'paanch': 5, 'six': 6, 'che': 6, 'chhe': 6,
       'seven': 7, 'saat': 7, 'eight': 8, 'ate': 8, 'aath': 8, 'nine': 9, 'nau': 9,
@@ -5290,26 +5299,28 @@
       'nineteen': 19, 'unnis': 19, 'twenty': 20, 'bees': 20, 'thirty': 30, 'tees': 30,
       'forty': 40, 'chalis': 40, 'fifty': 50, 'pachas': 50, 'sixty': 60, 'saath': 60,
       'seventy': 70, 'sattar': 70, 'eighty': 80, 'assi': 80, 'ninety': 90, 'nabbe': 90,
-      
+
       // Base Hundreds
-      'hundred': 100, 'sau': 100, 'so': 100, 
-      
+      'hundred': 100, 'sau': 100, 'so': 100, 'soo': 100,
+
       // Hindi Merged Hundreds
-      'dosau': 200, 'doso': 200, 
-      'teensau': 300, 'teenso': 300, 
-      'charsau': 400, 'charso': 400, 
-      'paanchsau': 500, 'paanchso': 500, 'pansau': 500, 'panso': 500,
-      'chesau': 600, 'cheso': 600, 'chhesau': 600, 'chheso': 600,
-      'saatsau': 700, 'saatso': 700, 
-      'aathsau': 800, 'aathso': 800, 
-      'nausau': 900, 'nauso': 900,
-      
+      'dosau': 200, 'doso': 200, 'dosoo': 200,
+      'teensau': 300, 'teenso': 300, 'teensoo': 300,
+      'charsau': 400, 'charso': 400, 'charsoo': 400,
+      'paanchsau': 500, 'paanchso': 500, 'paanchsoo': 500, 'pansau': 500, 'panso': 500, 'pansoo': 500, 'panchso': 500, 'panchsoo': 500,
+      'chesau': 600, 'cheso': 600, 'chesoo': 600, 'chhesau': 600, 'chheso': 600, 'chhesoo': 600,
+      'saatsau': 700, 'saatso': 700, 'saatsoo': 700,
+      'aathsau': 800, 'aathso': 800, 'aathsoo': 800, 'athso': 800, 'athsoo': 800,
+      'nausau': 900, 'nauso': 900, 'nausoo': 900,
+
       // Common Fractions
-      'dedh': 1.5, 'dedhsau': 150, 'dedhso': 150,
-      'dhai': 2.5, 'dhaisau': 250, 'dhaiso': 250,
-      
+      'dedh': 1.5, 'dedhsau': 150, 'dedhso': 150, 'dedhsoo': 150,
+      'dhai': 2.5, 'dhaisau': 250, 'dhaiso': 250, 'dhaisoo': 250,
+
       // Thousands & Lakhs
-      'thousand': 1000, 'hazar': 1000, 'hazaar': 1000,
+      'thousand': 1000, 'hazar': 1000, 'hazaar': 1000, 'hajar': 1000,
+      'ekhazar': 1000, 'ekhazaar': 1000, 'aikhazar': 1000, 'aikhazaar': 1000,
+      'dohazar': 2000, 'dohazaar': 2000,
       'lakh': 100000, 'laakh': 100000
     };
 
@@ -5355,7 +5366,13 @@
       let i = 0;
       while (i < nums.length) {
         let cur = nums[i]; let next = nums[i + 1]; let next2 = nums[i + 2];
-        if (cur < 100 && next === 100) {
+        if (cur < 100 && next === 1000) {
+          let val = cur * 1000;
+          if (next2 && next2 < 1000) { val += next2; i += 3; } else { i += 2; }
+          combined.push(val);
+        } else if (cur === 1000 && next && next < 1000) {
+          combined.push(cur + next); i += 2;
+        } else if (cur < 100 && next === 100) {
           let val = cur * 100;
           if (next2 && next2 < 100) { val += next2; i += 3; } else { i += 2; }
           combined.push(val);
@@ -5503,36 +5520,67 @@
       return matrix[b.length][a.length];
     }
 
+    function phoneticSkeleton(str) {
+      return str.toLowerCase()
+        .replace(/\b(ji|jee)\b/g, 'g')
+        .replace(/ph/g, 'f')
+        .replace(/sh/g, 's')
+        .replace(/p/g, 'b')
+        .replace(/t/g, 'd')
+        .replace(/k/g, 'g')
+        .replace(/w/g, 'v')
+        .replace(/h/g, '')
+        .replace(/[aeiou\s\.]/g, '')
+        .replace(/(.)\1+/g, '$1');
+    }
+
     function getSmartCustomerMatch(rawName) {
       if (!rawName) return '';
-      const lowerRaw = rawName.toLowerCase();
-      const lowerClean = lowerRaw.replace(/\s+/g, ''); 
-      
+      // Pre-clean "N Ji" -> "NG" before matching
+      const preCleaned = rawName.replace(/\b(ji|jee)\b/gi, 'G');
+      const lowerRaw = preCleaned.toLowerCase().trim();
+      const lowerClean = lowerRaw.replace(/\s+/g, '');
+
+      // 1. Direct exact or unique substring match
       const matches = custList.filter(c => c.toLowerCase().includes(lowerRaw) || lowerRaw.includes(c.toLowerCase()));
       if (matches.length === 1) return matches[0];
       if (matches.length > 1) {
         const exact = matches.find(c => c.toLowerCase() === lowerRaw);
         if (exact) return exact;
       }
-      
+
+      // 2. Phonetic Skeleton Match (handles Ramchandra N Ji -> Ram Chandar NG, Narendra Patti -> Narinder Baddi)
+      const rawSkel = phoneticSkeleton(preCleaned);
+      if (rawSkel.length >= 4) {
+        const skelMatches = custList.filter(c => phoneticSkeleton(c) === rawSkel);
+        if (skelMatches.length === 1) return skelMatches[0];
+        if (skelMatches.length > 1) {
+          skelMatches.sort((a, b) => getEditDistance(lowerClean, a.toLowerCase().replace(/\s+/g, '')) - getEditDistance(lowerClean, b.toLowerCase().replace(/\s+/g, '')));
+          return skelMatches[0];
+        }
+      }
+
+      // 3. Proportional Fuzzy Fallback (Levenshtein on both raw and phonetic skeletons)
       let bestMatch = '';
-      let lowestDistance = 999;
-      
+      let lowestScore = 999;
+
       custList.forEach(c => {
         let cleanCust = c.toLowerCase().replace(/\s+/g, '');
-        let dist = getEditDistance(lowerClean, cleanCust);
-        if (dist < lowestDistance) {
-          lowestDistance = dist;
+        let rawDist = getEditDistance(lowerClean, cleanCust);
+        let skelDist = getEditDistance(rawSkel, phoneticSkeleton(c));
+        let score = Math.min(rawDist, skelDist + 0.5);
+        if (score < lowestScore) {
+          lowestScore = score;
           bestMatch = c;
         }
       });
-      
-      let threshold = lowerClean.length <= 5 ? 1 : 3; 
-      if (lowestDistance <= threshold && bestMatch) {
+
+      let threshold = lowerClean.length <= 5 ? 1 : Math.min(4, Math.floor(lowerClean.length * 0.3));
+      if (lowestScore <= threshold && bestMatch) {
         return bestMatch;
       }
 
-      return rawName; 
+      return rawName;
     }
 
     if (context === 'bulk') {
@@ -5690,8 +5738,9 @@
     if (mode === 'items' && Object.keys(previewMap).length > 0) {
        previewBox.style.display = 'block';
        let html = '';
+       let sno = 1;
        for (let c in previewMap) {
-          html += `<div>• <strong>${c}</strong> (${previewMap[c].count} items) ➔ ₹${previewMap[c].total.toLocaleString('en-IN')}</div>`;
+          html += `<div>${sno++}. <strong>${c}</strong> (${previewMap[c].count} items) ➔ ₹${previewMap[c].total.toLocaleString('en-IN')}</div>`;
        }
        previewList.innerHTML = html;
     } else {
@@ -5721,6 +5770,8 @@
   }
 
   function restoreBulkDraft(draft) {
+    if (typeof ensureFruitDatalist === 'function') ensureFruitDatalist();
+    
     // 1. Restore Type (Purchase/Payment)
     document.getElementById('bulkEntryTypeSelected').value = draft.type;
     currentBulkType = draft.type;
